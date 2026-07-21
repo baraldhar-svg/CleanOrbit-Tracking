@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "33522556663",
+    "project_id": "orbittrack-50580",
+    "storage_bucket": "orbittrack-50580.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:33522556663:android:388e3acfde600f7fce3df2",
+        "android_client_info": {
+          "package_name": "com.orbittrack.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCs2esUFfwqeHU2xA8r8P1j7T9X9w7VLuY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

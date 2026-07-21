@@ -1,0 +1,46 @@
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+$ pnpm run typecheck && pnpm -r --if-present run build
+$ pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --filter "./scripts" --if-present run typecheck
+$ tsc --build
+Scope: 5 of 10 workspace projects
+artifacts/api-server typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/fleetsaas typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/mockup-sandbox typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/orbittrack-mobile typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/mockup-sandbox typecheck: Done
+scripts typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/orbittrack-mobile typecheck: Done
+artifacts/fleetsaas typecheck: Done
+artifacts/api-server typecheck: src/routes/advertisements.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/announcements.ts(11,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/auth.ts(16,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/budget-settings.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/calendar.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/dashboard.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/drivers.ts(16,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/events.ts(4,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/fleet.ts(7,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/fuel-logs.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/geocode.ts(3,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/maintenance-records.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/passengers.ts(52,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/push-tokens.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/routes.ts(18,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/stations.ts(7,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/subscriptions.ts(7,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/superadmin.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/tenants.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/trips.ts(10,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/users.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/vehicle-documents.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/vehicles.ts(7,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/webauthn.ts(12,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+artifacts/api-server typecheck: src/routes/whatsapp.ts(6,7): error TS2742: The inferred type of 'router' cannot be named without a reference to '.pnpm/@types+express-serve-static-core@5.1.1/node_modules/@types/express-serve-static-core'. This is likely not portable. A type annotation is necessary.
+scripts typecheck: Done
+artifacts/api-server typecheck: Failed
+C:\Users\DELL\bus-tracker-app\artifacts\api-server:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @workspace/api-server@0.0.0 typecheck: `tsc -p tsconfig.json --noEmit`
+Exit status 2
+[ELIFECYCLE] Command failed with exit code 2.
+[ELIFECYCLE] Command failed with exit code 2.
