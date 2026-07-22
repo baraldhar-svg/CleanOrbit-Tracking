@@ -1,13 +1,15 @@
 {
   "version": 2,
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "frontend/dist/public",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://33c7862f-0438-4adc-83ae-af5ac11d06a3-00-3u2khpqjgrop5.sisko.replit.dev/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "/api"
     },
     {
-      "source": "/auth/:path*",
-      "destination": "https://33c7862f-0438-4adc-83ae-af5ac11d06a3-00-3u2khpqjgrop5.sisko.replit.dev/auth/:path*"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
