@@ -14,6 +14,7 @@ import {
 import { eq, and, gt, isNotNull } from "drizzle-orm";
 import { signToken, checkSuperAdminBypass } from "../lib/auth";
 import { normalizePhone, syncUserAndProfiles } from "../lib/sync";
+import { logger } from "../lib/logger";
 
 const router: Router = Router();
 
@@ -58,57 +59,63 @@ async function generateUniqueSchoolCode(schoolName: string): Promise<string> {
 
 // ⚠️ परिवर्तन गरिएको मुख्य ठाउँ: अब यसले ओटिपी नमागी सिधै लगिन गराइदिन्छ
 router.post("/check-phone", async (req, res) => {
-  const { phone } = req.body as { phone?: string };
-  const raw = (phone ?? "").trim();
-  if (!raw || !/^\+?\d{7,15}$/.test(raw.replace(/[\s\-()]/g, ""))) {
-    return res.status(400).json({ error: "Enter a valid mobile number" });
-  }
-  const normalized = normalizePhone(raw);
+  try {
+    const { phone } = req.body as { phone?: string };
+    const raw = (phone ?? "").trim();
+    if (!raw || !/^\+?\d{7,15}$/.test(raw.replace(/[\s\-()]/g, ""))) {
+      return res.status(400).json({ error: "Enter a valid mobile number" });
+    }
+    const normalized = normalizePhone(raw);
 
-  const { user } = await syncUserAndProfiles(normalized);
+    const { user } = await syncUserAndProfiles(normalized);
 
-  if (!user) {
-    return res.status(403).json({
-      error:
-        "This number is not registered. Contact your school administrator to be added.",
-      found: false,
-    });
-  }
+    if (!user) {
+      return res.status(403).json({
+        error:
+          "This number is not registered. Contact your school administrator to be added.",
+        found: false,
+      });
+    }
 
-  // ── SUPER ADMIN DEV BYPASS CHECK-PHONE ───────────────────────────────────
-  if (process.env.NODE_ENV !== "production" && normalized === "9851049147") {
+    if (process.env.NODE_ENV !== "production" && normalized === "9851049147") {
+      return res.json({
+        found: true,
+        requiresPassword: true,
+        user: {
+          id: user.id,
+          phone: user.phone,
+          name: user.name,
+          role: user.role,
+          tenantId: user.tenantId,
+          schoolCode: user.schoolCode,
+        },
+      });
+    }
+
+    let tenant = null;
+    if (user.tenantId) {
+      const [t] = await db
+        .select()
+        .from(tenantsTable)
+        .where(eq(tenantsTable.id, user.tenantId))
+        .limit(1);
+      tenant = t ?? null;
+    }
+
     return res.json({
       found: true,
-      requiresPassword: true,
-      user: {
-        id: user.id,
-        phone: user.phone,
-        name: user.name,
-        role: user.role,
-        tenantId: user.tenantId,
-        schoolCode: user.schoolCode,
-      },
+      verified: true,
+      user: { ...user, tenant },
+      requiresSchoolCode: user.role !== "superadmin" && !!user.tenantId,
+      token: signToken({ userId: user.id, role: user.role, tenantId: user.tenantId ?? null }),
+    });
+  } catch (err: any) {
+    logger.error({ err }, "check-phone error");
+    return res.status(500).json({
+      error: err?.message || String(err),
+      cause: err?.cause?.message || String(err?.cause || err),
     });
   }
-
-  // 🚀 ओटिपी प्रणाली बन्द: सिधै युजरको पूरा विवरण फ्रन्टइन्डलाई बुझाइदिने
-  let tenant = null;
-  if (user.tenantId) {
-    const [t] = await db
-      .select()
-      .from(tenantsTable)
-      .where(eq(tenantsTable.id, user.tenantId))
-      .limit(1);
-    tenant = t ?? null;
-  }
-
-  return res.json({
-    found: true,
-    verified: true,
-    user: { ...user, tenant },
-    requiresSchoolCode: user.role !== "superadmin" && !!user.tenantId,
-    token: signToken({ userId: user.id, role: user.role, tenantId: user.tenantId ?? null }),
-  });
 });
 
 router.post("/send-otp", async (req, res) => {
