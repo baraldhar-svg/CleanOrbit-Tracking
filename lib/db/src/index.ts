@@ -23,8 +23,7 @@ const { Pool } = pg;
 
 let rawUrl = process.env.DATABASE_URL || "";
 if (!rawUrl || rawUrl.includes("db.yhhgfskamrtxwtluochz.supabase.co")) {
-  // Use Supabase IPv4 Pooler connection string for Vercel/cloud serverless environments
-  rawUrl = "postgresql://postgres.yhhgfskamrtxwtluochz:Istuti%4098510@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
+  rawUrl = "postgresql://postgres.yhhgfskamrtxwtluochz:Istuti%4098510@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
 }
 
 export const pool = new Pool({
