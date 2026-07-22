@@ -21,9 +21,15 @@ import * as schema from "./schema";
 
 const { Pool } = pg;
 
-const connectionString =
+let connectionString =
   process.env.DATABASE_URL ||
-  "postgresql://postgres:Istuti%4098510@db.yhhgfskamrtxwtluochz.supabase.co:5432/postgres";
+  "postgresql://postgres.yhhgfskamrtxwtluochz:Istuti%4098510@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
+
+// If process.env.DATABASE_URL contains the IPv6 direct host (db.xxx.supabase.co), replace it with the IPv4 Pooler host for Vercel
+if (connectionString.includes("db.yhhgfskamrtxwtluochz.supabase.co")) {
+  connectionString =
+    "postgresql://postgres.yhhgfskamrtxwtluochz:Istuti%4098510@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
+}
 
 export const pool = new Pool({
   connectionString,
