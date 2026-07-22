@@ -691,14 +691,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
                 {user.role}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
-              {[
-                me?.gender,
-                me?.className ? `Class ${me.className}` : null,
-                me?.section ? `Sec ${me.section}` : null,
-                user.tenant?.name,
-              ].filter(Boolean).join(" · ") || "Tap to set up your profile"}
-            </p>
+
             {(() => {
               const station = routeStations.find(rs => String(rs.stationId) === selectedStationId);
               return station?.stationName ? (
