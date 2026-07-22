@@ -21,13 +21,12 @@ import * as schema from "./schema";
 
 const { Pool } = pg;
 
-let rawUrl = process.env.DATABASE_URL || "";
-if (!rawUrl || rawUrl.includes("db.yhhgfskamrtxwtluochz.supabase.co")) {
-  rawUrl = "postgresql://postgres.yhhgfskamrtxwtluochz:Istuti%4098510@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
-}
+const connectionString =
+  process.env.DATABASE_URL ||
+  "postgresql://postgres:Istuti%4098510@db.yhhgfskamrtxwtluochz.supabase.co:5432/postgres";
 
 export const pool = new Pool({
-  connectionString: rawUrl,
+  connectionString,
   ssl: { rejectUnauthorized: false },
 });
 
