@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import OsmMap from "@/components/osm-map";
 import { useDriverLocation } from "@/hooks/use-driver-location";
 import { useAuth } from "@/hooks/use-auth";
-import { useListAnnouncements, useGetTripTimeline, useListCalendarEvents, useListRoutes, useListTripHistory, useListPassengers } from "@workspace/api-client-react";
+import { useListAnnouncements, useGetTripTimeline, getGetTripTimelineQueryKey, useListCalendarEvents, useListRoutes, useListTripHistory, useListPassengers } from "@workspace/api-client-react";
 import { PhotoPicker } from "@/components/photo-picker";
 import { Bus, Lock, Unlock, MapPin, Navigation, ChevronDown, CheckCircle, Star, Clock, History as HistoryIcon, X, User } from "lucide-react";
 
@@ -59,7 +59,7 @@ export default function ParentPortal() {
   const childPassengerId = myPassengers?.[0]?.id ?? null;
 
   const { data: announcements } = useListAnnouncements();
-  const { data: timeline } = useGetTripTimeline();
+  const { data: timeline } = useGetTripTimeline({ query: { queryKey: getGetTripTimelineQueryKey(), refetchInterval: 10000 } });
   const { data: tripHistory } = useListTripHistory({
     ...(selectedRouteId != null ? { routeId: selectedRouteId } : {}),
     ...(childPassengerId != null ? { passengerId: childPassengerId } : {}),

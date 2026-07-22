@@ -194,13 +194,125 @@ router.get("/locations", async (req, res) => {
   );
 });
 
-// GET /api/trips/timeline
-router.get("/timeline", async (_req, res) => {
-  res.json([
-    { id: 1, time: "06:45 AM", description: "Bus started from the main university campus garage.", status: "completed" },
-    { id: 2, time: "07:05 AM", description: "Vehicle crossed Balkhu intersection point.", status: "completed" },
-    { id: 3, time: "07:15 AM (Expected)", description: "Scheduled arrival at your designated Baneshwor stop.", status: "upcoming" },
-  ]);
+// GET /api/trips/timeline — returns real-time live activity logs for active/today's trips
+router.get("/timeline", async (req, res) => {
+  try {
+    const tenantId = req.tenantId;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [latestTrip] = await db
+      .select()
+      .from(tripLogsTable)
+      .where(eq(tripLogsTable.tenantId, tenantId))
+      .orderBy(desc(tripLogsTable.startedAt))
+      .limit(1);
+
+    const announcements = await db
+      .select()
+      .from(announcementsTable)
+      .where(eq(announcementsTable.tenantId, tenantId))
+      .orderBy(desc(announcementsTable.createdAt))
+      .limit(3);
+
+    const events: { id: number; time: string; description: string; status: "completed" | "upcoming" }[] = [];
+    let eventId = 1;
+
+    if (latestTrip) {
+      const startTime = new Date(latestTrip.startedAt);
+      const isTodayTrip = startTime >= todayStart;
+
+      if (isTodayTrip) {
+        const vehicleInfo = latestTrip.vehicleNumber ? ` (${latestTrip.vehicleNumber})` : "";
+        const routeInfo = latestTrip.routeName ? ` on ${latestTrip.routeName}` : "";
+
+        events.push({
+          id: eventId++,
+          time: startTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+          description: `Bus service started by ${latestTrip.driverName || "Driver"}${vehicleInfo}${routeInfo}.`,
+          status: "completed",
+        });
+
+        if (latestTrip.driverId && driverStationState.has(latestTrip.driverId)) {
+          const st = driverStationState.get(latestTrip.driverId)!;
+          const stTime = new Date(st.updatedAt);
+          events.push({
+            id: eventId++,
+            time: stTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+            description: st.stationName
+              ? `Vehicle reached / crossed ${st.stationName} (Stop #${st.stationIdx + 1}).`
+              : `Vehicle reached stop #${st.stationIdx + 1}.`,
+            status: "completed",
+          });
+        }
+
+        if (latestTrip.passengersBoarded > 0) {
+          events.push({
+            id: eventId++,
+            time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+            description: `${latestTrip.passengersBoarded} passenger(s) safely boarded the bus.`,
+            status: "completed",
+          });
+        }
+
+        for (const ann of announcements) {
+          const annTime = new Date(ann.createdAt);
+          if (annTime >= todayStart) {
+            events.push({
+              id: eventId++,
+              time: annTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+              description: `📢 Notice: ${ann.message}`,
+              status: "completed",
+            });
+          }
+        }
+
+        if (latestTrip.completedAt) {
+          const endTime = new Date(latestTrip.completedAt);
+          events.push({
+            id: eventId++,
+            time: endTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+            description: "Journey completed. All passengers arrived safely at destination.",
+            status: "completed",
+          });
+        } else {
+          events.push({
+            id: eventId++,
+            time: "Expected Soon",
+            description: "En route to designated passenger stops & final destination.",
+            status: "upcoming",
+          });
+        }
+      }
+    }
+
+    if (events.length === 0) {
+      events.push({
+        id: eventId++,
+        time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+        description: "Bus service initialized for today. Waiting for driver to start the journey.",
+        status: "upcoming",
+      });
+      events.push({
+        id: eventId++,
+        time: "Expected",
+        description: "Real-time location and stop updates will appear here live when the driver begins the route.",
+        status: "upcoming",
+      });
+    }
+
+    return res.json(events);
+  } catch (err: any) {
+    logger.error({ err }, "GET /timeline error");
+    return res.json([
+      {
+        id: 1,
+        time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+        description: "Waiting for driver to start live journey.",
+        status: "upcoming",
+      },
+    ]);
+  }
 });
 
 // PATCH /api/trips/station — called by the driver portal whenever the driver taps Next/Prev.

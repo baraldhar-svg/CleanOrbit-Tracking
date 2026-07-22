@@ -3,6 +3,7 @@ import { useDriverLocation } from "@/hooks/use-driver-location";
 import {
   useListAnnouncements,
   useGetTripTimeline,
+  getGetTripTimelineQueryKey,
   useUpdatePassenger,
   useCreatePassenger,
   useListPassengers,
@@ -79,7 +80,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
   const t = useT();
   const { user, login } = useAuth();
   const { data: announcements } = useListAnnouncements();
-  const { data: timeline } = useGetTripTimeline();
+  const { data: timeline } = useGetTripTimeline({ query: { queryKey: getGetTripTimelineQueryKey(), refetchInterval: 10000 } });
   const { data: passengers } = useListPassengers();
   const { data: routes } = useListRoutes();
   const updatePassenger = useUpdatePassenger();
@@ -320,6 +321,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
 
     // Driver tapped Next/Prev — update the displayed stop name immediately
     es.addEventListener("station_changed", (e) => {
+      queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       try {
         const d = JSON.parse((e as MessageEvent).data) as {
           stationIdx?: number; stationName?: string | null;
@@ -332,6 +334,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
 
     // Driver started journey — switch from "Waiting" to "En Route" banner
     es.addEventListener("trip_started", () => {
+      queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       setTripActive(true);
       setTripCompleted(false);
       setLiveStation(null); // reset to stop 0 for the new run
@@ -339,6 +342,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
 
     es.addEventListener("trip_completed", () => {
       queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       setTripActive(false);
       setLiveStation(null);
       setTripCompleted(true);
