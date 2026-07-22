@@ -28,6 +28,7 @@ const connectionString =
 export const pool = new Pool({
   connectionString,
   ssl: { rejectUnauthorized: false },
+  options: "-c search_path=public",
 });
 
 export const db = drizzle(pool, { schema });
