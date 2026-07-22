@@ -1,0 +1,12 @@
+node_modules
+.local
+.config
+.agents
+.git
+.vercel
+attached_assets
+artifacts
+dist
+build
+*.tsbuildinfo
+*.log
