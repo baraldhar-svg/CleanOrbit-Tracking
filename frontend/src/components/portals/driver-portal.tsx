@@ -396,16 +396,24 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   const withMessages = riderPassengers.filter((p) => p.quickMessage);
   const onLeavePassengers = riderPassengers.filter((p) => p.quickMessage === "Staying home today");
 
-  // Bus is "near school" when driver reaches the last station (≤ 200 m perimeter)
-  const nearSchool = driverStations.length > 0 && stationIdx === driverStations.length - 1;
+  // Bus is "near school/last stop" when driver reaches the last station or final destination
+  const nearSchool = driverStations.length > 0 && stationIdx >= driverStations.length - 1;
 
-  // 500 m geo-fence: use live GPS if available, otherwise fall back to station index
+  // Distance to destination
   const lastStation = driverStations.length > 0 ? driverStations[driverStations.length - 1] : undefined;
   const distToSchoolKm =
     driverPos != null && lastStation?.lat != null && lastStation?.lng != null
       ? haversineKm(driverPos.lat, driverPos.lng, lastStation.lat, lastStation.lng)
       : null;
-  const nearSchool500m = distToSchoolKm != null ? distToSchoolKm <= 0.5 : nearSchool;
+
+  // Drivers can complete the journey if:
+  // 1) Reached the last stop or School stop in Route Navigator (stationIdx >= driverStations.length - 1)
+  // 2) OR within 1.5 km of destination GPS
+  // 3) OR nearSchool is true
+  const canCompleteJourney =
+    nearSchool ||
+    (driverStations.length > 0 && stationIdx >= driverStations.length) ||
+    (distToSchoolKm != null ? distToSchoolKm <= 1.5 : false);
 
   const handleBoard = async (id: number) => {
     setBoardingId(id);
@@ -849,20 +857,20 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 </div>
               </div>
               <button
-                onClick={nearSchool500m ? handleJourneyComplete : undefined}
-                disabled={!nearSchool500m}
+                onClick={canCompleteJourney ? handleJourneyComplete : undefined}
+                disabled={!canCompleteJourney}
                 className={`w-full rounded-2xl py-4 text-center font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
-                  nearSchool500m
-                    ? "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 shadow-red-900/40"
+                  canCompleteJourney
+                    ? "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 shadow-green-900/40 cursor-pointer"
                     : "bg-slate-700 shadow-none opacity-50 cursor-not-allowed"
                 }`}
               >
                 <Flag size={20} className="inline mr-2" />
-                {nearSchool500m
-                  ? "Journey Completed"
+                {canCompleteJourney
+                  ? "Complete Journey"
                   : distToSchoolKm != null
-                    ? `Journey Completed · ${distToSchoolKm.toFixed(1)} km to school`
-                    : "Journey Completed — Reach School First"}
+                    ? `Complete Journey · ${distToSchoolKm.toFixed(1)} km to destination`
+                    : "Complete Journey — Reach Last Stop First"}
               </button>
             </div>
           )}
@@ -1014,10 +1022,12 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 <div className="rounded-xl bg-amber-500/15 border border-amber-500/30 px-3 py-2.5">
                   <p className="text-[9px] font-bold text-amber-400 uppercase tracking-wider mb-1">📍 Current Stop</p>
                   <p className="font-bold text-amber-300 text-sm leading-tight truncate">
-                    {currentStation?.stopLabel || currentStation?.stationName || "—"}
+                    {stationIdx >= driverStations.length
+                      ? "🏫 School / Final Destination"
+                      : currentStation?.stopLabel || currentStation?.stationName || "—"}
                   </p>
                   {(() => {
-                    const count = riderPassengers.filter((p) => p.stationId === currentStation?.stationId).length;
+                    const count = currentStation ? riderPassengers.filter((p) => p.stationId === currentStation?.stationId).length : 0;
                     return count > 0
                       ? <p className="text-[9px] text-amber-500 mt-0.5">{count} passenger{count > 1 ? "s" : ""}</p>
                       : null;
@@ -1031,11 +1041,15 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                     <div className="rounded-xl bg-slate-700/60 border border-slate-600/60 px-3 py-2.5">
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">➡ Next Stop</p>
                       <p className="font-bold text-slate-200 text-sm leading-tight truncate">
-                        {next ? (next.stopLabel || next.stationName || "—") : "🏫 School"}
+                        {stationIdx >= driverStations.length
+                          ? "🏁 Complete Journey"
+                          : next
+                          ? (next.stopLabel || next.stationName || "—")
+                          : "🏫 School"}
                       </p>
                       {nextCount > 0
                         ? <p className="text-[9px] text-slate-500 mt-0.5">{nextCount} boarding</p>
-                        : next ? <p className="text-[9px] text-slate-600 mt-0.5">No boarders</p> : null}
+                        : next ? <p className="text-[9px] text-slate-600 mt-0.5">No boarders</p> : <p className="text-[9px] text-emerald-400 mt-0.5 font-semibold">Final destination</p>}
                     </div>
                   );
                 })()}
@@ -1047,8 +1061,8 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                   className="rounded-xl bg-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-600 disabled:opacity-30 transition-colors flex-1">
                   ← Prev
                 </button>
-                <button onClick={() => setStationIdx((i) => Math.min(driverStations.length - 1, i + 1))}
-                  disabled={stationIdx === driverStations.length - 1}
+                <button onClick={() => setStationIdx((i) => Math.min(driverStations.length, i + 1))}
+                  disabled={stationIdx >= driverStations.length}
                   className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-30 transition-colors flex-1">
                   Next →
                 </button>
@@ -1061,6 +1075,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                     i < stationIdx ? "w-4 bg-green-500" : i === stationIdx ? "w-6 bg-amber-500" : "w-1.5 bg-slate-600"
                   }`} />
                 ))}
+                <div className={`h-1.5 rounded-full transition-all ${
+                  stationIdx >= driverStations.length ? "w-6 bg-emerald-500" : "w-1.5 bg-slate-600"
+                }`} title="School / Final Destination" />
               </div>
             </>
           )}
