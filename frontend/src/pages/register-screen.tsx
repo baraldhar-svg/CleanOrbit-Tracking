@@ -42,6 +42,7 @@ interface FoundUser {
   role: string;
   requiresSchoolCode: boolean;
   demoCode: string;
+  requiresPassword?: boolean;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -144,51 +145,50 @@ export default function RegisterScreen() {
   async function handleCheckPhone() {
     setErr(""); setLoading(true);
 
-    const cleanPhone = phone.replace(/[\s\-()]/g, "");
-    if (cleanPhone === "9851049147" || cleanPhone.endsWith("9851049147")) {
-      try {
-        const result = await apiPost("/auth/login-password", {
-          phone: "9851049147",
-          password: "Istuti@98510",
-        });
-        login({ ...result.user, tenant: result.user?.tenant ?? null }, result.token as string | undefined);
-        navigate("/dashboard");
-        return;
-      } catch (e: unknown) {
-        setErr(e instanceof Error ? e.message : "Super Admin login failed");
-        setLoading(false);
-        return;
-      }
-    }
-
     try {
       const data = await apiPost("/auth/check-phone", { phone });
-      // API returns { found, verified: true, user, requiresSchoolCode }
-      // Since the server already verified and returned the full user, log in directly
+      const fu: FoundUser = {
+        name: data.user?.name ?? data.name ?? "User",
+        role: data.user?.role ?? data.role ?? "student",
+        requiresSchoolCode: data.requiresSchoolCode ?? false,
+        demoCode: data.demoCode ?? "123456",
+        requiresPassword: data.requiresPassword ?? false,
+      };
+
+      if (fu.requiresPassword) {
+        setFoundUser(fu);
+        setStep("login");
+        return;
+      }
+
       if (data.verified && data.user) {
         login({ ...data.user, tenant: data.user.tenant ?? null });
         navigate("/dashboard");
         return;
       }
-      // Fallback: show OTP login step (should not normally be reached)
-      const fu: FoundUser = {
-        name: data.user?.name ?? data.name ?? "",
-        role: data.user?.role ?? data.role ?? "student",
-        requiresSchoolCode: data.requiresSchoolCode ?? false,
-        demoCode: data.demoCode ?? "123456",
-      };
+
       setFoundUser(fu);
       const digits = String(fu.demoCode).split("").slice(0, 6);
       setOtp(digits.concat(Array(6 - digits.length).fill("")));
       setStep("login");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error";
-      // 403 = not registered → go to new-account form
       if (msg.toLowerCase().includes("not registered") || msg.toLowerCase().includes("not found")) {
         setStep("new");
       } else {
         setErr(msg);
       }
+    } finally { setLoading(false); }
+  }
+
+  async function handleLoginPassword() {
+    setErr(""); setLoading(true);
+    try {
+      const result = await apiPost("/auth/login-password", { phone, password });
+      login({ ...result.user, tenant: result.user?.tenant ?? null }, result.token as string | undefined);
+      navigate("/dashboard");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Incorrect password");
     } finally { setLoading(false); }
   }
 
@@ -387,55 +387,83 @@ export default function RegisterScreen() {
               Sign in to your existing account instead
             </p>
 
-            {/* School code */}
-            {foundUser.requiresSchoolCode && (
+            {foundUser.requiresPassword ? (
               <div className="mb-4">
-                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">School Code</label>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                  Super Admin Password
+                </label>
                 <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
-                  <span className="text-slate-400 text-sm">🏫</span>
+                  <span className="text-slate-400 text-sm">🔒</span>
                   <input
-                    type="text"
-                    placeholder="e.g. APEX-ALPHA-1234"
-                    value={schoolCode}
-                    onChange={(e) => { setSchoolCode(e.target.value.toUpperCase()); setErr(""); }}
-                    className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none font-mono tracking-wider"
-                    autoCapitalize="characters"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setErr(""); }}
+                    className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none"
+                    onKeyDown={(e) => e.key === "Enter" && password && handleLoginPassword()}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-xs text-slate-400 hover:text-slate-200"
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
                 </div>
               </div>
-            )}
+            ) : (
+              <>
+                {/* School code */}
+                {foundUser.requiresSchoolCode && (
+                  <div className="mb-4">
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">School Code</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
+                      <span className="text-slate-400 text-sm">🏫</span>
+                      <input
+                        type="text"
+                        placeholder="e.g. APEX-ALPHA-1234"
+                        value={schoolCode}
+                        onChange={(e) => { setSchoolCode(e.target.value.toUpperCase()); setErr(""); }}
+                        className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none font-mono tracking-wider"
+                        autoCapitalize="characters"
+                      />
+                    </div>
+                  </div>
+                )}
 
-            {/* OTP */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Verification Code</label>
-                <span className="text-xs text-slate-500">Sent to +977 {phone}</span>
-              </div>
-              <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
-                {otp.map((digit, i) => (
-                  <input
-                    key={i}
-                    ref={(el) => { otpRefs.current[i] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => { handleOtpKey(i, e.target.value); setErr(""); }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
-                      if (e.key === "Enter" && otp.every(Boolean)) handleVerifyOtp();
-                    }}
-                    className="h-12 w-10 rounded-xl border border-slate-600 bg-slate-900 text-center text-lg font-bold text-white focus:border-amber-500 focus:outline-none transition-colors"
-                  />
-                ))}
-              </div>
-              <div className="mt-3 rounded-lg border border-amber-800/40 bg-amber-900/20 px-3 py-2 flex items-center gap-2">
-                <span className="text-amber-400 text-xs">💡</span>
-                <p className="text-xs text-amber-300">
-                  <span className="font-semibold">Demo mode:</span> Code <span className="font-mono font-bold tracking-widest">{foundUser.demoCode}</span> is auto-filled
-                </p>
-              </div>
-            </div>
+                {/* OTP */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Verification Code</label>
+                    <span className="text-xs text-slate-500">Sent to +977 {phone}</span>
+                  </div>
+                  <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
+                    {otp.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={(el) => { otpRefs.current[i] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => { handleOtpKey(i, e.target.value); setErr(""); }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
+                          if (e.key === "Enter" && otp.every(Boolean)) handleVerifyOtp();
+                        }}
+                        className="h-12 w-10 rounded-xl border border-slate-600 bg-slate-900 text-center text-lg font-bold text-white focus:border-amber-500 focus:outline-none transition-colors"
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-3 rounded-lg border border-amber-800/40 bg-amber-900/20 px-3 py-2 flex items-center gap-2">
+                    <span className="text-amber-400 text-xs">💡</span>
+                    <p className="text-xs text-amber-300">
+                      <span className="font-semibold">Demo mode:</span> Code <span className="font-mono font-bold tracking-widest">{foundUser.demoCode}</span> is auto-filled
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
 
             {err && (
               <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
@@ -445,16 +473,16 @@ export default function RegisterScreen() {
             )}
 
             <button
-              onClick={handleVerifyOtp}
-              disabled={otp.some(d => !d) || (foundUser.requiresSchoolCode && !schoolCode.trim()) || loading}
-              className="w-full rounded-xl bg-green-600 py-3 font-bold text-white hover:bg-green-500 disabled:opacity-40 transition-colors"
+              onClick={foundUser.requiresPassword ? handleLoginPassword : handleVerifyOtp}
+              disabled={loading || (foundUser.requiresPassword ? !password : (otp.some(d => !d) || (foundUser.requiresSchoolCode && !schoolCode.trim())))}
+              className="w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  <span className="h-4 w-4 rounded-full border-2 border-slate-900/30 border-t-slate-900 animate-spin" />
                   Signing in…
                 </span>
-              ) : "Sign In to Existing Account →"}
+              ) : foundUser.requiresPassword ? "Sign In to Super Admin →" : "Sign In to Existing Account →"}
             </button>
           </>
         )}

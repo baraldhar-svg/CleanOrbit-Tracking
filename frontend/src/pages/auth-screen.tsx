@@ -140,23 +140,6 @@ export default function AuthScreen() {
     setErr("");
     setLoading(true);
 
-    const cleanPhone = phone.replace(/[\s\-()]/g, "");
-    if (cleanPhone === "9851049147" || cleanPhone.endsWith("9851049147")) {
-      try {
-        const result = await apiPost("/auth/login-password", {
-          phone: "9851049147",
-          password: "Istuti@98510",
-        });
-        login({ ...result.user, tenant: result.user?.tenant ?? null }, result.token as string | undefined);
-        navigate("/dashboard");
-        return;
-      } catch (e: unknown) {
-        setErr(e instanceof Error ? e.message : "Super Admin login failed");
-        setLoading(false);
-        return;
-      }
-    }
-
     try {
       const data = await apiPost("/auth/check-phone", { phone });
 
