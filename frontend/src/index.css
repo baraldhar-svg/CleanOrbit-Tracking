@@ -322,11 +322,35 @@
   }
 
   /* If there's a 1px border, adjust the inset so that it covers that parent's border */
-  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate:not(.no-active-interaction-elevate)::after,
-  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+}
+
+/* ── Hero Bus & CTA Styles ────────────────────────────────────────── */
+@keyframes floatBus {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.heroBus {
+  animation: floatBus 4s ease-in-out infinite;
+}
+
+.ctaButton {
+  font-weight: 600 !important;
+  padding: 12px 24px !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.signInButton {
+  color: #ffffff !important;
+  background-color: transparent;
+  border: 2px solid #ffffff !important;
+}
+
+.getStartedButton {
+  color: #1a1a1a !important;
+  background-color: #ffc107 !important;
 }

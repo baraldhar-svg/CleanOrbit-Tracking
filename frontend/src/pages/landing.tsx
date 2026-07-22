@@ -32,34 +32,37 @@ export default function Landing() {
       <main className="relative z-10 flex flex-col items-center justify-center px-4 pb-10 pt-8 text-center">
         <div className="mb-6 flex items-center justify-center">
           <div className="relative">
-            <div className="bus-float text-[88px] drop-shadow-2xl">🚌</div>
+            <img
+              src="/hero_bus_image.png"
+              alt="Hero School Bus"
+              className="heroBus h-48 sm:h-56 md:h-64 w-auto max-w-full object-contain rounded-2xl drop-shadow-[0_20px_50px_rgba(255,208,0,0.25)] transition-transform hover:scale-105"
+            />
             <div className="absolute -right-3 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-green-500 text-xs animate-pulse shadow-lg shadow-green-500/50">
               📍
             </div>
           </div>
         </div>
 
-        <h2 className="mb-4 text-4xl font-black tracking-tight text-white sm:text-5xl">
-          Track Every School Bus.
-          <br />
+        <h1 className="mb-4 text-4xl font-black tracking-tight text-white sm:text-5xl md:text-6xl max-w-3xl leading-tight">
+          Track Every School Bus.{" "}
           <span className="text-[#ffd000]">Every Stop. In Real Time.</span>
-        </h2>
+        </h1>
         <p className="mb-8 max-w-md text-base text-slate-400 leading-relaxed">
           OrbitTrack connects parents, drivers and school admins with live GPS tracking, OTP boarding, geofencing alerts and smart fleet management — built for Nepal.
         </p>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <button
-            onClick={() => navigate("/register")}
-            className="rounded-2xl px-8 py-3.5 text-base font-bold text-slate-900 shadow-lg shadow-amber-500/30 hover:bg-amber-400 transition-all hover:scale-105 bg-[#ffee47]"
-          >
-            Get Started Free
-          </button>
+        <div className="flex flex-col gap-3 sm:flex-row items-center justify-center">
           <button
             onClick={() => navigate("/auth")}
-            className="rounded-2xl border border-slate-600 px-8 py-3.5 text-base font-semibold text-slate-200 hover:border-amber-500 hover:text-amber-400 transition-colors"
+            className="ctaButton signInButton rounded-2xl transition-all hover:scale-105"
           >
             Sign In
+          </button>
+          <button
+            onClick={() => navigate("/register")}
+            className="ctaButton getStartedButton rounded-2xl transition-all hover:scale-105"
+          >
+            Get Started Free
           </button>
         </div>
       </main>
