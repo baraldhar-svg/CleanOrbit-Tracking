@@ -25,7 +25,14 @@ async function apiPost(path: string, body: unknown) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = await res.json();
+  const text = await res.text();
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    if (!res.ok) throw new ApiError(`Server error (${res.status}). Please try again shortly.`);
+    throw new ApiError("Invalid response from server.");
+  }
   if (!res.ok) throw new ApiError(data.error ?? "Request failed", data.details);
   return data;
 }
