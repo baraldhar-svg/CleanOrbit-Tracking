@@ -327,15 +327,49 @@
   }
 }
 
-/* ── Hero Bus & CTA Styles ────────────────────────────────────────── */
-@keyframes floatBus {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+/* ── Bus Orbit & Motion Animations ────────────────────────────────── */
+@keyframes busOrbitMotion {
+  0% {
+    transform: rotate(0deg) translateX(25px) rotate(0deg) scale(0.97);
+  }
+  25% {
+    transform: rotate(90deg) translateY(-15px) rotate(-90deg) scale(1.04);
+  }
+  50% {
+    transform: rotate(180deg) translateX(-25px) rotate(-180deg) scale(0.97);
+  }
+  75% {
+    transform: rotate(270deg) translateY(15px) rotate(-270deg) scale(1.04);
+  }
+  100% {
+    transform: rotate(360deg) translateX(25px) rotate(-360deg) scale(0.97);
+  }
+}
+
+@keyframes spinOrbitRing {
+  0% { transform: rotateX(65deg) rotateZ(0deg); }
+  100% { transform: rotateX(65deg) rotateZ(360deg); }
+}
+
+@keyframes spinOrbitRingReverse {
+  0% { transform: rotateX(65deg) rotateZ(360deg); }
+  100% { transform: rotateX(65deg) rotateZ(0deg); }
+}
+
+.bus-orbit-move {
+  animation: busOrbitMotion 10s ease-in-out infinite;
+}
+
+.orbit-ring-spin {
+  animation: spinOrbitRing 16s linear infinite;
+}
+
+.orbit-ring-spin-reverse {
+  animation: spinOrbitRingReverse 12s linear infinite;
 }
 
 .heroBus {
-  animation: floatBus 4s ease-in-out infinite;
+  animation: busOrbitMotion 10s ease-in-out infinite;
 }
 
 .ctaButton {

@@ -29,25 +29,32 @@ export default function Landing() {
       </header>
 
       {/* ── Hero ────────────────────────────────────────────────────── */}
-      <main className="relative z-10 flex flex-col items-center justify-center px-4 pb-10 pt-8 text-center">
-        <div className="mb-6 flex items-center justify-center">
-          <div className="relative">
+      <main className="relative z-10 flex flex-col items-center justify-center px-4 pb-8 pt-6 text-center">
+        {/* Orbital Track Container */}
+        <div className="relative mb-6 flex h-60 w-60 sm:h-72 sm:w-72 items-center justify-center overflow-visible">
+          {/* Glowing Orbit Rings */}
+          <div className="absolute inset-0 rounded-full border-2 border-amber-400/40 shadow-[0_0_35px_rgba(255,193,7,0.25)] orbit-ring-spin" style={{ transform: "rotateX(70deg) rotateY(15deg)" }} />
+          <div className="absolute inset-3 rounded-full border border-dashed border-sky-400/50 orbit-ring-spin-reverse" style={{ transform: "rotateX(65deg) rotateY(-20deg)" }} />
+
+          {/* Seamless Orbiting Bus */}
+          <div className="relative z-10 bus-orbit-move flex items-center justify-center">
             <img
               src="/hero_bus_image.png"
-              alt="Hero School Bus"
-              className="heroBus h-48 sm:h-56 md:h-64 w-auto max-w-full object-contain rounded-2xl drop-shadow-[0_20px_50px_rgba(255,208,0,0.25)] transition-transform hover:scale-105"
+              alt="OrbitTrack Hero School Bus"
+              className="h-36 sm:h-44 w-auto object-contain mix-blend-screen drop-shadow-[0_15px_35px_rgba(255,208,0,0.4)] transition-transform hover:scale-105"
             />
-            <div className="absolute -right-3 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-green-500 text-xs animate-pulse shadow-lg shadow-green-500/50">
+            <div className="absolute -right-2 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-[10px] animate-pulse shadow-md shadow-green-500/50">
               📍
             </div>
           </div>
         </div>
 
-        <h1 className="mb-4 text-4xl font-black tracking-tight text-white sm:text-5xl md:text-6xl max-w-3xl leading-tight">
+        {/* Headline text (adjusted to smaller size as requested) */}
+        <h1 className="mb-3 text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl max-w-xl leading-tight">
           Track Every School Bus.{" "}
           <span className="text-[#ffd000]">Every Stop. In Real Time.</span>
         </h1>
-        <p className="mb-8 max-w-md text-base text-slate-400 leading-relaxed">
+        <p className="mb-6 max-w-md text-xs sm:text-sm text-slate-400 leading-relaxed">
           OrbitTrack connects parents, drivers and school admins with live GPS tracking, OTP boarding, geofencing alerts and smart fleet management — built for Nepal.
         </p>
 
