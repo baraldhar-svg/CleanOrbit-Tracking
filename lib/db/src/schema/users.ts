@@ -16,6 +16,7 @@ export const usersTable = pgTable("users", {
   biometricCredentialId: text("biometric_credential_id"),
   biometricPublicKey: text("biometric_public_key"),
   biometricCounter: integer("biometric_counter").default(0),
+  activeSessionId: text("active_session_id"),
 });
 
 export type User = typeof usersTable.$inferSelect;

@@ -22,6 +22,7 @@ export const driversTable = pgTable("drivers", {
   // Trip lifecycle timestamps — used by the delay watchdog
   tripStartedAt: timestamp("trip_started_at"),
   delayAlertSentAt: timestamp("delay_alert_sent_at"),
+  activeSessionId: text("active_session_id"),
 });
 
 export const insertDriverSchema = createInsertSchema(driversTable).omit({ id: true });

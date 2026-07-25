@@ -2,7 +2,7 @@
   "version": 2,
   "framework": "vite",
   "buildCommand": "pnpm run build",
-  "outputDirectory": "frontend/dist/public",
+  "outputDirectory": "apps/frontend/dist/public",
   "rewrites": [
     {
       "source": "/api/(.*)",
