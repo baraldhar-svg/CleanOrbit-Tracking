@@ -1671,6 +1671,10 @@ function NotificationLogPanel({
 }) {
   const queryClient = useQueryClient();
   const [selectedNotif, setSelectedNotif] = useState<NotificationRow | null>(null);
+  const [isPanelHidden, setIsPanelHidden] = useState(false);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [expandedNotifId, setExpandedNotifId] = useState<number | null>(null);
+  const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set());
 
   const { data, isLoading } = useQuery<NotificationRow[]>({
     queryKey: ["notifications"],
@@ -1682,7 +1686,8 @@ function NotificationLogPanel({
     refetchInterval: 10000,
   });
 
-  const rows = data ?? [];
+  const rawRows = data ?? [];
+  const rows = rawRows.filter((r) => !dismissedIds.has(r.id));
   const unread = rows.filter((r) => !r.readAt).length;
 
   useEffect(() => {
@@ -1697,8 +1702,42 @@ function NotificationLogPanel({
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
   }
 
+  function dismissNotice(id: number, e: React.MouseEvent) {
+    e.stopPropagation();
+    setDismissedIds((prev) => new Set([...prev, id]));
+  }
+
+  function toggleDropdown(id: number, e: React.MouseEvent) {
+    e.stopPropagation();
+    setExpandedNotifId((prev) => (prev === id ? null : id));
+  }
+
+  if (isPanelHidden) {
+    return (
+      <div className="rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/30 p-3 shadow-sm flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Bell size={16} className="text-amber-500 animate-pulse" />
+          <span className="font-bold text-amber-900 dark:text-amber-300 text-xs">
+            Live Alert Log Box (सूचना लग बक्स)
+          </span>
+          {unread > 0 && (
+            <span className="text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+              {unread} new
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => setIsPanelHidden(false)}
+          className="rounded-xl bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+        >
+          <ChevronDown size={14} /> Open Box (बक्स खोल्नुहोस्)
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-all">
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <Bell size={15} className="text-amber-500" />
@@ -1709,58 +1748,186 @@ function NotificationLogPanel({
             </span>
           )}
         </div>
-        {unread > 0 && (
+        <div className="flex items-center gap-2">
+          {unread > 0 && (
+            <button
+              onClick={markAllRead}
+              className="text-[11px] text-amber-600 hover:text-amber-500 font-semibold transition-colors mr-1"
+            >
+              Mark all read
+            </button>
+          )}
           <button
-            onClick={markAllRead}
-            className="text-[11px] text-amber-600 hover:text-amber-500 font-semibold transition-colors"
+            onClick={() => setIsPanelCollapsed((prev) => !prev)}
+            title={isPanelCollapsed ? "Expand panel" : "Collapse panel"}
+            className="rounded-lg p-1 text-muted-foreground hover:bg-muted transition-colors"
           >
-            Mark all read
+            {isPanelCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           </button>
-        )}
+          <button
+            onClick={() => setIsPanelHidden(true)}
+            title="Close Live Alert Log box"
+            className="rounded-lg p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
       <p className="text-xs text-muted-foreground mb-3">
-        Real-time student leave applications & delay alerts — tap any alert to view full details.
+        Real-time student leave applications &amp; delay alerts — click dropdown 🔽 to expand inline or tap card for modal view.
       </p>
 
-      {isLoading && (
-        <p className="text-xs text-muted-foreground">Loading alerts…</p>
-      )}
+      {!isPanelCollapsed && (
+        <>
+          {isLoading && (
+            <p className="text-xs text-muted-foreground">Loading alerts…</p>
+          )}
 
-      {!isLoading && rows.length === 0 && (
-        <p className="text-xs text-muted-foreground italic text-center py-6">
-          No alerts yet. Leave applications &amp; delay alerts appear here.
-        </p>
-      )}
+          {!isLoading && rows.length === 0 && (
+            <p className="text-xs text-muted-foreground italic text-center py-6">
+              No active alerts. Leave applications &amp; delay alerts appear here.
+            </p>
+          )}
 
-      {!isLoading && rows.length > 0 && (
-        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-          {rows.map((row) => (
-            <div
-              key={row.id}
-              onClick={() => setSelectedNotif(row)}
-              className={`rounded-lg border p-2.5 flex gap-2.5 items-start text-xs transition-all hover:scale-[0.99] ${notifColors(row.type)} ${
-                !row.readAt ? "ring-1 ring-amber-400/40 font-medium" : "opacity-80"
-              }`}
-            >
-              <span className="text-base leading-none mt-0.5 shrink-0">{notifIcon(row.type)}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className={`font-semibold text-foreground truncate ${!row.readAt ? "text-amber-700 dark:text-amber-300" : ""}`}>
-                    {row.title}
-                  </span>
-                  {!row.readAt && (
-                    <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
-                  )}
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{row.body}</p>
-                <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground/80">
-                  <span>{new Date(row.createdAt).toLocaleString("en-NP", { timeZone: "Asia/Kathmandu" })}</span>
-                  <span className="font-bold text-blue-600 dark:text-blue-400 hover:underline">View details →</span>
-                </div>
-              </div>
+          {!isLoading && rows.length > 0 && (
+            <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+              {rows.map((row) => {
+                const isExpanded = expandedNotifId === row.id;
+                return (
+                  <div
+                    key={row.id}
+                    className={`rounded-xl border transition-all ${notifColors(row.type)} ${
+                      !row.readAt ? "ring-1 ring-amber-400/40 font-medium" : "opacity-90"
+                    }`}
+                  >
+                    {/* Notice Main Header Bar */}
+                    <div
+                      onClick={() => setSelectedNotif(row)}
+                      className="p-3 flex gap-2.5 items-start text-xs cursor-pointer select-none"
+                    >
+                      <span className="text-base leading-none mt-0.5 shrink-0">{notifIcon(row.type)}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`font-semibold text-foreground truncate ${!row.readAt ? "text-amber-700 dark:text-amber-300" : ""}`}>
+                            {row.title}
+                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {!row.readAt && (
+                              <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0 mr-1" />
+                            )}
+                            <button
+                              onClick={(e) => toggleDropdown(row.id, e)}
+                              title={isExpanded ? "Collapse dropdown" : "Expand dropdown view"}
+                              className="rounded-lg p-1 bg-background/80 hover:bg-muted text-muted-foreground transition-colors border border-border"
+                            >
+                              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            </button>
+                            <button
+                              onClick={(e) => dismissNotice(row.id, e)}
+                              title="Dismiss / Close this notice"
+                              className="rounded-lg p-1 bg-background/80 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors border border-border"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{row.body}</p>
+                        <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground/80">
+                          <span>{new Date(row.createdAt).toLocaleString("en-NP", { timeZone: "Asia/Kathmandu" })}</span>
+                          <div className="flex items-center gap-2">
+                            {row.status === "approved" && (
+                              <span className="rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5">
+                                APPROVED ✓
+                              </span>
+                            )}
+                            <span className="font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5">
+                              Dropdown Details {isExpanded ? "▲" : "▼"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Inline Dropdown Accordion Content */}
+                    {isExpanded && (
+                      <div className="border-t border-border bg-background/90 p-3.5 space-y-3 rounded-b-xl animate-in slide-in-from-top-2 duration-200">
+                        {/* Student / Sender Info */}
+                        {(row.passengerName || row.passengerId) && (
+                          <div className="rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/30 p-2.5 text-xs grid grid-cols-2 gap-2">
+                            <div>
+                              <span className="text-[10px] text-muted-foreground block font-medium">Student (विद्यार्थी)</span>
+                              <span className="font-bold text-foreground text-xs">{row.passengerName ?? `Student #${row.passengerId}`}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-muted-foreground block font-medium">Class &amp; Roll</span>
+                              <span className="font-semibold text-foreground text-xs">
+                                {row.className ? `Class ${row.className}${row.section ? ` (${row.section})` : ""}` : "N/A"}
+                                {row.rollNumber ? ` · Roll: ${row.rollNumber}` : ""}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-muted-foreground block font-medium">Parent &amp; Phone</span>
+                              <span className="font-semibold text-foreground text-xs">
+                                {row.parentName ?? "Parent"} {row.passengerPhone ? `(${row.passengerPhone})` : ""}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-muted-foreground block font-medium">Bus Route &amp; Stop</span>
+                              <span className="font-semibold text-foreground text-xs">
+                                {row.routeName ?? "Default Route"} {row.stationName ? `· ${row.stationName}` : ""}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Full Application Body */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Full Application Letter / Text:</span>
+                          <div className="rounded-lg border border-border bg-card p-3 text-xs font-mono text-foreground whitespace-pre-wrap select-text leading-relaxed">
+                            {row.body}
+                          </div>
+                        </div>
+
+                        {/* Inline Actions */}
+                        <div className="flex items-center justify-between pt-1">
+                          <div>
+                            {row.status !== "approved" && (
+                              <button
+                                onClick={async () => {
+                                  const res = await fetch(`/api/notifications/${row.id}/approve`, {
+                                    method: "PATCH",
+                                    headers: tenantHeaders(),
+                                  });
+                                  if (res.ok) {
+                                    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+                                  }
+                                }}
+                                className="rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 transition-all shadow-sm flex items-center gap-1"
+                              >
+                                <CheckCircle size={13} /> Approve Application ✓
+                              </button>
+                            )}
+                            {row.status === "approved" && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                <CheckCircle size={13} /> APPROVED ✓ (स्वीकृत भएको)
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => setSelectedNotif(row)}
+                            className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline"
+                          >
+                            Open Full Modal →
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {/* ── Notification Detail Modal (Pop-up on click) ── */}
