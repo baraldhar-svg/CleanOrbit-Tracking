@@ -1367,24 +1367,34 @@ Roll No.: ${roll}`;
       {/* Transport Configuration */}
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <button
-          onClick={() => setTransportOpen((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-muted/40 transition-colors"
+          onClick={() => !(isFreezeActive || tripCompleted) && setTransportOpen((v) => !v)}
+          disabled={isFreezeActive || tripCompleted}
+          className={`w-full flex items-center justify-between px-4 py-3.5 transition-colors ${(isFreezeActive || tripCompleted) ? "opacity-60 cursor-not-allowed bg-muted/20" : "hover:bg-muted/40"}`}
         >
           <div className="flex items-center gap-2.5">
             <Route size={15} className="text-[#FFF078] shrink-0" />
             <div className="text-left">
-              <p className="text-sm font-semibold text-foreground">Transport Configuration</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-foreground">Transport Configuration</p>
+                {(isFreezeActive || tripCompleted) && (
+                  <span className="flex items-center gap-1 rounded-full bg-sky-950/40 border border-sky-500/40 px-2 py-0.5 text-[10px] font-bold text-sky-400">
+                    <Lock size={10} /> Locked (4h Freeze)
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                {me?.routeId
-                  ? `Route ${(routes ?? []).find((r) => r.id === me.routeId)?.name ?? `#${me.routeId}`} · station configured`
-                  : "No route assigned — tap to configure"}
+                {(isFreezeActive || tripCompleted)
+                  ? "Route & station configuration is locked after trip completion"
+                  : me?.routeId
+                    ? `Route ${(routes ?? []).find((r) => r.id === me.routeId)?.name ?? `#${me.routeId}`} · station configured`
+                    : "No route assigned — tap to configure"}
               </p>
             </div>
           </div>
-          <span className="text-muted-foreground text-xs">{transportOpen ? "▲" : "▼"}</span>
+          <span className="text-muted-foreground text-xs">{(isFreezeActive || tripCompleted) ? <Lock size={14} /> : transportOpen ? "▲" : "▼"}</span>
         </button>
 
-        {transportOpen && (
+        {transportOpen && !(isFreezeActive || tripCompleted) && (
           <div className="border-t border-border px-4 pb-4 pt-3 space-y-3">
             {/* Route picker */}
             <div>
@@ -1484,28 +1494,30 @@ Roll No.: ${roll}`;
         </div>
       )}
 
-      {/* ── Direct Message to School Admin Section (Available even during 4h freeze) ── */}
-      <div className="rounded-xl border border-blue-500/40 bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-slate-900 p-4 space-y-2 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-blue-400">
-            <MessageSquare size={16} />
-            <p className="text-sm font-bold text-slate-100">Send Message to School Admin</p>
+      {/* ── Direct Message to School Admin Section (Visible when unfrozen; during 4h freeze top blue banner handles this) ── */}
+      {!(isFreezeActive || tripCompleted) && (
+        <div className="rounded-xl border border-blue-500/40 bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-slate-900 p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-blue-400">
+              <MessageSquare size={16} />
+              <p className="text-sm font-bold text-slate-100">Send Message to School Admin</p>
+            </div>
+            <span className="rounded-full bg-emerald-900/60 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+              ✓ Active & Available
+            </span>
           </div>
-          <span className="rounded-full bg-emerald-900/60 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
-            ✓ Active & Available
-          </span>
+          <p className="text-xs text-slate-400">
+            Need help or have an inquiry? Send a direct message to school administration.
+          </p>
+          <button
+            onClick={openAdminMsgModal}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 transition-colors shadow-md"
+          >
+            <Send size={14} />
+            Message Admin / प्रशासनलाई सन्देश पठाउनुहोस्
+          </button>
         </div>
-        <p className="text-xs text-slate-400">
-          Need help or have an inquiry after journey completion? Send a direct message to school administration.
-        </p>
-        <button
-          onClick={openAdminMsgModal}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 transition-colors shadow-md"
-        >
-          <Send size={14} />
-          Message Admin / प्रशासनलाई सन्देश पठाउनुहोस्
-        </button>
-      </div>
+      )}
 
       {/* ── Direct Message to School Admin Modal ── */}
       {adminMsgModalOpen && (
