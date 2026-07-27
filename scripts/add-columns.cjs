@@ -18,9 +18,12 @@ async function main() {
     await client.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS active_session_id text;
       ALTER TABLE drivers ADD COLUMN IF NOT EXISTS active_session_id text;
+      ALTER TABLE drivers ADD COLUMN IF NOT EXISTS trip_completed_at timestamp with time zone;
+      ALTER TABLE notifications ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending';
+      ALTER TABLE notifications ADD COLUMN IF NOT EXISTS approved_at timestamp with time zone;
     `);
 
-    console.log("SUCCESS! Columns active_session_id added to users and drivers tables.");
+    console.log("SUCCESS! Columns added to users, drivers, and notifications tables.");
     client.release();
     pool.end();
   } catch (err) {

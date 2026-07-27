@@ -75,6 +75,8 @@ export const notificationsTable = pgTable("notifications", {
   type: text("type").notNull(), // "absent" | "delay" | "boarding" | "announcement"
   title: text("title").notNull(),
   body: text("body").notNull(),
+  status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected"
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
   readAt: timestamp("read_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

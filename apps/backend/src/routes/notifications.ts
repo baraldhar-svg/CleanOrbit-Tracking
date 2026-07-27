@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { notificationsTable, passengersTable, routesTable, stationsTable } from "@workspace/db";
 import { eq, desc, and, isNull } from "drizzle-orm";
+import { broadcast } from "../lib/sse";
+import { createNotification } from "../lib/notifications";
 
 const router: IRouter = Router();
 
@@ -16,6 +18,8 @@ router.get("/", async (req, res) => {
       type: notificationsTable.type,
       title: notificationsTable.title,
       body: notificationsTable.body,
+      status: notificationsTable.status,
+      approvedAt: notificationsTable.approvedAt,
       readAt: notificationsTable.readAt,
       createdAt: notificationsTable.createdAt,
       passengerName: passengersTable.name,
@@ -46,6 +50,44 @@ router.patch("/:id/read", async (req, res) => {
     .set({ readAt: new Date() })
     .where(and(eq(notificationsTable.id, id), eq(notificationsTable.tenantId, req.tenantId)));
   return res.json({ ok: true });
+});
+
+// PATCH /api/notifications/:id/approve — admin approves leave application
+router.patch("/:id/approve", async (req, res) => {
+  const id = Number(req.params["id"]);
+  if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+
+  const [notif] = await db
+    .select()
+    .from(notificationsTable)
+    .where(and(eq(notificationsTable.id, id), eq(notificationsTable.tenantId, req.tenantId)));
+
+  if (!notif) return res.status(404).json({ error: "Notification not found" });
+
+  const now = new Date();
+  await db
+    .update(notificationsTable)
+    .set({ status: "approved", approvedAt: now, readAt: now })
+    .where(and(eq(notificationsTable.id, id), eq(notificationsTable.tenantId, req.tenantId)));
+
+  if (notif.passengerId) {
+    void createNotification({
+      tenantId: req.tenantId,
+      passengerId: notif.passengerId,
+      type: "announcement",
+      title: "Your Leave Application Has Been Approved ✓",
+      body: `Your leave application has been officially approved by School Administration on ${now.toLocaleDateString("en-GB")}.`,
+    });
+
+    broadcast(req.tenantId, "leave_application_approved", {
+      tenantId: req.tenantId,
+      passengerId: notif.passengerId,
+      notificationId: id,
+      approvedAt: now.toISOString(),
+    });
+  }
+
+  return res.json({ ok: true, status: "approved", approvedAt: now.toISOString() });
 });
 
 // POST /api/notifications/read-all — mark all unread as read

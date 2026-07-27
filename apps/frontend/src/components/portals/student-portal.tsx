@@ -106,6 +106,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
   const [adminMsgText, setAdminMsgText] = useState("");
   const [adminMsgSending, setAdminMsgSending] = useState(false);
   const [adminMsgToast, setAdminMsgToast] = useState<string | null>(null);
+  const [appApproved, setAppApproved] = useState(false);
 
   // Live station state pushed via `station_changed` SSE when driver taps Next/Prev
   const [liveStation, setLiveStation] = useState<{ idx: number; name: string | null } | null>(null);
@@ -487,8 +488,18 @@ Roll No.: ${roll}`;
       } catch { /* ignore */ }
     });
 
+    es.addEventListener("leave_application_approved", (e) => {
+      try {
+        const d = JSON.parse((e as MessageEvent).data) as { passengerId?: number };
+        if (d.passengerId === me?.id) {
+          setAppApproved(true);
+          queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+        }
+      } catch { /* ignore */ }
+    });
+
     return () => es.close();
-  }, [queryClient]);
+  }, [queryClient, me?.id]);
 
   // Hydrate tripActive + liveStation + 4h freeze on page load (mid-journey recovery via 10 s poll)
   useEffect(() => {
@@ -1390,6 +1401,27 @@ Roll No.: ${roll}`;
           </div>
         )}
       </div>
+
+      {/* ── Approved Leave Application Banner ── */}
+      {appApproved && (
+        <div className="rounded-xl border border-emerald-400 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-700 p-4 text-white shadow-lg space-y-2 animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <CheckCircle size={32} className="text-white shrink-0 animate-bounce" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm">Leave Application Approved! ✓</p>
+              <p className="text-xs text-emerald-100 mt-0.5 leading-snug">
+                Your leave application has been officially approved by School Administration. (तपाईंको बिदाको निवेदन स्वीकृत भयो।)
+              </p>
+            </div>
+            <button
+              onClick={() => setAppApproved(false)}
+              className="rounded-lg bg-emerald-900/60 p-1 text-emerald-200 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Direct Message to School Admin Section (Available even during 4h freeze) ── */}
       <div className="rounded-xl border border-blue-500/40 bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-slate-900 p-4 space-y-2 shadow-sm">

@@ -1621,6 +1621,8 @@ type NotificationRow = {
   type: string;
   title: string;
   body: string;
+  status?: string | null;
+  approvedAt?: string | null;
   readAt: string | null;
   createdAt: string;
   passengerName?: string | null;
@@ -1817,34 +1819,77 @@ function NotificationLogPanel({
               </div>
             )}
 
+            {/* Status & Approval Badge */}
+            <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3 border border-border">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-muted-foreground">Application Status:</span>
+                {selectedNotif.status === "approved" ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle size={13} /> APPROVED ✓ (स्वीकृत भएको)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+                    <Clock size={13} /> PENDING REVIEW (प्रतीक्षारत)
+                  </span>
+                )}
+              </div>
+              {selectedNotif.status === "approved" && selectedNotif.approvedAt && (
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  Approved on {new Date(selectedNotif.approvedAt).toLocaleDateString("en-GB")}
+                </span>
+              )}
+            </div>
+
             {/* Message / Application Content */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-muted-foreground">Application Letter / Message Content:</label>
-              <div className="rounded-xl border border-border bg-muted/40 p-4 text-xs font-mono text-foreground leading-relaxed whitespace-pre-wrap select-text">
+              <div className="rounded-xl border border-blue-200 dark:border-blue-900/40 bg-white dark:bg-slate-900/80 p-4 text-xs font-mono text-foreground leading-relaxed whitespace-pre-wrap select-text shadow-inner">
                 {selectedNotif.body}
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-              {!selectedNotif.readAt && (
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
+              <div>
+                {selectedNotif.status !== "approved" && (
+                  <button
+                    onClick={async () => {
+                      const res = await fetch(`/api/notifications/${selectedNotif.id}/approve`, {
+                        method: "PATCH",
+                        headers: tenantHeaders(),
+                      });
+                      if (res.ok) {
+                        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+                        setSelectedNotif((prev) => prev ? { ...prev, status: "approved", approvedAt: new Date().toISOString() } : null);
+                      }
+                    }}
+                    className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 transition-all shadow-md flex items-center gap-1.5"
+                  >
+                    <CheckCircle size={14} />
+                    Approve Application ✓ (स्वीकृत गर्नुहोस्)
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {!selectedNotif.readAt && (
+                  <button
+                    onClick={async () => {
+                      await fetch(`/api/notifications/${selectedNotif.id}/read`, { method: "PATCH", headers: tenantHeaders() });
+                      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+                      setSelectedNotif(null);
+                    }}
+                    className="rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-xs px-3.5 py-2 transition-colors shadow-sm"
+                  >
+                    Mark as Read ✓
+                  </button>
+                )}
                 <button
-                  onClick={async () => {
-                    await fetch(`/api/notifications/${selectedNotif.id}/read`, { method: "PATCH", headers: tenantHeaders() });
-                    queryClient.invalidateQueries({ queryKey: ["notifications"] });
-                    setSelectedNotif(null);
-                  }}
-                  className="rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-xs px-4 py-2 transition-colors shadow-sm"
+                  onClick={() => setSelectedNotif(null)}
+                  className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
                 >
-                  Mark as Read ✓
+                  Close
                 </button>
-              )}
-              <button
-                onClick={() => setSelectedNotif(null)}
-                className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
-              >
-                Close
-              </button>
+              </div>
             </div>
           </div>
         </div>
