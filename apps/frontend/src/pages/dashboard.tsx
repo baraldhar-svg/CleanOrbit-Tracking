@@ -38,12 +38,12 @@ function AdCarousel({ ads, onAdClick }: { ads: Ad[]; onAdClick: (ad: Ad) => void
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
-  // Auto 360 rotate every 3.2 seconds
+  // Auto 360 rotate every 3.5 seconds
   useEffect(() => {
     if (ads.length <= 1 || isPaused) return;
     const interval = setInterval(() => {
       setIdx((i) => (i + 1) % ads.length);
-    }, 3200);
+    }, 3500);
     return () => clearInterval(interval);
   }, [ads.length, isPaused]);
 
@@ -69,130 +69,105 @@ function AdCarousel({ ads, onAdClick }: { ads: Ad[]; onAdClick: (ad: Ad) => void
     touchStartX.current = null;
   };
 
-  const N = ads.length;
+  const currentAd = ads[idx] ?? ads[0];
 
   return (
     <div
-      className="relative w-full select-none py-4 px-2 overflow-hidden bg-gradient-to-b from-slate-900/90 via-slate-950 to-slate-900/90 border-y border-amber-500/20"
+      className="relative w-full select-none py-3 px-3 sm:px-6 overflow-hidden bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-y border-amber-500/20"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Header title */}
-      <div className="flex items-center justify-between px-4 mb-3">
+      {/* Header title & controls */}
+      <div className="flex items-center justify-between px-1 mb-2.5">
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-amber-400 animate-ping" />
           <p className="text-xs font-black text-amber-400 uppercase tracking-widest">
             Featured School Spotlight
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={handlePrev}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800/80 border border-slate-700 text-slate-300 hover:border-amber-500 hover:text-amber-400 transition-all active:scale-95 text-xs"
-            title="Previous Ad"
-          >
-            ◀
-          </button>
-          <button
-            onClick={handleNext}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800/80 border border-slate-700 text-slate-300 hover:border-amber-500 hover:text-amber-400 transition-all active:scale-95 text-xs"
-            title="Next Ad"
-          >
-            ▶
-          </button>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-slate-400 font-mono">
+            {idx + 1} / {ads.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handlePrev}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:border-amber-400 hover:text-amber-300 transition-all active:scale-95 text-xs shadow-md"
+              title="Previous Ad"
+            >
+              ◀
+            </button>
+            <button
+              onClick={handleNext}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:border-amber-400 hover:text-amber-300 transition-all active:scale-95 text-xs shadow-md"
+              title="Next Ad"
+            >
+              ▶
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 3D Perspective Stage */}
-      <div className="relative mx-auto h-48 sm:h-56 w-full max-w-4xl flex items-center justify-center [perspective:1000px]">
-        {ads.map((ad, i) => {
-          // Compute circular offset relative to active index
-          let offset = (i - idx + N) % N;
-          if (offset > N / 2) offset -= N;
+      {/* 360 Rotating Full Banner Container */}
+      <div className="relative w-full [perspective:1200px]">
+        <div
+          key={currentAd.id}
+          onClick={() => onAdClick(currentAd)}
+          className="relative w-full h-44 sm:h-52 md:h-60 rounded-2xl overflow-hidden cursor-pointer transition-all duration-700 ease-out shadow-2xl border-2 border-amber-400/80 shadow-amber-500/20 group animate-in fade-in zoom-in-95 duration-500"
+          style={{
+            transformStyle: "preserve-3d",
+          }}
+        >
+          {/* Full Banner Image */}
+          <img
+            src={currentAd.imageUrl}
+            alt={currentAd.title}
+            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
+          />
 
-          const isFront = offset === 0;
-          const absOffset = Math.abs(offset);
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-transparent to-transparent" />
 
-          // Only render visible cards in 3D range (-2 to 2)
-          if (absOffset > 2 && N > 5) return null;
+          {/* SPONSORED Badge */}
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-amber-500/90 backdrop-blur-md px-3 py-1 text-[10px] font-black text-slate-950 shadow-lg">
+            <span>SPONSORED</span>
+          </div>
 
-          // 3D positioning calculation
-          let translateX = offset * 210;
-          if (typeof window !== "undefined" && window.innerWidth < 640) {
-            translateX = offset * 140;
-          }
-
-          const translateZ = isFront ? 60 : -140 * absOffset;
-          const rotateY = isFront ? 0 : offset < 0 ? 32 : -32;
-          const scale = isFront ? 1.08 : Math.max(0.7, 0.88 - absOffset * 0.15);
-          const opacity = isFront ? 1 : Math.max(0.3, 0.7 - absOffset * 0.2);
-          const zIndex = 30 - absOffset * 10;
-
-          return (
-            <div
-              key={ad.id}
-              onClick={() => {
-                if (isFront) onAdClick(ad);
-                else setIdx(i);
-              }}
-              style={{
-                transform: `translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
-                zIndex,
-                opacity,
-              }}
-              className={`absolute w-[260px] sm:w-[320px] rounded-2xl overflow-hidden cursor-pointer transition-all duration-700 ease-out shadow-2xl ${
-                isFront
-                  ? "ring-2 ring-amber-400 shadow-amber-500/30 brightness-105"
-                  : "brightness-75 hover:brightness-100"
-              }`}
-            >
-              <div className="relative h-40 sm:h-44 w-full">
-                <img
-                  src={ad.imageUrl}
-                  alt={ad.title}
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-
-                {/* AD badge */}
-                <div className="absolute top-2.5 right-2.5 rounded-full bg-amber-500/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-black text-slate-950 shadow-md">
-                  SPONSORED
-                </div>
-
-                {/* Content */}
-                <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
-                  <p className="font-black text-white text-sm sm:text-base leading-tight drop-shadow-md">
-                    {ad.title}
-                  </p>
-                  {ad.subtitle && (
-                    <p className="text-xs text-slate-300 mt-1 line-clamp-1">
-                      {ad.subtitle}
-                    </p>
-                  )}
-                  {ad.targetUrl && (
-                    <div className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 px-2.5 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-500 hover:text-slate-900 transition-colors">
-                      <Globe size={11} />
-                      <span>Visit School →</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+          {/* Banner Content */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-left flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div className="max-w-2xl">
+              <h3 className="font-black text-white text-base sm:text-xl md:text-2xl leading-tight drop-shadow-md">
+                {currentAd.title}
+              </h3>
+              {currentAd.subtitle && (
+                <p className="text-xs sm:text-sm text-slate-200 mt-1 drop-shadow line-clamp-2">
+                  {currentAd.subtitle}
+                </p>
+              )}
             </div>
-          );
-        })}
+
+            {currentAd.targetUrl && (
+              <div className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-4 py-2 text-xs sm:text-sm font-extrabold text-slate-950 hover:from-amber-400 hover:to-amber-300 transition-all shadow-md group-hover:scale-105">
+                <Globe size={14} />
+                <span>Visit School →</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* 360 Rotation Dots & Indicators */}
-      <div className="flex justify-center items-center gap-1.5 pt-3">
+      <div className="flex justify-center items-center gap-1.5 pt-2.5">
         {ads.map((_, i) => (
           <button
             key={i}
             onClick={() => setIdx(i)}
             className={`h-2 rounded-full transition-all duration-500 ${
               i === idx
-                ? "w-6 bg-amber-400 shadow-sm shadow-amber-400/50"
+                ? "w-8 bg-amber-400 shadow-md shadow-amber-400/50"
                 : "w-2 bg-slate-700 hover:bg-slate-500"
             }`}
           />

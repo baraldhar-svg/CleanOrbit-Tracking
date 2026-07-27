@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useGetDashboardStats, useListTenants, useListSuperadminTripHistory } from "@workspace/api-client-react";
-import { Shield, Building2, Users, Radio, Banknote, Megaphone, Pencil, X, Check, Upload, Search, Trash2, ChevronDown, ChevronRight, MapPin, Bus, Wifi, WifiOff, RefreshCw, CreditCard, CheckCircle, AlertTriangle, RotateCcw } from "lucide-react";
+import { Shield, Building2, Users, Radio, Banknote, Megaphone, Pencil, X, Check, Upload, Search, Trash2, ChevronDown, ChevronUp, ChevronRight, MapPin, Bus, Wifi, WifiOff, RefreshCw, CreditCard, CheckCircle, AlertTriangle, RotateCcw } from "lucide-react";
 
 function fileToDataUrl(file: File, maxWidth = 1000, maxHeight = 600, quality = 0.8): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -1793,6 +1793,9 @@ export default function SuperadminPortal() {
   const { data: tenants } = useListTenants();
   const { data: recentTrips } = useListSuperadminTripHistory({ limit: 10 });
 
+  const [recentTripsOpen, setRecentTripsOpen] = useState(false);
+  const [adManagerOpen, setAdManagerOpen] = useState(false);
+
   const [ads, setAds] = useState<Ad[]>([]);
   const [adsLoading, setAdsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -1938,156 +1941,191 @@ export default function SuperadminPortal() {
       {/* Ad Requests */}
       <AdRequestsPanel />
 
-      {/* Recent Trips */}
+      {/* Recent Trips — Collapsible Panel */}
       <div className="rounded-2xl bg-gradient-to-br from-[#0F172A] to-[#1e293b] border border-slate-700 shadow-2xl overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-700">
-          <Bus size={16} className="text-amber-400 shrink-0" />
-          <h2 className="font-bold text-slate-100">Recent Trips</h2>
-          <span className="ml-auto text-xs text-slate-500">{(recentTrips ?? []).length} trips</span>
-        </div>
-        {!recentTrips || recentTrips.length === 0 ? (
-          <div className="py-10 text-center text-sm text-slate-500">
-            No trips recorded yet. Trips are logged when a driver starts a journey.
+        <button
+          type="button"
+          onClick={() => setRecentTripsOpen(!recentTripsOpen)}
+          className="w-full flex items-center justify-between px-5 py-4 border-b border-slate-700 hover:bg-slate-800/40 transition-colors text-left focus:outline-none"
+        >
+          <div className="flex items-center gap-2">
+            <Bus size={16} className="text-amber-400 shrink-0" />
+            <h2 className="font-bold text-slate-100">Recent Trips</h2>
+            <span className="rounded-full bg-slate-800 border border-slate-700 px-2 py-0.5 text-xs text-slate-400 font-mono">
+              {(recentTrips ?? []).length} trips
+            </span>
           </div>
-        ) : (
-          <div className="divide-y divide-slate-800">
-            {recentTrips.map((t) => {
-              const startD = new Date(t.startedAt);
-              const startLabel = startD.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
-              const durationLabel = t.completedAt
-                ? (() => { const mins = Math.round((new Date(t.completedAt).getTime() - startD.getTime()) / 60000); return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`; })()
-                : "In progress";
-              return (
-                <div key={t.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-800/50 transition-colors">
-                  <div className={`h-2.5 w-2.5 rounded-full shrink-0 ${t.completedAt ? "bg-green-500" : "bg-amber-400 animate-pulse"}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-slate-200">{t.driverName ?? "—"}</span>
-                      {t.vehicleNumber && (
-                        <span className="rounded bg-slate-700 px-1.5 py-0.5 text-[10px] font-mono text-slate-400">{t.vehicleNumber}</span>
-                      )}
-                      <span className="rounded bg-blue-900/40 border border-blue-800/40 px-1.5 py-0.5 text-[10px] text-blue-300">{t.tenantName}</span>
+          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+            <span>{recentTripsOpen ? "Close ▼" : "View Dropdown ▼"}</span>
+            {recentTripsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </div>
+        </button>
+
+        {recentTripsOpen && (
+          <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+            {!recentTrips || recentTrips.length === 0 ? (
+              <div className="py-10 text-center text-sm text-slate-500">
+                No trips recorded yet. Trips are logged when a driver starts a journey.
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-800 max-h-96 overflow-y-auto">
+                {recentTrips.map((t) => {
+                  const startD = new Date(t.startedAt);
+                  const startLabel = startD.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+                  const durationLabel = t.completedAt
+                    ? (() => { const mins = Math.round((new Date(t.completedAt).getTime() - startD.getTime()) / 60000); return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`; })()
+                    : "In progress";
+                  return (
+                    <div key={t.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-800/50 transition-colors">
+                      <div className={`h-2.5 w-2.5 rounded-full shrink-0 ${t.completedAt ? "bg-green-500" : "bg-amber-400 animate-pulse"}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-slate-200">{t.driverName ?? "—"}</span>
+                          {t.vehicleNumber && (
+                            <span className="rounded bg-slate-700 px-1.5 py-0.5 text-[10px] font-mono text-slate-400">{t.vehicleNumber}</span>
+                          )}
+                          <span className="rounded bg-blue-900/40 border border-blue-800/40 px-1.5 py-0.5 text-[10px] text-blue-300">{t.tenantName}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">{startLabel} · {durationLabel}{t.routeName ? ` · ${t.routeName}` : ""}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold text-slate-200">{t.passengersBoarded}/{t.passengersTotal}</p>
+                        <p className="text-[10px] text-slate-500">boarded</p>
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5">{startLabel} · {durationLabel}{t.routeName ? ` · ${t.routeName}` : ""}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-slate-200">{t.passengersBoarded}/{t.passengersTotal}</p>
-                    <p className="text-[10px] text-slate-500">boarded</p>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Ad Carousel Manager */}
+      {/* Ad Carousel Manager — Collapsible Panel */}
       <div className="rounded-2xl bg-gradient-to-br from-[#0F172A] to-[#1e293b] border border-slate-700 shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-          <div>
-            <div className="flex items-center gap-2">
-              <Megaphone size={18} className="text-slate-300 shrink-0" />
-              <h2 className="font-bold text-slate-100">Ad Carousel Manager</h2>
-              <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-xs font-semibold text-amber-400">
-                {liveCount} Live
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">Manage banners shown on all dashboards · drag ▲▼ to reorder</p>
-          </div>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 hover:bg-slate-800/40 transition-colors">
           <button
-            onClick={() => { setShowAddForm(!showAddForm); setFormErr(""); }}
+            type="button"
+            onClick={() => setAdManagerOpen(!adManagerOpen)}
+            className="flex-1 flex items-center justify-between text-left focus:outline-none pr-3"
+          >
+            <div>
+              <div className="flex items-center gap-2">
+                <Megaphone size={18} className="text-slate-300 shrink-0" />
+                <h2 className="font-bold text-slate-100">Ad Carousel Manager</h2>
+                <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-xs font-semibold text-amber-400">
+                  {liveCount} Live
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">Manage banners shown on all dashboards · drag ▲▼ to reorder</p>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+              <span>{adManagerOpen ? "Close ▼" : "View Dropdown ▼"}</span>
+              {adManagerOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </button>
+          <button
+            onClick={() => {
+              if (!adManagerOpen) setAdManagerOpen(true);
+              setShowAddForm(!showAddForm);
+              setFormErr("");
+            }}
             className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-bold text-slate-900 hover:bg-amber-400 transition-colors shrink-0"
           >
-            {showAddForm ? "✕ Cancel" : "+ New Ad"}
+            {showAddForm && adManagerOpen ? "✕ Cancel" : "+ New Ad"}
           </button>
         </div>
 
-        {/* Add Form */}
-        {showAddForm && (
-          <div className="border-b border-slate-700 bg-slate-900/60 p-5 space-y-3">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">New Banner Ad</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-400">School / Ad Title *</label>
-                <input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Sunrise Academy"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-amber-500" />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-400">Subtitle / Tagline</label>
-                <input value={formSubtitle} onChange={(e) => setFormSubtitle(e.target.value)} placeholder="Admissions Open 2081"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-amber-500" />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-400">Banner Image *</label>
-              <div className="flex gap-2">
-                <input value={formImageUrl} onChange={(e) => setFormImageUrl(e.target.value)} placeholder="https://images.unsplash.com/… or upload →"
-                  className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-amber-500" />
-                <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-700 px-3 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-600 transition-colors">
-                  <Upload size={13} />Upload
-                  <input type="file" accept="image/*" className="hidden"
-                    onChange={async (e) => { const f = e.target.files?.[0]; if (f) setFormImageUrl(await fileToDataUrl(f)); e.target.value = ""; }} />
-                </label>
-              </div>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-400">Target URL (click destination)</label>
-              <input value={formTargetUrl} onChange={(e) => setFormTargetUrl(e.target.value)} placeholder="/school/6 or https://..."
-                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-amber-500" />
-            </div>
-            {/* Preview */}
-            {formImageUrl && (
-              <div className="relative h-24 w-full overflow-hidden rounded-xl border border-slate-700">
-                <img src={formImageUrl} alt="preview" className="h-full w-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/600x96/1e293b/64748b?text=Invalid+URL"; }} />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-center px-4">
+        {adManagerOpen && (
+          <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+            {/* Add Form */}
+            {showAddForm && (
+              <div className="border-b border-slate-700 bg-slate-900/60 p-5 space-y-3">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">New Banner Ad</p>
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <p className="text-sm font-bold text-white">{formTitle || "Ad Title"}</p>
-                    {formSubtitle && <p className="text-xs text-slate-300">{formSubtitle}</p>}
+                    <label className="mb-1 block text-xs font-semibold text-slate-400">School / Ad Title *</label>
+                    <input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Sunrise Academy"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-amber-500" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-400">Subtitle / Tagline</label>
+                    <input value={formSubtitle} onChange={(e) => setFormSubtitle(e.target.value)} placeholder="Admissions Open 2081"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-amber-500" />
                   </div>
                 </div>
-                <span className="absolute top-2 right-2 rounded-full bg-green-500/90 px-2 py-0.5 text-[10px] font-bold text-white">PREVIEW</span>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-slate-400">Banner Image *</label>
+                  <div className="flex gap-2">
+                    <input value={formImageUrl} onChange={(e) => setFormImageUrl(e.target.value)} placeholder="https://images.unsplash.com/… or upload →"
+                      className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-amber-500" />
+                    <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-700 px-3 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-600 transition-colors">
+                      <Upload size={13} />Upload
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={async (e) => { const f = e.target.files?.[0]; if (f) setFormImageUrl(await fileToDataUrl(f)); e.target.value = ""; }} />
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-slate-400">Target URL (click destination)</label>
+                  <input value={formTargetUrl} onChange={(e) => setFormTargetUrl(e.target.value)} placeholder="/school/6 or https://..."
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-amber-500" />
+                </div>
+                {/* Preview */}
+                {formImageUrl && (
+                  <div className="relative h-24 w-full overflow-hidden rounded-xl border border-slate-700">
+                    <img src={formImageUrl} alt="preview" className="h-full w-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/600x96/1e293b/64748b?text=Invalid+URL"; }} />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-center px-4">
+                      <div>
+                        <p className="text-sm font-bold text-white">{formTitle || "Ad Title"}</p>
+                        {formSubtitle && <p className="text-xs text-slate-300">{formSubtitle}</p>}
+                      </div>
+                    </div>
+                    <span className="absolute top-2 right-2 rounded-full bg-green-500/90 px-2 py-0.5 text-[10px] font-bold text-white">PREVIEW</span>
+                  </div>
+                )}
+                {formErr && <p className="text-xs text-red-400">{formErr}</p>}
+                <button
+                  onClick={handleAddAd}
+                  disabled={!formTitle || !formImageUrl || formLoading}
+                  className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-50 transition-colors"
+                >
+                  {formLoading ? "Publishing…" : "Publish Banner Ad"}
+                </button>
               </div>
             )}
-            {formErr && <p className="text-xs text-red-400">{formErr}</p>}
-            <button
-              onClick={handleAddAd}
-              disabled={!formTitle || !formImageUrl || formLoading}
-              className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-50 transition-colors"
-            >
-              {formLoading ? "Publishing…" : "Publish Banner Ad"}
-            </button>
-          </div>
-        )}
 
-        {/* Ad List */}
-        <div className="p-4 space-y-2">
-          {adsLoading ? (
-            <div className="py-8 text-center text-sm text-slate-500">Loading ads…</div>
-          ) : ads.length === 0 ? (
-            <div className="py-8 text-center text-sm text-slate-500">No ads yet. Add the first one above.</div>
-          ) : (
-            ads.map((ad, idx) => (
-              <AdRow
-                key={ad.id}
-                ad={ad}
-                onToggle={handleToggle}
-                onDelete={handleDelete}
-                onSave={handleSaveAd}
-                onMoveUp={(id) => handleMove(id, "up")}
-                onMoveDown={(id) => handleMove(id, "down")}
-                isFirst={idx === 0}
-                isLast={idx === ads.length - 1}
-              />
-            ))
-          )}
-        </div>
+            {/* Ad List */}
+            <div className="p-4 space-y-2">
+              {adsLoading ? (
+                <div className="py-8 text-center text-sm text-slate-500">Loading ads…</div>
+              ) : ads.length === 0 ? (
+                <div className="py-8 text-center text-sm text-slate-500">No ads yet. Add the first one above.</div>
+              ) : (
+                ads.map((ad, idx) => (
+                  <AdRow
+                    key={ad.id}
+                    ad={ad}
+                    onToggle={handleToggle}
+                    onDelete={handleDelete}
+                    onSave={handleSaveAd}
+                    onMoveUp={(id) => handleMove(id, "up")}
+                    onMoveDown={(id) => handleMove(id, "down")}
+                    isFirst={idx === 0}
+                    isLast={idx === ads.length - 1}
+                  />
+                ))
+              )}
+            </div>
 
-        {ads.length > 0 && (
-          <div className="border-t border-slate-800 px-5 py-3 flex items-center justify-between">
-            <p className="text-xs text-slate-500">{ads.length} total · {liveCount} live on carousel</p>
-            <p className="text-[10px] text-slate-600">Changes save instantly</p>
+            {ads.length > 0 && (
+              <div className="border-t border-slate-800 px-5 py-3 flex items-center justify-between">
+                <p className="text-xs text-slate-500">{ads.length} total · {liveCount} live on carousel</p>
+                <p className="text-[10px] text-slate-600">Changes save instantly</p>
+              </div>
+            )}
           </div>
         )}
       </div>

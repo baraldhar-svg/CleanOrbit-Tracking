@@ -173,6 +173,20 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
   const { data: calEvents } = useListCalendarEvents({ month: todayAdStr.slice(0, 7) });
   const upcomingEvents = (calEvents ?? []).filter(e => e.eventDate === todayAdStr || e.eventDate === tmrAdStr);
 
+  // Check if today is a holiday (Saturday in Nepal or calendar holiday event)
+  const isHolidayToday = useMemo(() => {
+    const todayStr = todayAdStr;
+    const now = new Date();
+    if (now.getDay() === 6) return true; // Saturday is weekly holiday in Nepal
+    return (calEvents ?? []).some(
+      (e) =>
+        e.eventDate === todayStr &&
+        (e.type === "holiday" ||
+          (e.title ?? "").toLowerCase().includes("holiday") ||
+          (e.title ?? "").includes("बिदा"))
+    );
+  }, [todayAdStr, calEvents]);
+
   // Subscription status — server computes isPaying/daysLeft/isExpired, cast from extended response
   type SubPassenger = typeof me & { isPaying?: boolean; isExpired?: boolean; daysLeft?: number | null; showExpiryBanner?: boolean };
   const meEx = me as SubPassenger | undefined;
@@ -298,7 +312,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
   // Geofencing: alert when driver is within threshold of student's stop
   const myStop = routeStations.find((rs) => String(rs.stationId) === selectedStationId);
   const nearbyAlert = (() => {
-    if (!driverLoc.isLive || !myStop?.lat || !myStop?.lng || geoAlertDismissed) return false;
+    if (isHolidayToday || !driverLoc.isLive || !tripActive || !myStop?.lat || !myStop?.lng || geoAlertDismissed) return false;
     const dLat = (driverLoc.lat - myStop.lat) * 111000;
     const dLng = (driverLoc.lng - myStop.lng) * 111000 * Math.cos(myStop.lat * (Math.PI / 180));
     return Math.sqrt(dLat * dLat + dLng * dLng) < GEO_ALERT_THRESHOLD_METERS;
@@ -621,8 +635,25 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
             </div>
           );
         }
-        // State 1a: Before Boarding — bus is broadcasting live GPS
-        if (driverLoc.isLive) {
+        // State 0: Holiday Today — School & Bus service closed
+        if (isHolidayToday) {
+          return (
+            <div className="rounded-xl border border-red-300 dark:border-red-800/60 bg-gradient-to-r from-red-500/90 via-rose-600 to-rose-700 p-4 text-white shadow-md">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🎉</span>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm">HOLIDAY TODAY · साप्ताहिक बिदा</p>
+                  <p className="text-xs text-rose-100 mt-0.5 leading-snug">
+                    School is closed today for Holiday. Bus tracking & live services are off duty.
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // State 1a: Before Boarding — bus is broadcasting live GPS & trip is active
+        if (driverLoc.isLive && tripActive) {
           // Use the exact stop from driver SSE if available, fall back to GPS-nearest
           const displayStation = liveStation?.name ?? nearestDriverStation?.rs.stationName ?? null;
           return (
@@ -913,32 +944,37 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
         })()}
 
         {/* GPS Status Bar with Real-Time Speed & Motion State */}
-        <div className="rounded-xl border border-border bg-muted/40 p-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-              <Bus size={12} className="text-amber-500" />
-              {driverLoc.vehicleNumber ? `Bus: ${driverLoc.vehicleNumber}` : "Bus Location"}
-            </p>
-            <p className="text-sm font-semibold text-foreground font-mono">
-              {driverLoc.isLive
-                ? `${driverLoc.lat.toFixed(4)}°N, ${driverLoc.lng.toFixed(4)}°E`
-                : "Waiting for GPS…"}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground font-medium">
-              {driverLoc.isLive
-                ? ((driverLoc.speedKmh ?? 0) > 3 ? "⚡ Moving" : "⏸️ Stopped")
-                : "Status"}
-            </p>
-            <p className={`text-sm font-bold flex items-center gap-1 justify-end ${driverLoc.isLive ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
-              <span className={`h-2 w-2 rounded-full inline-block ${driverLoc.isLive ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
-              {driverLoc.isLive
-                ? `${driverLoc.speedKmh != null ? Math.round(driverLoc.speedKmh) : 0} km/h`
-                : "Offline"}
-            </p>
-          </div>
-        </div>
+        {(() => {
+          const isBusLive = driverLoc.isLive || tripActive;
+          return (
+            <div className="rounded-xl border border-border bg-muted/40 p-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 truncate">
+                  <Bus size={12} className="text-amber-500 shrink-0" />
+                  {driverLoc.vehicleNumber ? `Bus: ${driverLoc.vehicleNumber}` : "Bus Location"}
+                </p>
+                <p className="text-sm font-semibold text-foreground font-mono truncate">
+                  {isBusLive
+                    ? `${driverLoc.lat.toFixed(4)}°N, ${driverLoc.lng.toFixed(4)}°E`
+                    : "Bus Offline (Parked)"}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-xs text-muted-foreground font-medium">
+                  {isBusLive
+                    ? ((driverLoc.speedKmh ?? 0) > 3 ? "⚡ Moving" : "⏸️ Stopped")
+                    : "Status"}
+                </p>
+                <p className={`text-sm font-bold flex items-center gap-1 justify-end ${isBusLive ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                  <span className={`h-2 w-2 rounded-full inline-block ${isBusLive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+                  {isBusLive
+                    ? `${driverLoc.speedKmh != null && driverLoc.speedKmh > 0 ? Math.round(driverLoc.speedKmh) : 0} km/h`
+                    : "Offline"}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="rounded-xl overflow-hidden border border-border shadow-sm" style={{ height: 280 }}>
           <OsmMap
@@ -946,7 +982,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
             route={routeStations.filter((rs) => rs.lat && rs.lng).map((rs) => ({ lat: rs.lat!, lng: rs.lng!, name: rs.stationName ?? `Stop ${rs.id}` }))}
             lat={driverLoc.lat}
             lng={driverLoc.lng}
-            isLive={driverLoc.isLive}
+            isLive={driverLoc.isLive || tripActive}
             label={driverLoc.vehicleNumber ?? undefined}
             height={280}
           />

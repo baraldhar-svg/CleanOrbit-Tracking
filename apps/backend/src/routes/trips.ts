@@ -146,7 +146,8 @@ router.get("/active", async (req, res) => {
   const currentLat = driver?.currentLat ?? 27.7172;
   const currentLng = driver?.currentLng ?? 85.3240;
   const locationUpdatedAt = driver?.locationUpdatedAt ?? null;
-  const isLive = driver?.isOnline === true && driver?.currentLat != null;
+  const isRecentlyUpdated = locationUpdatedAt != null && (Date.now() - new Date(locationUpdatedAt).getTime()) < 300_000;
+  const isLive = (driver?.isOnline === true || isRecentlyUpdated) && driver?.currentLat != null;
   const speedKmh = driver?.speedKmh ?? null;
 
   const stationState = driver?.id != null ? driverStationState.get(driver.id) : undefined;
@@ -158,7 +159,7 @@ router.get("/active", async (req, res) => {
     locationUpdatedAt,
     isLive,
     speedKmh,
-    isJourneyActive: driver?.isOnline === true,
+    isJourneyActive: driver?.isOnline === true || isRecentlyUpdated || driver?.tripStartedAt != null,
     stationIdx: stationState?.stationIdx ?? null,
     stationName: stationState?.stationName ?? null,
     etaMinutes: 5,
@@ -780,7 +781,7 @@ router.get("/history", async (req, res) => {
 export function startHeartbeatWatchdog(): void {
   setInterval(async () => {
     try {
-      const cutoff = new Date(Date.now() - 45_000).toISOString();
+      const cutoff = new Date(Date.now() - 300_000).toISOString();
       const stale = await db
         .select({
           id: driversTable.id,

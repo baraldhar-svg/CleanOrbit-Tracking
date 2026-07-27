@@ -2880,6 +2880,7 @@ function StudentsPanel() {
 
 // ── 🚌 Driver Panel: list all drivers with search ──
 function DriverPanel() {
+  const queryClient = useQueryClient();
   const { data: drivers } = useListDrivers();
   const { data: routes } = useListRoutes();
   const [search, setSearch] = useState("");
@@ -2944,18 +2945,27 @@ function DriverPanel() {
         ) : (
           <div className="divide-y border rounded-xl overflow-hidden bg-muted/10">
             {filtered.map((d: any) => (
-              <button
+              <div
                 key={d.id}
                 onClick={() => setEditDriver(d)}
-                className="w-full flex items-center justify-between px-3 py-2.5 text-xs text-left hover:bg-muted/30 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2.5 text-xs text-left hover:bg-muted/30 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <span
-                    className={`h-2 w-2 rounded-full ${d.isOnline ? "bg-green-500" : "bg-muted-foreground/40"}`}
+                    className={`h-2.5 w-2.5 rounded-full shrink-0 ${d.isOnline ? "bg-green-500 animate-pulse" : d.isActive !== false ? "bg-amber-400" : "bg-gray-400"}`}
                   />
                   <div>
-                    <p className="font-semibold text-foreground">{d.name}</p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-foreground">{d.name}</p>
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                        d.isActive !== false
+                          ? "bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-800"
+                          : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700"
+                      }`}>
+                        {d.isActive !== false ? "Active Duty" : "Freezed / Off Duty"}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
                       {d.vehicleNumber}
                       {routeNameByDriverId.has(d.id)
                         ? ` · Route: ${routeNameByDriverId.get(d.id)}`
@@ -2964,13 +2974,31 @@ function DriverPanel() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <span className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        await apiPatch(`/drivers/${d.id}`, { isActive: !(d.isActive !== false) });
+                        queryClient.invalidateQueries({ queryKey: getListDriversQueryKey() });
+                        queryClient.invalidateQueries({ queryKey: getListRoutesQueryKey() });
+                      } catch { /* ignore */ }
+                    }}
+                    className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition-all ${
+                      d.isActive !== false
+                        ? "bg-green-600 text-white hover:bg-green-700 shadow-sm"
+                        : "bg-slate-700 text-slate-200 hover:bg-slate-600 border border-slate-600"
+                    }`}
+                  >
+                    {d.isActive !== false ? "🟢 Active" : "🔒 Freezed"}
+                  </button>
+                  <span className="flex items-center gap-1 font-mono text-[11px]">
                     <Phone size={11} />
-                    <span className="font-mono">{d.phone}</span>
+                    {d.phone}
                   </span>
                   <Pencil size={12} />
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

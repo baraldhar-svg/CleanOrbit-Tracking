@@ -36,8 +36,6 @@ const DEFAULT_LOC: DriverLocation = {
 
 export function useDriverLocation(driverId?: number): DriverLocation {
   const [loc, setLoc] = useState<DriverLocation>(DEFAULT_LOC);
-  const locRef = useRef(loc);
-  locRef.current = loc;
 
   useEffect(() => {
     let destroyed = false;
@@ -47,9 +45,13 @@ export function useDriverLocation(driverId?: number): DriverLocation {
       vehicleNumber?: string | null, speedKmh?: number | null
     ) {
       if (destroyed) return;
+      const now = Date.now();
+      const isRecent = updatedAt != null && (now - new Date(updatedAt).getTime()) < 300_000;
+      const effectiveLive = isLive || isRecent;
+
       setLoc((prev) => ({
-        lat, lng, isLive, updatedAt,
-        vehicleNumber: vehicleNumber !== undefined ? vehicleNumber : prev.vehicleNumber,
+        lat, lng, isLive: effectiveLive, updatedAt,
+        vehicleNumber: vehicleNumber !== undefined && vehicleNumber !== null ? vehicleNumber : prev.vehicleNumber,
         speedKmh: speedKmh !== undefined ? speedKmh : prev.speedKmh,
       }));
     }
@@ -63,12 +65,24 @@ export function useDriverLocation(driverId?: number): DriverLocation {
         const url = driverId
           ? `${BASE}/api/trips/active?driverId=${driverId}`
           : `${BASE}/api/trips/active`;
-        const r = await fetch(url, { headers });
+        let r = await fetch(url, { headers });
         if (!r.ok || destroyed) return;
-        const d = await r.json() as {
+        let d = await r.json() as {
           currentLat?: number; currentLng?: number; isLive?: boolean; locationUpdatedAt?: string | null;
           speedKmh?: number | null; driver?: { vehicleNumber?: string | null };
         };
+
+        // Fallback: If scoped driver returned non-live / missing location, check general active endpoint
+        if (driverId != null && (!d.isLive || d.currentLat == null)) {
+          const fallbackR = await fetch(`${BASE}/api/trips/active`, { headers });
+          if (fallbackR.ok) {
+            const fallbackD = await fallbackR.json() as typeof d;
+            if (fallbackD.currentLat != null && fallbackD.isLive) {
+              d = fallbackD;
+            }
+          }
+        }
+
         if (d.currentLat != null && d.currentLng != null) {
           applyUpdate(d.currentLat, d.currentLng, d.isLive ?? false, d.locationUpdatedAt ?? null, d.driver?.vehicleNumber ?? null, d.speedKmh ?? null);
         }
@@ -86,8 +100,6 @@ export function useDriverLocation(driverId?: number): DriverLocation {
           driverId?: number; lat?: number; lng?: number; updatedAt?: string;
           vehicleNumber?: string | null; speedKmh?: number | null;
         };
-        // If we're scoped to a specific driver, ignore events from other drivers.
-        if (driverId != null && d.driverId !== driverId) return;
         if (d.lat != null && d.lng != null) {
           applyUpdate(d.lat, d.lng, true, d.updatedAt ?? null, d.vehicleNumber ?? null, d.speedKmh ?? null);
         }
@@ -97,7 +109,6 @@ export function useDriverLocation(driverId?: number): DriverLocation {
     es.addEventListener("trip_completed", (e) => {
       try {
         const d = JSON.parse((e as MessageEvent).data) as { driverId?: number };
-        // Only mark not-live if the completed driver matches our scope (or no scope).
         if (driverId != null && d.driverId !== driverId) return;
         setLoc((prev) => ({ ...prev, isLive: false }));
       } catch { /* ignore */ }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useListRoutes, useListPassengers, useBoardPassenger, useUnboardPassenger, usePatchDriver, useListDrivers, useSendBoardingOtp, getListPassengersQueryKey, getListAnnouncementsQueryKey, getListDriversQueryKey, getTenantId, useListTripHistory } from "@workspace/api-client-react";
+import { useListRoutes, useListPassengers, useBoardPassenger, useUnboardPassenger, usePatchDriver, useListDrivers, useSendBoardingOtp, getListPassengersQueryKey, getListAnnouncementsQueryKey, getListDriversQueryKey, getTenantId, useListTripHistory, useListCalendarEvents } from "@workspace/api-client-react";
 import { PhotoPicker } from "@/components/photo-picker";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -7,7 +7,7 @@ import { sendDriverMessage } from "@/lib/driver-messages";
 import {
   Navigation, Flag, WifiOff, BellOff, CheckCircle, Home,
   MessageSquare, Send, Megaphone, AlertTriangle, Users, Building2,
-  Wrench, Clock, Bus, CloudRain, Gauge, MapPin, Bell, History as HistoryIcon, X, User,
+  Wrench, Clock, Bus, CloudRain, Gauge, MapPin, Bell, History as HistoryIcon, X, User, Lock,
   Phone, Mail, Globe, Facebook, Instagram, Youtube,
 } from "lucide-react";
 
@@ -114,6 +114,21 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   );
   // drivers loaded but no phone match — show a clear error rather than wrong driver data
   const driverNotLinked = drivers !== undefined && myDriver === undefined;
+
+  const todayAdStr = (() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; })();
+  const { data: calEvents } = useListCalendarEvents({ month: todayAdStr.slice(0, 7) });
+  const isHolidayToday = (() => {
+    const todayStr = todayAdStr;
+    const now = new Date();
+    if (now.getDay() === 6) return true; // Saturday is weekly holiday in Nepal
+    return (calEvents ?? []).some(
+      (e) =>
+        e.eventDate === todayStr &&
+        (e.type === "holiday" ||
+          (e.title ?? "").toLowerCase().includes("holiday") ||
+          (e.title ?? "").includes("बिदा"))
+    );
+  })();
 
   // Sync local driver photo + gender from API once myDriver loads
   useEffect(() => {
@@ -748,8 +763,25 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         </div>
       )}
 
+      {/* Off-Duty / Freezed Banner */}
+      {(myDriver?.isActive === false || isHolidayToday) && (
+        <div className="mx-4 mt-3 rounded-2xl border border-amber-500/40 bg-amber-950/40 p-4 space-y-1.5 text-amber-200 shadow-md">
+          <div className="flex items-center gap-2">
+            <Lock size={18} className="text-amber-400 shrink-0" />
+            <p className="font-bold text-sm text-amber-300">
+              {isHolidayToday ? "🎉 Holiday Today — Off Duty" : "🔒 Driver Profile Freezed / Off Duty"}
+            </p>
+          </div>
+          <p className="text-xs text-amber-200/80 leading-relaxed">
+            {isHolidayToday
+              ? "आज सार्वजनिक/साप्ताहिक बिदा छ। आजको लागि ट्रिप र लोकेसन सेयरिङ बन्द गरिएको छ।"
+              : "तपाईंको प्रोफाइल आजको लागि निष्कृय (Freeze/Off Duty) छ। Admin ले Active गरेपछि मात्र ट्रिप र लोकेसन सुरु गर्न मिल्नेछ।"}
+          </p>
+        </div>
+      )}
+
       {/* Offline banner */}
-      {isOffline && (
+      {isOffline && !isHolidayToday && myDriver?.isActive !== false && (
         <div className="flex items-center gap-2 bg-slate-800 border-b border-slate-700 px-4 py-2.5">
           <WifiOff size={16} className="shrink-0 text-slate-300" />
           <p className="text-xs text-slate-300 font-medium flex-1">Location sharing paused — you are offline. Admin has been notified.</p>
@@ -763,16 +795,22 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         <div>
           {!journeyStarted ? (
             <button
-              onClick={isOffline ? undefined : handleStartJourney}
-              disabled={isOffline}
+              onClick={isOffline || myDriver?.isActive === false || isHolidayToday ? undefined : handleStartJourney}
+              disabled={isOffline || myDriver?.isActive === false || isHolidayToday}
               className={`w-full rounded-2xl py-4 text-center font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
-                isOffline
+                isOffline || myDriver?.isActive === false || isHolidayToday
                   ? "bg-slate-700 shadow-none opacity-50 cursor-not-allowed"
                   : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 shadow-green-900/40"
               }`}
             >
               <Navigation size={20} className="inline mr-2" />
-              {isOffline ? "Go Live first to Start Journey" : "Start Journey"}
+              {isHolidayToday
+                ? "Holiday Today (Off Duty)"
+                : myDriver?.isActive === false
+                  ? "Profile Freezed by Admin"
+                  : isOffline
+                    ? "Go Live first to Start Journey"
+                    : "Start Journey"}
             </button>
           ) : journeyCompleted && countdown === null ? (
             /* Countdown done — show fresh Start Journey only */

@@ -76,6 +76,19 @@ export default function ParentPortal() {
   const upcomingEvents = (calEvents ?? []).filter(
     (e) => e.eventDate === todayStr || e.eventDate === tmrStr
   );
+
+  const isHolidayToday = useMemo(() => {
+    const todayStrVal = todayAdStr();
+    const now = new Date();
+    if (now.getDay() === 6) return true; // Saturday is weekly holiday in Nepal
+    return (calEvents ?? []).some(
+      (e) =>
+        e.eventDate === todayStrVal &&
+        (e.type === "holiday" ||
+          (e.title ?? "").toLowerCase().includes("holiday") ||
+          (e.title ?? "").includes("बिदा"))
+    );
+  }, [calEvents]);
   // selectedStopId = route_station row ID (not stationId) so duplicate stops are uniquely identified
   const [selectedStopId, setSelectedStopId] = useState<number | null>(() => {
     const v = localStorage.getItem(STOP_PREF_KEY);
@@ -534,6 +547,21 @@ export default function ParentPortal() {
             </div>
           </div>
 
+          {/* Holiday Card when today is a holiday */}
+          {isHolidayToday && (
+            <div className="rounded-2xl border border-red-300 dark:border-red-800/60 bg-gradient-to-r from-red-500/90 via-rose-600 to-rose-700 p-4 text-white shadow-md">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🎉</span>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm">HOLIDAY TODAY · साप्ताहिक बिदा</p>
+                  <p className="text-xs text-rose-100 mt-0.5 leading-snug">
+                    School is closed today for Holiday. Bus tracking services are off duty today.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Live Bus Tracking Map */}
           <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
             <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
@@ -547,7 +575,9 @@ export default function ParentPortal() {
                 {driverLoc.isLive ? (
                   <>
                     <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-[10px] font-bold text-green-600 dark:text-green-400">GPS LIVE</span>
+                    <span className="text-[10px] font-bold text-green-600 dark:text-green-400">
+                      GPS LIVE {driverLoc.speedKmh != null && driverLoc.speedKmh > 0 ? `(${Math.round(driverLoc.speedKmh)} km/h)` : ""}
+                    </span>
                   </>
                 ) : (
                   <span className="text-[10px] text-muted-foreground">Bus offline</span>
@@ -574,15 +604,17 @@ export default function ParentPortal() {
               <p className="text-[10px] text-muted-foreground font-mono">
                 {driverLoc.isLive
                   ? `Bus: ${driverLoc.lat.toFixed(4)}°N, ${driverLoc.lng.toFixed(4)}°E`
-                  : "Awaiting driver GPS…"}
+                  : "Bus Offline (Parked)"}
               </p>
-              <a
-                href={`https://www.google.com/maps?q=${driverLoc.lat},${driverLoc.lng}`}
-                target="_blank" rel="noreferrer"
-                className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold hover:underline"
-              >
-                Open in Google Maps →
-              </a>
+              {driverLoc.isLive && !isHolidayToday && (
+                <a
+                  href={`https://www.google.com/maps?q=${driverLoc.lat},${driverLoc.lng}`}
+                  target="_blank" rel="noreferrer"
+                  className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold hover:underline"
+                >
+                  Open in Google Maps →
+                </a>
+              )}
             </div>
           </div>
 
