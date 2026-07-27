@@ -160,10 +160,27 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
     finally { setDriverPhotoSaving(false); }
   }
 
-  // Derive this driver's assigned route from the routes list
-  const myRoute = myDriver
-    ? ((routes ?? []) as Array<{ id: number; driverId?: number | null }>).find((r) => r.driverId === myDriver.id) ?? null
-    : null;
+  // Derive this driver's assigned route from the routes list (with fallback by driver name or vehicle)
+  const myRoute = useMemo(() => {
+    if (!myDriver || !routes || routes.length === 0) return null;
+    // 1. Direct match: route has driverId === myDriver.id
+    const directMatch = (routes as Array<{ id: number; name?: string; driverId?: number | null }>).find(
+      (r) => r.driverId === myDriver.id
+    );
+    if (directMatch) return directMatch;
+
+    // 2. Name-based match: route name matches driver name or vehicle
+    const dName = (myDriver.name || "").toLowerCase();
+    const vNum = (myDriver.vehicleNumber || "").toLowerCase();
+    const nameMatch = (routes as Array<{ id: number; name?: string; driverId?: number | null }>).find((r) => {
+      const rName = (r.name || "").toLowerCase();
+      return (dName && (rName.includes(dName) || dName.includes(rName))) ||
+             (vNum && rName.includes(vNum));
+    });
+    if (nameMatch) return nameMatch;
+
+    return null;
+  }, [myDriver, routes]);
 
   const { data: myTripHistory } = useListTripHistory(
     myDriver?.id != null ? { driverId: myDriver.id, limit: 30 } : undefined
@@ -453,6 +470,14 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
   // Scope riders strictly to THIS driver's assigned route or route stations & apply local optimistic status
   const riderPassengers = useMemo(() => {
+    if (!passengers || passengers.length === 0) return [];
+
+    // IF DRIVER HAS NO MATCHING ROUTE AND NO STATIONS LOADED YET:
+    // DO NOT SHOW ALL SCHOOL PASSENGERS! Return empty array to isolate routes strictly.
+    if (!myRoute && driverStationIds.size === 0) {
+      return [];
+    }
+
     return (passengers ?? [])
       .map((p) => {
         if (localBoardedIds.has(p.id)) return { ...p, status: "boarded" as const };
@@ -461,20 +486,26 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       })
       .filter((p) => {
         if (p.role === "driver") return false;
+
         // If driver has an assigned route, match strictly by routeId or stationId
         if (myRoute?.id != null) {
           if (p.routeId != null) {
             return p.routeId === myRoute.id;
           }
-          return p.stationId != null && driverStationIds.has(p.stationId);
+          if (p.stationId != null && driverStationIds.has(p.stationId)) {
+            return true;
+          }
+          return false; // DO NOT FALL THROUGH TO TRUE!
         }
+
         // If driver has no assigned route ID yet but has stations, match by station ID
         if (driverStationIds.size > 0) {
           return p.stationId != null && driverStationIds.has(p.stationId);
         }
-        return true;
+
+        return false; // NEVER FALL THROUGH TO TRUE!
       });
-  }, [passengers, myRoute?.id, driverStationIds, localBoardedIds, localUnboardedIds]);
+  }, [passengers, myRoute, driverStationIds, localBoardedIds, localUnboardedIds]);
 
   const boardedCount = riderPassengers.filter((p) => p.status === "boarded").length;
   const totalCount = riderPassengers.length;
@@ -1344,51 +1375,57 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         <div>
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Passenger Checklist</p>
           <div className="space-y-2">
-            {riderPassengers.filter((p) => p.status !== "leave" && p.quickMessage !== "Staying home today").map((p) => (
-              <div key={p.id} className={`flex items-center gap-3 rounded-2xl p-3 border transition-all ${
-                p.status === "boarded" ? "bg-emerald-900/20 border-emerald-700/30"
-                  : (p.status as string) === "absent" ? "bg-red-900/20 border-red-700/30"
-                  : "bg-slate-800 border-slate-700"
-              }`}>
-                <Avatar name={p.name} photoUrl={p.photoUrl} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-slate-100 text-sm">{p.name}</p>
-                    {p.liveToday === 1 && (
-                      <span className="rounded-full bg-green-800/50 border border-green-700/40 px-1.5 py-0.5 text-[9px] text-green-300 font-bold">LIVE</span>
-                    )}
-                    <span className="rounded-full bg-slate-700 px-1.5 py-0.5 text-[9px] text-slate-400 capitalize">{p.role}</span>
-                  </div>
-                  <p className="text-xs text-slate-400">{p.stationName}</p>
-                  {p.quickMessage && <p className="text-[10px] text-blue-400 italic mt-0.5 truncate">"{p.quickMessage}"</p>}
-                </div>
-                {p.status === "boarded" ? (
-                  <div className="shrink-0 flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-950/90 border border-emerald-600/60 px-3 py-1.5 text-xs font-bold text-emerald-400 shadow-sm">
-                      <CheckCircle2 size={14} className="text-emerald-400" />
-                      On Board ✓
-                    </span>
-                    <button
-                      onClick={() => handleUnboard(p.id)}
-                      disabled={unboardingId === p.id || isOffline}
-                      title="Tap to unboard passenger"
-                      className="text-[10px] text-slate-400 hover:text-red-400 underline transition-colors px-1 py-0.5"
-                    >
-                      {unboardingId === p.id ? "…" : "Undo"}
-                    </button>
-                  </div>
-                ) : (p.status as string) === "absent" ? (
-                  <span className="shrink-0 rounded-xl bg-red-900/40 border border-red-700/40 px-3 py-1.5 text-xs text-red-400 font-semibold">Absent</span>
-                ) : p.quickMessage === "Staying home today" ? (
-                  <span className="shrink-0 rounded-xl bg-slate-700 px-3 py-1.5 text-xs text-slate-400">On Leave</span>
-                ) : (
-                  <button onClick={() => handleBoard(p.id)} disabled={boardingId === p.id || isOffline}
-                    className="shrink-0 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 active:bg-amber-700 disabled:opacity-50 transition-colors">
-                    {boardingId === p.id ? "…" : "Board ✓"}
-                  </button>
-                )}
+            {riderPassengers.filter((p) => p.status !== "leave" && p.quickMessage !== "Staying home today").length === 0 ? (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-center text-slate-400 text-xs">
+                {myRoute ? `No active passengers assigned to ${myRoute.name ?? "your route"}` : "No route assigned to your driver account. Contact Admin to assign your route."}
               </div>
-            ))}
+            ) : (
+              riderPassengers.filter((p) => p.status !== "leave" && p.quickMessage !== "Staying home today").map((p) => (
+                <div key={p.id} className={`flex items-center gap-3 rounded-2xl p-3 border transition-all ${
+                  p.status === "boarded" ? "bg-emerald-900/20 border-emerald-700/30"
+                    : (p.status as string) === "absent" ? "bg-red-900/20 border-red-700/30"
+                    : "bg-slate-800 border-slate-700"
+                }`}>
+                  <Avatar name={p.name} photoUrl={p.photoUrl} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-slate-100 text-sm">{p.name}</p>
+                      {p.liveToday === 1 && (
+                        <span className="rounded-full bg-green-800/50 border border-green-700/40 px-1.5 py-0.5 text-[9px] text-green-300 font-bold">LIVE</span>
+                      )}
+                      <span className="rounded-full bg-slate-700 px-1.5 py-0.5 text-[9px] text-slate-400 capitalize">{p.role}</span>
+                    </div>
+                    <p className="text-xs text-slate-400">{p.stationName}</p>
+                    {p.quickMessage && <p className="text-[10px] text-blue-400 italic mt-0.5 truncate">"{p.quickMessage}"</p>}
+                  </div>
+                  {p.status === "boarded" ? (
+                    <div className="shrink-0 flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-950/90 border border-emerald-600/60 px-3 py-1.5 text-xs font-bold text-emerald-400 shadow-sm">
+                        <CheckCircle2 size={14} className="text-emerald-400" />
+                        On Board ✓
+                      </span>
+                      <button
+                        onClick={() => handleUnboard(p.id)}
+                        disabled={unboardingId === p.id || isOffline}
+                        title="Tap to unboard passenger"
+                        className="text-[10px] text-slate-400 hover:text-red-400 underline transition-colors px-1 py-0.5"
+                      >
+                        {unboardingId === p.id ? "…" : "Undo"}
+                      </button>
+                    </div>
+                  ) : (p.status as string) === "absent" ? (
+                    <span className="shrink-0 rounded-xl bg-red-900/40 border border-red-700/40 px-3 py-1.5 text-xs text-red-400 font-semibold">Absent</span>
+                  ) : p.quickMessage === "Staying home today" ? (
+                    <span className="shrink-0 rounded-xl bg-slate-700 px-3 py-1.5 text-xs text-slate-400">On Leave</span>
+                  ) : (
+                    <button onClick={() => handleBoard(p.id)} disabled={boardingId === p.id || isOffline}
+                      className="shrink-0 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 active:bg-amber-700 disabled:opacity-50 transition-colors">
+                      {boardingId === p.id ? "…" : "Board ✓"}
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
