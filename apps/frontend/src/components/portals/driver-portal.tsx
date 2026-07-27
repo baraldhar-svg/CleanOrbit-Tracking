@@ -325,18 +325,50 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   // Cleanup on unmount
   useEffect(() => () => stopGpsTracking(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Effect A: Server re-sync ────────────────────────────────────────────────
-  // Fires once when myDriver resolves (the API call returns). If the driver was
-  // live (isOffline=false restored from localStorage), re-signal the server so
-  // isOnline stays true — the heartbeat watchdog may have timed them out while
-  // they were navigating away.
+  // ── Effect A: Server re-sync & Journey state sync ───────────────────────────
+  // Syncs active journey state and online status from server if driver is online on server
   useEffect(() => {
-    if (!myDriver?.id || isOffline) return;
-    void patchDriver
-      .mutateAsync({ id: myDriver.id, data: { isOnline: true } })
-      .catch(() => { /* non-blocking */ });
-    queryClient.invalidateQueries({ queryKey: getListDriversQueryKey() });
-  }, [myDriver?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!myDriver?.id) return;
+    if (myDriver.isOnline || myDriver.tripStartedAt) {
+      setIsOffline(false);
+      setJourneyStarted(true);
+      if (myDriver.tripStartedAt && !journeyTime) {
+        try {
+          const d = new Date(myDriver.tripStartedAt);
+          setJourneyTime(d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+        } catch { /* ignore */ }
+      }
+    }
+  }, [myDriver?.id, myDriver?.isOnline, myDriver?.tripStartedAt]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Effect A2: Single Active Device Session Watchdog ─────────────────────────
+  // Periodically polls driver status every 4s to ensure this device session is still active
+  useEffect(() => {
+    if (!myDriver?.id || !user) return;
+    const activeSessionId = user.activeSessionId || localStorage.getItem("orbittrack_session_id");
+    if (!activeSessionId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const tenantId = getTenantId();
+        const headers: Record<string, string> = {
+          "x-session-id": activeSessionId,
+        };
+        if (tenantId !== null) headers["x-tenant-id"] = String(tenantId);
+        const res = await fetch(`${BASE_GPS}/api/trips/active?driverId=${myDriver.id}`, { headers });
+        if (res.status === 401) {
+          const data = (await res.json().catch(() => ({}))) as { sessionInvalidated?: boolean };
+          if (data.sessionInvalidated) {
+            stopGpsTracking();
+            logout();
+            alert("सावधान: यो अकाउन्ट अर्को डिभाइसमा लगइन भयो। पुरानो डिभाइस स्वतः लगआउट गरिएको छ र GPS बन्द गरिएको छ।");
+          }
+        }
+      } catch { /* ignore */ }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [myDriver?.id, user, logout]);
 
   // ── Effect B: GPS auto-resume ───────────────────────────────────────────────
   // Fires when myDriver resolves AND journeyStarted=true (restored from storage).

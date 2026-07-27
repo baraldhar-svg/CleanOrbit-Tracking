@@ -193,6 +193,10 @@ export interface Driver {
   vehicleNumber: string;
   isActive?: boolean;
   isOnline?: boolean;
+  /** @nullable */
+  tripStartedAt?: string | null;
+  /** @nullable */
+  activeSessionId?: string | null;
 }
 
 export interface DriverInput {

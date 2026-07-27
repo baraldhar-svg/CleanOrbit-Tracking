@@ -127,6 +127,14 @@ router.get("/active", async (req, res) => {
       .limit(1);
   }
 
+  const reqSessionId = (req.headers["x-session-id"] as string | undefined) ?? (req.query.sessionId as string | undefined);
+  if (driver?.activeSessionId && reqSessionId && driver.activeSessionId !== reqSessionId) {
+    return res.status(401).json({
+      sessionInvalidated: true,
+      error: "Logged in from another device. GPS tracking has been stopped on this device.",
+    });
+  }
+
   const [allCount] = await db
     .select({ count: count() })
     .from(passengersTable)
@@ -152,7 +160,7 @@ router.get("/active", async (req, res) => {
 
   const stationState = driver?.id != null ? driverStationState.get(driver.id) : undefined;
 
-  res.json({
+  return res.json({
     tripId: driver?.id ?? 1,
     currentLat,
     currentLng,
@@ -416,7 +424,7 @@ router.post("/location", async (req, res) => {
       .where(and(eq(driversTable.tenantId, req.tenantId), eq(driversTable.id, driverId)))
       .limit(1);
 
-    if (driver?.activeSessionId && reqSessionId && driver.activeSessionId !== reqSessionId) {
+    if (driver?.activeSessionId && driver.activeSessionId !== reqSessionId) {
       return res.status(401).json({
         sessionInvalidated: true,
         error: "Logged in from another device. GPS tracking has been stopped on this device.",
