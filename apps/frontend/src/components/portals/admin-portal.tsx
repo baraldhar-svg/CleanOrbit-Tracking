@@ -1687,7 +1687,12 @@ function NotificationLogPanel({
   });
 
   const rawRows = data ?? [];
-  const rows = rawRows.filter((r) => !dismissedIds.has(r.id));
+  const rows = rawRows.filter(
+    (r) =>
+      !dismissedIds.has(r.id) &&
+      r.type !== "announcement" &&
+      !r.title.toLowerCase().includes("your leave application has been approved")
+  );
   const unread = rows.filter((r) => !r.readAt).length;
 
   useEffect(() => {

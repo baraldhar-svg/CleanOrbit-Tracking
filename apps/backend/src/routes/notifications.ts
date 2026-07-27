@@ -1,15 +1,42 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { notificationsTable, passengersTable, routesTable, stationsTable } from "@workspace/db";
-import { eq, desc, and, isNull } from "drizzle-orm";
+import { eq, ne, desc, and, isNull } from "drizzle-orm";
 import { broadcast } from "../lib/sse";
 import { createNotification } from "../lib/notifications";
 
 const router: IRouter = Router();
 
-// GET /api/notifications — list recent notifications for this tenant with student details
+// GET /api/notifications — list recent notifications
+// For Admin (default): returns inbound student alerts, excluding student-targeted announcements
+// For Student (?passengerId=123): returns student-specific notifications (approvals, alerts)
 router.get("/", async (req, res) => {
   const limit = Math.min(Number(req.query["limit"] ?? 50), 100);
+  const passengerId = req.query["passengerId"] ? Number(req.query["passengerId"]) : null;
+
+  if (passengerId && !isNaN(passengerId)) {
+    // Student portal fetching their own notifications
+    const rows = await db
+      .select({
+        id: notificationsTable.id,
+        tenantId: notificationsTable.tenantId,
+        passengerId: notificationsTable.passengerId,
+        type: notificationsTable.type,
+        title: notificationsTable.title,
+        body: notificationsTable.body,
+        status: notificationsTable.status,
+        approvedAt: notificationsTable.approvedAt,
+        readAt: notificationsTable.readAt,
+        createdAt: notificationsTable.createdAt,
+      })
+      .from(notificationsTable)
+      .where(and(eq(notificationsTable.tenantId, req.tenantId), eq(notificationsTable.passengerId, passengerId)))
+      .orderBy(desc(notificationsTable.createdAt))
+      .limit(limit);
+    return res.json(rows);
+  }
+
+  // Admin portal Live Alert Log — EXCLUDE student-targeted approval announcements
   const rows = await db
     .select({
       id: notificationsTable.id,
@@ -35,7 +62,12 @@ router.get("/", async (req, res) => {
     .leftJoin(passengersTable, eq(notificationsTable.passengerId, passengersTable.id))
     .leftJoin(routesTable, eq(passengersTable.routeId, routesTable.id))
     .leftJoin(stationsTable, eq(passengersTable.stationId, stationsTable.id))
-    .where(eq(notificationsTable.tenantId, req.tenantId))
+    .where(
+      and(
+        eq(notificationsTable.tenantId, req.tenantId),
+        ne(notificationsTable.type, "announcement")
+      )
+    )
     .orderBy(desc(notificationsTable.createdAt))
     .limit(limit);
   return res.json(rows);

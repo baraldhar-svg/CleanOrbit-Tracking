@@ -466,11 +466,13 @@ Roll No.: ${roll}`;
       } catch { /* malformed event */ }
     });
 
-    // Driver started journey — switch from "Waiting" to "En Route" banner
+    // Driver started journey — UNFREEZE ALL STUDENT ACTIVITIES IMMEDIATELY!
     es.addEventListener("trip_started", () => {
       queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       setTripActive(true);
       setTripCompleted(false);
+      setIsFreezeActive(false);
+      setFreezeRemainingMinutes(null);
       setLiveStation(null); // reset to stop 0 for the new run
     });
 
@@ -517,11 +519,13 @@ Roll No.: ${roll}`;
         };
         if (d.isJourneyActive) {
           setTripActive(true);
+          setTripCompleted(false);
+          setIsFreezeActive(false);
+          setFreezeRemainingMinutes(null);
           if (typeof d.stationIdx === "number") {
             setLiveStation({ idx: d.stationIdx, name: d.stationName ?? null });
           }
-        }
-        if (d.isFreezeActive || d.isJourneyCompleted) {
+        } else if (d.isFreezeActive || d.isJourneyCompleted) {
           setIsFreezeActive(true);
           setTripCompleted(true);
           if (typeof d.freezeRemainingMs === "number") {
@@ -534,6 +538,23 @@ Roll No.: ${roll}`;
     const interval = setInterval(syncFromPoll, 10_000);
     return () => clearInterval(interval);
   }, []);
+
+  // Hydrate student leave approval notification status on load
+  useEffect(() => {
+    const pid = me?.id;
+    if (!pid) return;
+    async function checkStudentNotifs() {
+      try {
+        const r = await fetch(`${BASE}/api/notifications?passengerId=${pid}`);
+        if (!r.ok) return;
+        const list = await r.json() as Array<{ status?: string; title?: string }>;
+        if (list.some((n) => n.status === "approved" || n.title?.includes("Approved"))) {
+          setAppApproved(true);
+        }
+      } catch { /* ignore */ }
+    }
+    void checkStudentNotifs();
+  }, [me?.id]);
 
   const handleQuickMessage = useCallback(async (msg: string) => {
     setActiveQuickMsg(msg);
@@ -901,8 +922,8 @@ Roll No.: ${roll}`;
         </button>
       )}
 
-      {/* Live Distance Card — updates every GPS ping from the driver */}
-      {driverLoc.isLive && (
+      {/* Live Distance Card — updates every GPS ping from the driver (Hidden during 4h freeze) */}
+      {driverLoc.isLive && !(isFreezeActive || tripCompleted) && (
         (() => {
           const schoolStation = routeStations.length > 0 ? routeStations[routeStations.length - 1] : null;
           const distToSchoolKm = schoolStation?.lat && schoolStation?.lng
@@ -937,13 +958,20 @@ Roll No.: ${roll}`;
 
       {/* Riding Today / Leave Status */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm">
-        <p className="text-sm font-semibold text-foreground">{t.todaysStatus}</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">{t.todaysStatus}</p>
+          {(isFreezeActive || tripCompleted) && (
+            <span className="flex items-center gap-1 rounded-full bg-sky-950/40 border border-sky-500/40 px-2 py-0.5 text-[10px] font-bold text-sky-400">
+              <Lock size={10} /> 4h Freeze Active
+            </span>
+          )}
+        </div>
+        <div className={`grid grid-cols-2 gap-2 ${(isFreezeActive || tripCompleted) ? "opacity-50 pointer-events-none select-none" : ""}`}>
           <button
             onClick={handleLiveToday}
-            disabled={isBoarded || onLeave}
+            disabled={isBoarded || onLeave || isFreezeActive || tripCompleted}
             className={`rounded-xl py-3 text-sm font-semibold transition-all ${
-              isBoarded
+              isBoarded || isFreezeActive || tripCompleted
                 ? "bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed"
                 : liveToday && !onLeave
                   ? "bg-green-600 text-white shadow-md"
@@ -954,9 +982,9 @@ Roll No.: ${roll}`;
           </button>
           <button
             onClick={handleLeaveClick}
-            disabled={isBoarded}
+            disabled={isBoarded || isFreezeActive || tripCompleted}
             className={`rounded-xl py-3 text-sm font-semibold transition-all select-none ${
-              isBoarded
+              isBoarded || isFreezeActive || tripCompleted
                 ? "bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed"
                 : onLeave
                   ? "bg-red-600 text-white shadow-md"
@@ -965,12 +993,21 @@ Roll No.: ${roll}`;
           >
             {isBoarded ? (
               <span className="flex items-center justify-center gap-1"><Lock size={12} /> {t.locked}</span>
+            ) : isFreezeActive || tripCompleted ? (
+              <span className="flex items-center justify-center gap-1"><Lock size={12} /> Frozen</span>
             ) : onLeave ? (
               <span className="flex items-center justify-center gap-1"><X size={12} /> {t.onLeave}</span>
             ) : t.takeLeave}
           </button>
         </div>
-        {isBoarded ? (
+        {(isFreezeActive || tripCompleted) ? (
+          <div className="flex items-center gap-2 rounded-lg border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/30 px-3 py-2">
+            <Lock size={12} className="shrink-0 text-sky-600 dark:text-sky-400" />
+            <p className="text-xs text-sky-700 dark:text-sky-400 font-medium">
+              Status updates frozen after journey completion. Unfreezes when driver starts next run.
+            </p>
+          </div>
+        ) : isBoarded ? (
           <div className="flex items-center gap-2 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-3 py-2">
             <Lock size={12} className="shrink-0 text-green-600 dark:text-green-400" />
             <p className="text-xs text-green-700 dark:text-green-400 font-medium">{t.actionsLocked}</p>
@@ -1018,101 +1055,123 @@ Roll No.: ${roll}`;
 
 
 
-      {/* GPS / Tracking — paying users only */}
-      {isPaying ? (
-      <><div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-primary text-sm flex items-center gap-1.5"><Map size={14} /> Live Bus Location</h2>
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse inline-block" />
-              LIVE
-            </span>
+        {/* GPS / Tracking — paying users only */}
+        {isPaying ? (
+        <><div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-primary text-sm flex items-center gap-1.5"><Map size={14} /> Live Bus Location</h2>
+            <div className="flex items-center gap-2">
+              {(isFreezeActive || tripCompleted) ? (
+                <span className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-bold">
+                  <Lock size={12} /> CLOSED
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                  <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse inline-block" />
+                  LIVE
+                </span>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Route-locked Bus Info Banner */}
-        {(() => {
-          const selRoute = (routes ?? []).find((r) => r.id === Number(selectedRouteId));
-          if (!selRoute) return (
-            <button
-              onClick={() => setTransportOpen(true)}
-              className="w-full flex items-center gap-3 rounded-xl border border-dashed border-amber-400/60 bg-amber-50/40 dark:bg-amber-950/10 px-4 py-2.5 text-left hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
-            >
-              <Route size={14} className="text-amber-500 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">No route selected</p>
-                <p className="text-[10px] text-amber-600/70 dark:text-amber-500/70">Tap to choose your bus route ↓</p>
+          {(isFreezeActive || tripCompleted) ? (
+            <div className="rounded-2xl border border-sky-300 dark:border-sky-800/60 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-indigo-950/40 p-5 text-center space-y-2 shadow-inner">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-300">
+                <Lock size={24} />
               </div>
-            </button>
-          );
-          return (
-            <div className="flex items-center gap-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 px-4 py-2.5">
-              <div className={`h-2 w-2 rounded-full shrink-0 ${selRoute.isActive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-foreground truncate">{selRoute.name}</p>
-                <p className="text-[10px] text-muted-foreground">
-                  {selRoute.vehiclePlate ? (
-                    <><span className="font-semibold text-amber-700 dark:text-amber-400">{selRoute.vehiclePlate}</span>{selRoute.driverName ? ` · ${selRoute.driverName}` : ""}</>
-                  ) : selRoute.driverName ?? "No bus assigned"}
-                </p>
-              </div>
-              <button onClick={() => setTransportOpen(true)} className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2">change</button>
+              <p className="text-sm font-bold text-sky-900 dark:text-sky-200">
+                Live Map &amp; Bus Tracking Closed / नक्सा तथा बस स्थान बन्द छ 🎒
+              </p>
+              <p className="text-xs text-sky-700 dark:text-sky-300 max-w-sm mx-auto leading-relaxed">
+                Today's bus journey is completed. Map tracking &amp; live location are frozen for 4 hours and will automatically unfreeze when the driver starts the next route run.
+              </p>
             </div>
-          );
-        })()}
+          ) : (
+            <>
+              {/* Route-locked Bus Info Banner */}
+              {(() => {
+                const selRoute = (routes ?? []).find((r) => r.id === Number(selectedRouteId));
+                if (!selRoute) return (
+                  <button
+                    onClick={() => setTransportOpen(true)}
+                    className="w-full flex items-center gap-3 rounded-xl border border-dashed border-amber-400/60 bg-amber-50/40 dark:bg-amber-950/10 px-4 py-2.5 text-left hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
+                  >
+                    <Route size={14} className="text-amber-500 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">No route selected</p>
+                      <p className="text-[10px] text-amber-600/70 dark:text-amber-500/70">Tap to choose your bus route ↓</p>
+                    </div>
+                  </button>
+                );
+                return (
+                  <div className="flex items-center gap-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 px-4 py-2.5">
+                    <div className={`h-2 w-2 rounded-full shrink-0 ${selRoute.isActive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">{selRoute.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {selRoute.vehiclePlate ? (
+                          <><span className="font-semibold text-amber-700 dark:text-amber-400">{selRoute.vehiclePlate}</span>{selRoute.driverName ? ` · ${selRoute.driverName}` : ""}</>
+                        ) : selRoute.driverName ?? "No bus assigned"}
+                      </p>
+                    </div>
+                    <button onClick={() => setTransportOpen(true)} className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2">change</button>
+                  </div>
+                );
+              })()}
 
-        {/* GPS Status Bar with Real-Time Speed & Motion State */}
-        {(() => {
-          const isBusLive = driverLoc.isLive || tripActive;
-          return (
-            <div className="rounded-xl border border-border bg-muted/40 p-3 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 truncate">
-                  <Bus size={12} className="text-amber-500 shrink-0" />
-                  {driverLoc.vehicleNumber ? `Bus: ${driverLoc.vehicleNumber}` : "Bus Location"}
-                </p>
-                <p className="text-sm font-semibold text-foreground font-mono truncate">
-                  {isBusLive
-                    ? `${driverLoc.lat.toFixed(4)}°N, ${driverLoc.lng.toFixed(4)}°E`
-                    : "Bus Offline (Parked)"}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-xs text-muted-foreground font-medium">
-                  {isBusLive
-                    ? ((driverLoc.speedKmh ?? 0) > 3 ? "⚡ Moving" : "⏸️ Stopped")
-                    : "Status"}
-                </p>
-                <p className={`text-sm font-bold flex items-center gap-1 justify-end ${isBusLive ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
-                  <span className={`h-2 w-2 rounded-full inline-block ${isBusLive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
-                  {isBusLive
-                    ? `${driverLoc.speedKmh != null && driverLoc.speedKmh > 0 ? Math.round(driverLoc.speedKmh) : 0} km/h`
-                    : "Offline"}
-                </p>
-              </div>
-            </div>
-          );
-        })()}
+              {/* GPS Status Bar with Real-Time Speed & Motion State */}
+              {(() => {
+                const isBusLive = driverLoc.isLive || tripActive;
+                return (
+                  <div className="rounded-xl border border-border bg-muted/40 p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 truncate">
+                        <Bus size={12} className="text-amber-500 shrink-0" />
+                        {driverLoc.vehicleNumber ? `Bus: ${driverLoc.vehicleNumber}` : "Bus Location"}
+                      </p>
+                      <p className="text-sm font-semibold text-foreground font-mono truncate">
+                        {isBusLive
+                          ? `${driverLoc.lat.toFixed(4)}°N, ${driverLoc.lng.toFixed(4)}°E`
+                          : "Bus Offline (Parked)"}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs text-muted-foreground font-medium">
+                        {isBusLive
+                          ? ((driverLoc.speedKmh ?? 0) > 3 ? "⚡ Moving" : "⏸️ Stopped")
+                          : "Status"}
+                      </p>
+                      <p className={`text-sm font-bold flex items-center gap-1 justify-end ${isBusLive ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                        <span className={`h-2 w-2 rounded-full inline-block ${isBusLive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+                        {isBusLive
+                          ? `${driverLoc.speedKmh != null && driverLoc.speedKmh > 0 ? Math.round(driverLoc.speedKmh) : 0} km/h`
+                          : "Offline"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
 
-        <div className="rounded-xl overflow-hidden border border-border shadow-sm" style={{ height: 280 }}>
-          <OsmMap
-            mode="tracking"
-            route={routeStations.filter((rs) => rs.lat && rs.lng).map((rs) => ({ lat: rs.lat!, lng: rs.lng!, name: rs.stationName ?? `Stop ${rs.id}` }))}
-            lat={driverLoc.lat}
-            lng={driverLoc.lng}
-            isLive={driverLoc.isLive || tripActive}
-            label={driverLoc.vehicleNumber ?? undefined}
-            height={280}
-          />
-        </div>
-        {routeStations.length > 0 ? (
-          <p className="text-xs text-muted-foreground text-center">
-            Your route · {routeStations.length} stop{routeStations.length !== 1 ? "s" : ""}
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground text-center">Next stop: Kalanki Chowk</p>
-        )}
+              <div className="rounded-xl overflow-hidden border border-border shadow-sm" style={{ height: 280 }}>
+                <OsmMap
+                  mode="tracking"
+                  route={routeStations.filter((rs) => rs.lat && rs.lng).map((rs) => ({ lat: rs.lat!, lng: rs.lng!, name: rs.stationName ?? `Stop ${rs.id}` }))}
+                  lat={driverLoc.lat}
+                  lng={driverLoc.lng}
+                  isLive={driverLoc.isLive || tripActive}
+                  label={driverLoc.vehicleNumber ?? undefined}
+                  height={280}
+                />
+              </div>
+              {routeStations.length > 0 ? (
+                <p className="text-xs text-muted-foreground text-center">
+                  Your route · {routeStations.length} stop{routeStations.length !== 1 ? "s" : ""}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center">Next stop: Kalanki Chowk</p>
+              )}
+            </>
+          )}
       </div>
 
       {/* Route Stops — my stop pinned, rest scrollable */}
@@ -1220,20 +1279,22 @@ Roll No.: ${roll}`;
       <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-foreground flex items-center gap-1.5"><MessageSquare size={14} /> Quick Message to Driver</p>
-          {isBoarded ? (
+          {(isFreezeActive || tripCompleted) ? (
+            <span className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-bold"><Lock size={10} /> Frozen</span>
+          ) : isBoarded ? (
             <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium"><Lock size={10} /> {t.locked}</span>
           ) : sentMsg ? (
             <span className="text-xs text-green-600 font-medium">✓ Sent</span>
           ) : null}
         </div>
-        <div className={`grid grid-cols-2 gap-2 ${isBoarded ? "opacity-50 pointer-events-none select-none" : ""}`}>
+        <div className={`grid grid-cols-2 gap-2 ${(isBoarded || isFreezeActive || tripCompleted) ? "opacity-50 pointer-events-none select-none" : ""}`}>
           {QUICK_MESSAGES.map((msg) => {
             const isActive = activeQuickMsg === msg.value;
             return (
               <button
                 key={msg.value}
                 onClick={() => handleQuickMessage(msg.value)}
-                disabled={isBoarded}
+                disabled={isBoarded || isFreezeActive || tripCompleted}
                 className={`rounded-xl border px-3 py-2.5 text-xs font-medium text-left transition-all active:scale-[0.97] ${
                   isActive
                     ? "border-[#ffee47] bg-[#ffee47] text-slate-900 shadow-md scale-[0.98]"
