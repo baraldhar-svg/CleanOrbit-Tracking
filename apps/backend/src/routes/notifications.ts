@@ -1,16 +1,36 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { notificationsTable } from "@workspace/db";
+import { notificationsTable, passengersTable, routesTable, stationsTable } from "@workspace/db";
 import { eq, desc, and, isNull } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-// GET /api/notifications — list recent notifications for this tenant
+// GET /api/notifications — list recent notifications for this tenant with student details
 router.get("/", async (req, res) => {
   const limit = Math.min(Number(req.query["limit"] ?? 50), 100);
   const rows = await db
-    .select()
+    .select({
+      id: notificationsTable.id,
+      tenantId: notificationsTable.tenantId,
+      passengerId: notificationsTable.passengerId,
+      type: notificationsTable.type,
+      title: notificationsTable.title,
+      body: notificationsTable.body,
+      readAt: notificationsTable.readAt,
+      createdAt: notificationsTable.createdAt,
+      passengerName: passengersTable.name,
+      passengerPhone: passengersTable.phone,
+      className: passengersTable.className,
+      section: passengersTable.section,
+      rollNumber: passengersTable.rollNumber,
+      parentName: passengersTable.parentName,
+      routeName: routesTable.name,
+      stationName: stationsTable.name,
+    })
     .from(notificationsTable)
+    .leftJoin(passengersTable, eq(notificationsTable.passengerId, passengersTable.id))
+    .leftJoin(routesTable, eq(passengersTable.routeId, routesTable.id))
+    .leftJoin(stationsTable, eq(passengersTable.stationId, stationsTable.id))
     .where(eq(notificationsTable.tenantId, req.tenantId))
     .orderBy(desc(notificationsTable.createdAt))
     .limit(limit);

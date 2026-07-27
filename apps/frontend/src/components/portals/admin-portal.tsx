@@ -1623,10 +1623,20 @@ type NotificationRow = {
   body: string;
   readAt: string | null;
   createdAt: string;
+  passengerName?: string | null;
+  passengerPhone?: string | null;
+  parentName?: string | null;
+  className?: string | null;
+  section?: string | null;
+  rollNumber?: string | null;
+  routeName?: string | null;
+  stationName?: string | null;
 };
 
 function notifIcon(type: string): string {
   switch (type) {
+    case "leave_application": return "📝";
+    case "admin_message": return "📩";
     case "absent": return "🚌";
     case "delay": return "⏰";
     case "boarding": return "✅";
@@ -1637,14 +1647,17 @@ function notifIcon(type: string): string {
 
 function notifColors(type: string): string {
   switch (type) {
+    case "leave_application":
+    case "admin_message":
+      return "border-blue-300 bg-blue-50/70 dark:border-blue-800/60 dark:bg-blue-950/30 hover:border-blue-500 cursor-pointer";
     case "absent":
-      return "border-red-200 bg-red-50/60 dark:border-red-900/40 dark:bg-red-900/10";
+      return "border-red-200 bg-red-50/60 dark:border-red-900/40 dark:bg-red-900/10 cursor-pointer";
     case "delay":
-      return "border-amber-200 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-900/10";
+      return "border-amber-200 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-900/10 cursor-pointer";
     case "boarding":
-      return "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-900/10";
+      return "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-900/10 cursor-pointer";
     default:
-      return "border-border bg-muted/30";
+      return "border-border bg-muted/30 cursor-pointer";
   }
 }
 
@@ -1655,6 +1668,8 @@ function NotificationLogPanel({
   onNewUnread?: (count: number) => void;
 }) {
   const queryClient = useQueryClient();
+  const [selectedNotif, setSelectedNotif] = useState<NotificationRow | null>(null);
+
   const { data, isLoading } = useQuery<NotificationRow[]>({
     queryKey: ["notifications"],
     queryFn: async () => {
@@ -1662,7 +1677,7 @@ function NotificationLogPanel({
       if (!res.ok) throw new Error("Failed to load notifications");
       return res.json();
     },
-    refetchInterval: 12000,
+    refetchInterval: 10000,
   });
 
   const rows = data ?? [];
@@ -1702,7 +1717,7 @@ function NotificationLogPanel({
         )}
       </div>
       <p className="text-xs text-muted-foreground mb-3">
-        Real-time absence &amp; delay alerts — delivered instantly in the OrbitTrack app.
+        Real-time student leave applications & delay alerts — tap any alert to view full details.
       </p>
 
       {isLoading && (
@@ -1711,7 +1726,7 @@ function NotificationLogPanel({
 
       {!isLoading && rows.length === 0 && (
         <p className="text-xs text-muted-foreground italic text-center py-6">
-          No alerts yet. Alerts appear here when a student is marked absent or a bus delay is reported.
+          No alerts yet. Leave applications &amp; delay alerts appear here.
         </p>
       )}
 
@@ -1720,27 +1735,118 @@ function NotificationLogPanel({
           {rows.map((row) => (
             <div
               key={row.id}
-              className={`rounded-lg border p-2.5 flex gap-2.5 items-start text-xs transition-all ${notifColors(row.type)} ${
-                !row.readAt ? "ring-1 ring-amber-400/40" : "opacity-75"
+              onClick={() => setSelectedNotif(row)}
+              className={`rounded-lg border p-2.5 flex gap-2.5 items-start text-xs transition-all hover:scale-[0.99] ${notifColors(row.type)} ${
+                !row.readAt ? "ring-1 ring-amber-400/40 font-medium" : "opacity-80"
               }`}
             >
               <span className="text-base leading-none mt-0.5 shrink-0">{notifIcon(row.type)}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`font-semibold text-foreground ${!row.readAt ? "text-amber-700 dark:text-amber-300" : ""}`}>
+                  <span className={`font-semibold text-foreground truncate ${!row.readAt ? "text-amber-700 dark:text-amber-300" : ""}`}>
                     {row.title}
                   </span>
                   {!row.readAt && (
                     <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{row.body}</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-1">
-                  {new Date(row.createdAt).toLocaleString("en-NP", { timeZone: "Asia/Kathmandu" })}
-                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{row.body}</p>
+                <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground/80">
+                  <span>{new Date(row.createdAt).toLocaleString("en-NP", { timeZone: "Asia/Kathmandu" })}</span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400 hover:underline">View details →</span>
+                </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Notification Detail Modal (Pop-up on click) ── */}
+      {selectedNotif && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">{notifIcon(selectedNotif.type)}</span>
+                <div>
+                  <h3 className="font-bold text-foreground text-sm">{selectedNotif.title}</h3>
+                  <p className="text-[10px] text-muted-foreground">
+                    {new Date(selectedNotif.createdAt).toLocaleString("en-NP", { timeZone: "Asia/Kathmandu" })}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedNotif(null)}
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Sender Student & Parent Info Card */}
+            {(selectedNotif.passengerName || selectedNotif.passengerId) && (
+              <div className="rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-950/40 p-3.5 space-y-2 text-xs">
+                <p className="font-bold text-blue-900 dark:text-blue-300 text-xs flex items-center gap-1.5 border-b border-blue-200/50 dark:border-blue-800/40 pb-1.5">
+                  <User size={14} /> Sender Student &amp; Parent Details / पठाइएको विद्यार्थीको विवरण
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-foreground">
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block font-medium">Student Name (विद्यार्थी)</span>
+                    <span className="font-semibold text-xs">{selectedNotif.passengerName ?? `Student #${selectedNotif.passengerId}`}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block font-medium">Class &amp; Roll Number</span>
+                    <span className="font-semibold text-xs">
+                      {selectedNotif.className ? `Class ${selectedNotif.className}${selectedNotif.section ? ` (${selectedNotif.section})` : ""}` : "N/A"}
+                      {selectedNotif.rollNumber ? ` · Roll No: ${selectedNotif.rollNumber}` : ""}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block font-medium">Parent Name &amp; Phone</span>
+                    <span className="font-semibold text-xs">
+                      {selectedNotif.parentName ?? "Parent"} {selectedNotif.passengerPhone ? `(${selectedNotif.passengerPhone})` : ""}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block font-medium">Bus Route &amp; Station</span>
+                    <span className="font-semibold text-xs">
+                      {selectedNotif.routeName ?? "Default Route"} {selectedNotif.stationName ? `· ${selectedNotif.stationName}` : ""}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Message / Application Content */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground">Application Letter / Message Content:</label>
+              <div className="rounded-xl border border-border bg-muted/40 p-4 text-xs font-mono text-foreground leading-relaxed whitespace-pre-wrap select-text">
+                {selectedNotif.body}
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              {!selectedNotif.readAt && (
+                <button
+                  onClick={async () => {
+                    await fetch(`/api/notifications/${selectedNotif.id}/read`, { method: "PATCH", headers: tenantHeaders() });
+                    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+                    setSelectedNotif(null);
+                  }}
+                  className="rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-xs px-4 py-2 transition-colors shadow-sm"
+                >
+                  Mark as Read ✓
+                </button>
+              )}
+              <button
+                onClick={() => setSelectedNotif(null)}
+                className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

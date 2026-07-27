@@ -112,6 +112,50 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
   // True from `trip_started` until `trip_completed` — lets us show "en route" even without GPS
   const [tripActive, setTripActive] = useState(false);
 
+  const generateLeaveTemplate = useCallback(() => {
+    const today = new Date();
+    const dateStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    const nextDateStr = `${String(tomorrow.getDate()).padStart(2, "0")}/${String(tomorrow.getMonth() + 1).padStart(2, "0")}/${tomorrow.getFullYear()}`;
+
+    const schoolName = "Golden Sungava Secondary School";
+    const schoolAddress = "Koteshwor, Kathmandu";
+    const studentName = me?.name || "[Your Name]";
+    const cls = me?.className ? `${me.className}${me.section ? ` (${me.section})` : ""}` : "[Your Class]";
+    const roll = me?.rollNumber || "[Your Roll Number]";
+
+    return `To
+The Principal,
+${schoolName},
+${schoolAddress}.
+
+Date: ${dateStr}
+
+Subject: Application for leave.
+
+Respected Sir/Madam,
+
+With due respect, I would like to state that I, ${studentName}, a student of class ${cls} in your school, am unable to attend school from ${dateStr} to ${nextDateStr} (for 2 days) due to [sudden illness / an urgent piece of work at home].
+
+Therefore, I kindly request you to grant me leave for the mentioned days. I shall be very grateful to you.
+
+Thank you!
+
+Yours obediently,
+
+Name: ${studentName}
+Class: ${cls}
+Roll No.: ${roll}`;
+  }, [me?.name, me?.className, me?.section, me?.rollNumber]);
+
+  const openAdminMsgModal = useCallback(() => {
+    if (!adminMsgText.trim()) {
+      setAdminMsgText(generateLeaveTemplate());
+    }
+    setAdminMsgModalOpen(true);
+  }, [adminMsgText, generateLeaveTemplate]);
+
   const handleSendAdminMessage = useCallback(async () => {
     if (!adminMsgText.trim() || !me?.id) return;
     setAdminMsgSending(true);
@@ -1362,7 +1406,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
           Need help or have an inquiry after journey completion? Send a direct message to school administration.
         </p>
         <button
-          onClick={() => setAdminMsgModalOpen(true)}
+          onClick={openAdminMsgModal}
           className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 transition-colors shadow-md"
         >
           <Send size={14} />
@@ -1373,7 +1417,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
       {/* ── Direct Message to School Admin Modal ── */}
       {adminMsgModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4">
+          <div className="w-full max-w-lg rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
@@ -1393,22 +1437,48 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
             </div>
 
             {adminMsgToast ? (
-              <div className="rounded-xl bg-emerald-950/40 border border-emerald-500/40 p-3 text-xs text-emerald-300 font-semibold text-center">
-                ✓ {adminMsgToast}
+              <div className="rounded-xl bg-emerald-950/40 border border-emerald-500/40 p-4 text-xs text-emerald-300 font-semibold text-center space-y-1">
+                <p className="text-sm font-bold">✓ {adminMsgToast}</p>
+                <p className="text-[10px] text-emerald-400/80">Delivered to School Administration log.</p>
               </div>
             ) : (
               <>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Enter your question, feedback, or issue below. School administration will receive this message in real-time.
-                </p>
-                <textarea
-                  value={adminMsgText}
-                  onChange={(e) => setAdminMsgText(e.target.value)}
-                  placeholder="Type your message to admin here... (उदा: गाडी पुगेको पुष्टि भयो / प्रश्न)"
-                  rows={4}
-                  className="w-full rounded-xl border border-input bg-background p-3 text-sm text-foreground focus:border-blue-500 focus:outline-none resize-none"
-                />
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-foreground">Select Application / Message Template:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => setAdminMsgText(generateLeaveTemplate())}
+                      className="rounded-lg border border-blue-400/50 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1.5 text-[11px] font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex items-center gap-1"
+                    >
+                      📄 Leave Application (बिदाको निवेदन)
+                    </button>
+                    <button
+                      onClick={() => setAdminMsgText("Respected Admin,\nI have an inquiry regarding bus pickup timing & route today. Kindly inform.\nThank you!")}
+                      className="rounded-lg border border-amber-400/50 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors flex items-center gap-1"
+                    >
+                      🚌 Bus Inquiry (बस जानकारी)
+                    </button>
+                    <button
+                      onClick={() => setAdminMsgText("")}
+                      className="rounded-lg border border-border bg-muted px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
+                    >
+                      ✏️ Clear / Custom
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-muted-foreground">Application Letter Content (Editable):</label>
+                  <textarea
+                    value={adminMsgText}
+                    onChange={(e) => setAdminMsgText(e.target.value)}
+                    placeholder="Type your message to admin here... (उदा: बिदाको निवेदन / प्रश्न)"
+                    rows={11}
+                    className="w-full rounded-xl border border-input bg-background p-3 text-xs text-foreground font-mono focus:border-blue-500 focus:outline-none leading-relaxed resize-y select-text"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-border">
                   <button
                     onClick={() => setAdminMsgModalOpen(false)}
                     className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
@@ -1420,7 +1490,7 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
                     disabled={!adminMsgText.trim() || adminMsgSending}
                     className="rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-5 py-2 text-xs font-bold text-white shadow-md transition-all flex items-center gap-1.5"
                   >
-                    {adminMsgSending ? "Sending…" : "Send Message ✓"}
+                    {adminMsgSending ? "Sending…" : "Send Application ✓"}
                   </button>
                 </div>
               </>

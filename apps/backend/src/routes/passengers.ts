@@ -626,18 +626,13 @@ router.post("/:id/message-admin", async (req, res) => {
 
   const passengerName = passenger?.name ?? "Student";
 
-  await db.insert(announcementsTable).values({
-    tenantId: req.tenantId,
-    message: `📩 Message from ${passengerName}: "${message.trim()}"`,
-    severity: "info",
-  });
-
+  // Send ONLY to Admin Notification log (Not to public Notice Board)
   void createNotification({
     tenantId: req.tenantId,
     passengerId: id,
     type: "announcement",
-    title: `Message sent to Admin`,
-    body: `Your message "${message.trim()}" has been delivered to School Admin.`,
+    title: `Leave Application / Message from ${passengerName}`,
+    body: message.trim(),
   });
 
   broadcast(req.tenantId, "admin_message_received", {
