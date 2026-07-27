@@ -1793,11 +1793,15 @@ function AddPersonDialog({
 }) {
   const queryClient = useQueryClient();
   const { data: stations } = useListStations();
+  const { data: routes } = useListRoutes();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [parentName, setParentName] = useState("");
   const [gender, setGender] = useState("");
+  const [routeId, setRouteId] = useState("");
   const [stationId, setStationId] = useState("");
+  const [routeStations, setRouteStations] = useState<Array<{ id: number; stationId: number; stationName?: string | null; stopLabel?: string | null }>>([]);
+  const [loadingRouteStations, setLoadingRouteStations] = useState(false);
   const [className, setClassName] = useState("");
   const [section, setSection] = useState("");
   const [rollNumber, setRollNumber] = useState("");
@@ -1810,12 +1814,31 @@ function AddPersonDialog({
 
   const showFaculty = role === "student" && STUDENT_FACULTY_CLASSES.has(className);
 
+  useEffect(() => {
+    if (!routeId) {
+      setRouteStations([]);
+      return;
+    }
+    setLoadingRouteStations(true);
+    const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+    const headers: Record<string, string> = {};
+    const tenantId = getTenantId();
+    if (tenantId !== null) headers["x-tenant-id"] = String(tenantId);
+    fetch(`${BASE}/api/routes/${routeId}/stations`, { headers })
+      .then((r) => r.json())
+      .then((data) => setRouteStations(Array.isArray(data) ? data : []))
+      .catch(() => setRouteStations([]))
+      .finally(() => setLoadingRouteStations(false));
+  }, [routeId]);
+
   function reset() {
     setName("");
     setPhone("");
     setParentName("");
     setGender("");
+    setRouteId("");
     setStationId("");
+    setRouteStations([]);
     setClassName("");
     setSection("");
     setRollNumber("");
@@ -1831,6 +1854,10 @@ function AddPersonDialog({
       setErr("Name is required");
       return;
     }
+    if (!routeId) {
+      setErr("Please select a bus route");
+      return;
+    }
     if (!stationId) {
       setErr("Please select a boarding station");
       return;
@@ -1844,6 +1871,7 @@ function AddPersonDialog({
         parentName: parentName.trim() || undefined,
         gender: gender || undefined,
         role,
+        routeId: Number(routeId),
         stationId: Number(stationId),
         photoUrl: photoUrl || undefined,
         ...(role === "student"
@@ -1939,6 +1967,28 @@ function AddPersonDialog({
               ))}
             </div>
           </div>
+          {/* Select Bus Route */}
+          <div>
+            <label className="mb-1 block font-semibold text-muted-foreground">
+              Bus Route *
+            </label>
+            <select
+              value={routeId}
+              onChange={(e) => {
+                setRouteId(e.target.value);
+                setStationId("");
+              }}
+              className="w-full border rounded-lg p-2 bg-background"
+            >
+              <option value="">Select route</option>
+              {(routes ?? []).map((r: any) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} {r.vehiclePlate ? `(${r.vehiclePlate})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Select Boarding Station */}
           <div>
             <label className="mb-1 block font-semibold text-muted-foreground">
               Boarding Station *
@@ -1948,12 +1998,26 @@ function AddPersonDialog({
               onChange={(e) => setStationId(e.target.value)}
               className="w-full border rounded-lg p-2 bg-background"
             >
-              <option value="">Select station</option>
-              {(stations ?? []).map((s: any) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
+              <option value="">
+                {!routeId
+                  ? "Select route first"
+                  : loadingRouteStations
+                  ? "Loading stations…"
+                  : routeStations.length === 0
+                  ? "No stations found on this route"
+                  : "Select station"}
+              </option>
+              {routeId && routeStations.length > 0
+                ? routeStations.map((s) => (
+                    <option key={s.stationId || s.id} value={s.stationId || s.id}>
+                      {s.stopLabel || s.stationName || `Station #${s.stationId}`}
+                    </option>
+                  ))
+                : (!routeId ? (stations ?? []) : []).map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
             </select>
           </div>
           {role === "student" ? (
@@ -2489,13 +2553,17 @@ function EditPersonDialog({
 }) {
   const queryClient = useQueryClient();
   const { data: stations } = useListStations();
+  const { data: routes } = useListRoutes();
   const isStudent = person?.role === "student";
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [parentName, setParentName] = useState("");
   const [gender, setGender] = useState("");
+  const [routeId, setRouteId] = useState("");
   const [stationId, setStationId] = useState("");
+  const [routeStations, setRouteStations] = useState<Array<{ id: number; stationId: number; stationName?: string | null; stopLabel?: string | null }>>([]);
+  const [loadingRouteStations, setLoadingRouteStations] = useState(false);
   const [className, setClassName] = useState("");
   const [section, setSection] = useState("");
   const [rollNumber, setRollNumber] = useState("");
@@ -2509,11 +2577,29 @@ function EditPersonDialog({
   const showFaculty = isStudent && STUDENT_FACULTY_CLASSES.has(className);
 
   useEffect(() => {
+    if (!routeId) {
+      setRouteStations([]);
+      return;
+    }
+    setLoadingRouteStations(true);
+    const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+    const headers: Record<string, string> = {};
+    const tenantId = getTenantId();
+    if (tenantId !== null) headers["x-tenant-id"] = String(tenantId);
+    fetch(`${BASE}/api/routes/${routeId}/stations`, { headers })
+      .then((r) => r.json())
+      .then((data) => setRouteStations(Array.isArray(data) ? data : []))
+      .catch(() => setRouteStations([]))
+      .finally(() => setLoadingRouteStations(false));
+  }, [routeId]);
+
+  useEffect(() => {
     if (person && open) {
       setName(person.name ?? "");
       setPhone(person.phone ?? "");
       setParentName(person.parentName ?? "");
       setGender(person.gender ?? "");
+      setRouteId(person.routeId ? String(person.routeId) : "");
       setStationId(person.stationId ? String(person.stationId) : "");
       setClassName(person.className ?? "");
       setSection(person.section ?? "");
@@ -2546,6 +2632,7 @@ function EditPersonDialog({
         parentName: parentName.trim() || undefined,
         gender: gender || undefined,
         photoUrl: photoUrl || undefined,
+        routeId: routeId ? Number(routeId) : undefined,
         stationId: stationId ? Number(stationId) : undefined,
         ...(isStudent ? {
           className: className || undefined,
@@ -2611,15 +2698,53 @@ function EditPersonDialog({
               ))}
             </div>
           </div>
+          {/* Bus Route */}
+          <div>
+            <label className="mb-1 block font-semibold text-muted-foreground">Bus Route</label>
+            <select
+              value={routeId}
+              onChange={(e) => {
+                setRouteId(e.target.value);
+                setStationId("");
+              }}
+              className="w-full border rounded-lg p-2 bg-background"
+            >
+              <option value="">Select route</option>
+              {(routes ?? []).map((r: any) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} {r.vehiclePlate ? `(${r.vehiclePlate})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
           {/* Boarding Station */}
           <div>
             <label className="mb-1 block font-semibold text-muted-foreground">Boarding Station</label>
-            <select value={stationId} onChange={(e) => setStationId(e.target.value)}
-              className="w-full border rounded-lg p-2 bg-background">
-              <option value="">Select station</option>
-              {(stations ?? []).map((s: any) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
+            <select
+              value={stationId}
+              onChange={(e) => setStationId(e.target.value)}
+              className="w-full border rounded-lg p-2 bg-background"
+            >
+              <option value="">
+                {!routeId
+                  ? "Select route first"
+                  : loadingRouteStations
+                  ? "Loading stations…"
+                  : routeStations.length === 0
+                  ? "No stations found on this route"
+                  : "Select station"}
+              </option>
+              {routeId && routeStations.length > 0
+                ? routeStations.map((s) => (
+                    <option key={s.stationId || s.id} value={s.stationId || s.id}>
+                      {s.stopLabel || s.stationName || `Station #${s.stationId}`}
+                    </option>
+                  ))
+                : (!routeId ? (stations ?? []) : []).map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
             </select>
           </div>
 
