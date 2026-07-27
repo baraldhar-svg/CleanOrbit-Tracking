@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useListRoutes, useListPassengers, useBoardPassenger, useUnboardPassenger, usePatchDriver, useListDrivers, useSendBoardingOtp, getListPassengersQueryKey, getListAnnouncementsQueryKey, getListDriversQueryKey, getTenantId, useListTripHistory, useListCalendarEvents } from "@workspace/api-client-react";
 import { PhotoPicker } from "@/components/photo-picker";
 import { useQueryClient } from "@tanstack/react-query";
@@ -401,9 +401,26 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   // currentStation is scoped to THIS route — uses route_station row, not global station
   const currentStation = driverStations[stationIdx] ?? null;
 
-  // Exclude other drivers from the rider list — drivers are registered as passengers
-  // in the same school but must not appear in the boarding checklist or counts.
-  const riderPassengers = (passengers ?? []).filter((p) => p.role !== "driver");
+  const driverStationIds = useMemo(() => new Set(driverStations.map((s) => s.stationId || s.id)), [driverStations]);
+
+  // Scope riders strictly to THIS driver's assigned route or route stations
+  const riderPassengers = useMemo(() => {
+    return (passengers ?? []).filter((p) => {
+      if (p.role === "driver") return false;
+      // If driver has an assigned route, match strictly by routeId or stationId
+      if (myRoute?.id != null) {
+        if (p.routeId != null) {
+          return p.routeId === myRoute.id;
+        }
+        return p.stationId != null && driverStationIds.has(p.stationId);
+      }
+      // If driver has no assigned route ID yet but has stations, match by station ID
+      if (driverStationIds.size > 0) {
+        return p.stationId != null && driverStationIds.has(p.stationId);
+      }
+      return true;
+    });
+  }, [passengers, myRoute?.id, driverStationIds]);
 
   const boardedCount = riderPassengers.filter((p) => p.status === "boarded").length;
   const totalCount = riderPassengers.length;
@@ -1176,8 +1193,8 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
         {/* At This Station — Waiting Passengers */}
         {journeyStarted && !journeyCompleted && currentStation && (() => {
-          const waiting = (passengers ?? []).filter(
-            (p) => p.stationId === currentStation.id && p.status === "pending" && p.quickMessage !== "Staying home today"
+          const waiting = riderPassengers.filter(
+            (p) => (p.stationId === currentStation.stationId || p.stationId === currentStation.id) && p.status === "pending" && p.quickMessage !== "Staying home today"
           );
           return (
             <div className="rounded-2xl border border-amber-600/40 bg-amber-950/20 overflow-hidden">
