@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { db } from "@workspace/db";
-import { passengersTable, stationsTable, usersTable, tenantsTable, boardingLogsTable, driversTable, driverNotificationsTable } from "@workspace/db";
+import { passengersTable, stationsTable, usersTable, tenantsTable, boardingLogsTable, driversTable, driverNotificationsTable, routesTable } from "@workspace/db";
 import { eq, desc, and, or, ne, isNull, isNotNull } from "drizzle-orm";
 import { broadcast } from "../lib/sse";
 import { normalizePhone, syncUserAndProfiles } from "../lib/sync";
@@ -107,11 +107,38 @@ function todayNST(): string {
 }
 
 router.get("/", async (req, res) => {
-  const { phone } = req.query as { phone?: string };
+  const { phone, routeId, driverId, role } = req.query as {
+    phone?: string;
+    routeId?: string;
+    driverId?: string;
+    role?: string;
+  };
   const baseWhere = eq(passengersTable.tenantId, req.tenantId);
-  const whereClause = phone
-    ? and(baseWhere, eq(passengersTable.phone, normalizePhone(phone)))
-    : baseWhere;
+  const conditions = [baseWhere];
+
+  if (phone) {
+    conditions.push(eq(passengersTable.phone, normalizePhone(phone)));
+  }
+
+  if (role) {
+    conditions.push(eq(passengersTable.role, role));
+  }
+
+  if (routeId) {
+    conditions.push(eq(passengersTable.routeId, Number(routeId)));
+  }
+
+  if (driverId) {
+    const [assignedRoute] = await db
+      .select({ id: routesTable.id })
+      .from(routesTable)
+      .where(and(eq(routesTable.tenantId, req.tenantId), eq(routesTable.driverId, Number(driverId))));
+    if (assignedRoute) {
+      conditions.push(eq(passengersTable.routeId, assignedRoute.id));
+    }
+  }
+
+  const whereClause = and(...conditions);
 
   // Lazy daily reset — wipe liveToday/status/boardedAt for any passenger whose live_date is stale
   const today = todayNST();
