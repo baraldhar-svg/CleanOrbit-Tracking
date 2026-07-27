@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { driversTable, usersTable, tenantsTable } from "@workspace/db";
+import { driversTable, usersTable, tenantsTable, routesTable, passengersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { CreateDriverBody, PatchDriverParams, PatchDriverBody } from "@workspace/api-zod";
 import { broadcast } from "../lib/sse";
@@ -27,6 +27,74 @@ router.get("/active", async (req, res) => {
     return res.json(all[0] ?? { id: 1, name: "Ram Bahadur", phone: "+977 9851012345", vehicleNumber: "BA 3 CHA 4567", isActive: true });
   }
   return res.json(rows[0]);
+});
+
+// GET /api/drivers/:id/dashboard — Fetch driver's assigned route and strictly route-matched students
+router.get("/:id/dashboard", async (req, res) => {
+  const driverId = Number(req.params["id"]);
+  if (isNaN(driverId)) {
+    return res.status(400).json({ success: false, message: "Invalid driver ID" });
+  }
+
+  // 1. Fetch driver details
+  const [driver] = await db
+    .select()
+    .from(driversTable)
+    .where(and(eq(driversTable.id, driverId), eq(driversTable.tenantId, req.tenantId)))
+    .limit(1);
+
+  if (!driver) {
+    return res.status(404).json({ success: false, message: "Driver not found" });
+  }
+
+  // 2. Fetch route assigned to this driver
+  const [assignedRoute] = await db
+    .select()
+    .from(routesTable)
+    .where(and(eq(routesTable.tenantId, req.tenantId), eq(routesTable.driverId, driverId)))
+    .limit(1);
+
+  const routeName = assignedRoute?.name ?? "Unassigned Route";
+  const routeId = assignedRoute?.id ?? null;
+
+  // 3. Filter students strictly matching this driver's assigned route
+  const filteredStudents = routeId != null
+    ? await db
+        .select({
+          id: passengersTable.id,
+          name: passengersTable.name,
+          phone: passengersTable.phone,
+          role: passengersTable.role,
+          stationId: passengersTable.stationId,
+          routeId: passengersTable.routeId,
+          className: passengersTable.className,
+          section: passengersTable.section,
+          rollNumber: passengersTable.rollNumber,
+          status: passengersTable.status,
+          boardedAt: passengersTable.boardedAt,
+        })
+        .from(passengersTable)
+        .where(
+          and(
+            eq(passengersTable.tenantId, req.tenantId),
+            eq(passengersTable.role, "student"),
+            eq(passengersTable.routeId, routeId)
+          )
+        )
+    : [];
+
+  return res.status(200).json({
+    success: true,
+    driver: {
+      id: driver.id,
+      name: driver.name,
+      vehicleNumber: driver.vehicleNumber,
+      route: routeName,
+      routeId,
+    },
+    assignedStudentsCount: filteredStudents.length,
+    notificationsSentTo: filteredStudents,
+  });
 });
 
 router.post("/", async (req, res) => {
