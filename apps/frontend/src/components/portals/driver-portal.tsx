@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { sendDriverMessage } from "@/lib/driver-messages";
 import {
-  Navigation, Flag, WifiOff, BellOff, CheckCircle, Home,
+  Navigation, Flag, WifiOff, BellOff, CheckCircle, CheckCircle2, Home,
   MessageSquare, Send, Megaphone, AlertTriangle, Users, Building2,
   Wrench, Clock, Bus, CloudRain, Gauge, MapPin, Bell, History as HistoryIcon, X, User, Lock,
   Phone, Mail, Globe, Facebook, Instagram, Youtube,
@@ -448,24 +448,33 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
   const driverStationIds = useMemo(() => new Set(driverStations.map((s) => s.stationId || s.id)), [driverStations]);
 
-  // Scope riders strictly to THIS driver's assigned route or route stations
+  const [localBoardedIds, setLocalBoardedIds] = useState<Set<number>>(new Set());
+  const [localUnboardedIds, setLocalUnboardedIds] = useState<Set<number>>(new Set());
+
+  // Scope riders strictly to THIS driver's assigned route or route stations & apply local optimistic status
   const riderPassengers = useMemo(() => {
-    return (passengers ?? []).filter((p) => {
-      if (p.role === "driver") return false;
-      // If driver has an assigned route, match strictly by routeId or stationId
-      if (myRoute?.id != null) {
-        if (p.routeId != null) {
-          return p.routeId === myRoute.id;
+    return (passengers ?? [])
+      .map((p) => {
+        if (localBoardedIds.has(p.id)) return { ...p, status: "boarded" as const };
+        if (localUnboardedIds.has(p.id)) return { ...p, status: "pending" as const };
+        return p;
+      })
+      .filter((p) => {
+        if (p.role === "driver") return false;
+        // If driver has an assigned route, match strictly by routeId or stationId
+        if (myRoute?.id != null) {
+          if (p.routeId != null) {
+            return p.routeId === myRoute.id;
+          }
+          return p.stationId != null && driverStationIds.has(p.stationId);
         }
-        return p.stationId != null && driverStationIds.has(p.stationId);
-      }
-      // If driver has no assigned route ID yet but has stations, match by station ID
-      if (driverStationIds.size > 0) {
-        return p.stationId != null && driverStationIds.has(p.stationId);
-      }
-      return true;
-    });
-  }, [passengers, myRoute?.id, driverStationIds]);
+        // If driver has no assigned route ID yet but has stations, match by station ID
+        if (driverStationIds.size > 0) {
+          return p.stationId != null && driverStationIds.has(p.stationId);
+        }
+        return true;
+      });
+  }, [passengers, myRoute?.id, driverStationIds, localBoardedIds, localUnboardedIds]);
 
   const boardedCount = riderPassengers.filter((p) => p.status === "boarded").length;
   const totalCount = riderPassengers.length;
@@ -494,21 +503,29 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
   const handleBoard = async (id: number) => {
     setBoardingId(id);
+    setLocalBoardedIds((prev) => new Set([...prev, id]));
+    setLocalUnboardedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     try {
       const otpRes = await sendBoardingOtp.mutateAsync({ id });
       const otp = otpRes.demoCode ?? "000000";
       await boardPassenger.mutateAsync({ id, data: { otp } });
       queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
-      refetch();
+      void refetch();
+    } catch {
+      setLocalBoardedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     } finally { setBoardingId(null); }
   };
 
   const handleUnboard = async (id: number) => {
     setUnboardingId(id);
+    setLocalUnboardedIds((prev) => new Set([...prev, id]));
+    setLocalBoardedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     try {
       await unboardPassenger.mutateAsync({ id });
       queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
-      refetch();
+      void refetch();
+    } catch {
+      setLocalUnboardedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     } finally { setUnboardingId(null); }
   };
 
@@ -572,6 +589,16 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
     const id = setInterval(() => { void refetch(); }, 8000);
     return () => clearInterval(id);
   }, [refetch]);
+
+  // Listen for real-time passengers_updated SSE events to refetch immediately
+  useEffect(() => {
+    const es = new EventSource(`${BASE}/api/events`);
+    es.addEventListener("passengers_updated", () => {
+      void refetch();
+      queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+    });
+    return () => es.close();
+  }, [refetch, queryClient]);
 
   // ── Session Invalidated SSE listener (Auto logout & stop GPS when logged in on new device) ──
   useEffect(() => {
@@ -1336,18 +1363,19 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                   {p.quickMessage && <p className="text-[10px] text-blue-400 italic mt-0.5 truncate">"{p.quickMessage}"</p>}
                 </div>
                 {p.status === "boarded" ? (
-                  <div className="shrink-0 flex flex-col items-center gap-1">
+                  <div className="shrink-0 flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-950/90 border border-emerald-600/60 px-3 py-1.5 text-xs font-bold text-emerald-400 shadow-sm">
+                      <CheckCircle2 size={14} className="text-emerald-400" />
+                      On Board ✓
+                    </span>
                     <button
                       onClick={() => handleUnboard(p.id)}
                       disabled={unboardingId === p.id || isOffline}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        unboardingId === p.id ? "bg-slate-600 opacity-50" : "bg-emerald-500"
-                      }`}
-                      aria-label="Unboard passenger"
+                      title="Tap to unboard passenger"
+                      className="text-[10px] text-slate-400 hover:text-red-400 underline transition-colors px-1 py-0.5"
                     >
-                      <span className="inline-block h-4 w-4 translate-x-6 rounded-full bg-white shadow transition-transform" />
+                      {unboardingId === p.id ? "…" : "Undo"}
                     </button>
-                    <span className="text-[9px] text-emerald-400 font-semibold">Boarded</span>
                   </div>
                 ) : (p.status as string) === "absent" ? (
                   <span className="shrink-0 rounded-xl bg-red-900/40 border border-red-700/40 px-3 py-1.5 text-xs text-red-400 font-semibold">Absent</span>
