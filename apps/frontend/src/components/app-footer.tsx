@@ -18,7 +18,7 @@ export default function AppFooter({ variant = "light" }: { variant?: "light" | "
           </button>
           <span className={`mx-1 ${dark ? "text-slate-600" : "text-border"}`}>|</span>
           <a
-            href="https://wa.me/9779840077623"
+            href="https://wa.me/9779747468885"
             target="_blank"
             rel="noopener noreferrer"
             className={`inline-flex items-center gap-1 underline-offset-2 hover:underline transition-colors ${dark ? "text-slate-400 hover:text-green-400" : "text-muted-foreground hover:text-green-600"}`}
