@@ -94,7 +94,7 @@ function TikTokIcon({ size = 13 }: { size?: number }) {
 }
 
 export default function DriverPortal({ tenant }: { tenant?: any }) {
-  const { user, login } = useAuth();
+  const { user, login, logout } = useAuth();
   const [driverProfileOpen, setDriverProfileOpen] = useState(false);
   // Route list used to find THIS driver's assigned route → scope the station navigator
   const { data: routes } = useListRoutes();
@@ -270,7 +270,10 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         const tenantId = getTenantId();
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (tenantId !== null) headers["x-tenant-id"] = String(tenantId);
-        // Fire-and-forget — non-blocking
+        const activeSessionId = user?.activeSessionId || localStorage.getItem("orbittrack_session_id") || undefined;
+        if (activeSessionId) headers["x-session-id"] = activeSessionId;
+
+        // Send location ping — if session was invalidated by another device login, handle 401
         void fetch(`${BASE_GPS}/api/trips/location`, {
           method: "POST",
           headers,
@@ -281,7 +284,17 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
             speed: typeof speed === "number" && speed >= 0 ? speed : undefined,
             driverId: myDriver?.id,
             vehicleNo: myDriver?.vehicleNumber,
+            activeSessionId,
           }),
+        }).then(async (res) => {
+          if (res.status === 401) {
+            const data = (await res.json().catch(() => ({}))) as { sessionInvalidated?: boolean };
+            if (data.sessionInvalidated) {
+              stopGpsTracking();
+              logout();
+              alert("सावधान: यो अकाउन्ट अर्को मोबाइल (Device) मा लगइन भयो। पुरानो मोबाइल स्वतः लगआउट गरिएको छ र GPS बन्द गरिएको छ।");
+            }
+          }
         });
       },
       (err) => {
@@ -527,6 +540,29 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
     const id = setInterval(() => { void refetch(); }, 8000);
     return () => clearInterval(id);
   }, [refetch]);
+
+  // ── Session Invalidated SSE listener (Auto logout & stop GPS when logged in on new device) ──
+  useEffect(() => {
+    if (!user || user.role !== "driver") return;
+    const es = new EventSource(`${BASE}/api/events`);
+    es.addEventListener("driver_session_invalidated", (e) => {
+      try {
+        const d = JSON.parse((e as MessageEvent).data) as { phone?: string; newSessionId?: string };
+        const myPhone = user.phone ? user.phone.replace(/\D/g, "") : "";
+        const eventPhone = d.phone ? d.phone.replace(/\D/g, "") : "";
+        const localSession = user.activeSessionId || localStorage.getItem("orbittrack_session_id");
+
+        if (myPhone && eventPhone && (myPhone === eventPhone || myPhone.endsWith(eventPhone) || eventPhone.endsWith(myPhone))) {
+          if (d.newSessionId && d.newSessionId !== localSession) {
+            stopGpsTracking();
+            logout();
+            alert("सावधान: यो अकाउन्ट अर्को मोबाइल (Device) मा लगइन भयो। पुरानो मोबाइल स्वतः लगआउट गरिएको छ र GPS बन्द गरिएको छ।");
+          }
+        }
+      } catch { /* ignore */ }
+    });
+    return () => es.close();
+  }, [user, logout]);
 
   async function handleToggleOffline() {
     const goingOffline = !isOffline;

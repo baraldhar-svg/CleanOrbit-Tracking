@@ -399,12 +399,29 @@ router.patch("/station", async (req, res) => {
 // When driverId is supplied the update is scoped to that specific driver row.
 // Without driverId the first isActive driver in the tenant is updated (backward-compat for single-driver tenants).
 router.post("/location", async (req, res) => {
-  const { lat, lng, accuracy, speed, driverId } = req.body as {
-    lat?: number; lng?: number; accuracy?: number; speed?: number; driverId?: number;
+  const { lat, lng, accuracy, speed, driverId, activeSessionId } = req.body as {
+    lat?: number; lng?: number; accuracy?: number; speed?: number; driverId?: number; activeSessionId?: string;
   };
 
   if (typeof lat !== "number" || typeof lng !== "number") {
     return res.status(400).json({ error: "lat and lng (numbers) are required" });
+  }
+
+  const reqSessionId = activeSessionId ?? (req.headers["x-session-id"] as string | undefined);
+
+  if (driverId) {
+    const [driver] = await db
+      .select({ id: driversTable.id, activeSessionId: driversTable.activeSessionId })
+      .from(driversTable)
+      .where(and(eq(driversTable.tenantId, req.tenantId), eq(driversTable.id, driverId)))
+      .limit(1);
+
+    if (driver?.activeSessionId && reqSessionId && driver.activeSessionId !== reqSessionId) {
+      return res.status(401).json({
+        sessionInvalidated: true,
+        error: "Logged in from another device. GPS tracking has been stopped on this device.",
+      });
+    }
   }
 
   const nowMs = Date.now();

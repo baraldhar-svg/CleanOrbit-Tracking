@@ -16,28 +16,19 @@ import { eq, and, gt, isNotNull } from "drizzle-orm";
 import { signToken, checkSuperAdminBypass } from "../lib/auth";
 import { normalizePhone, syncUserAndProfiles } from "../lib/sync";
 import { logger } from "../lib/logger";
+import { broadcast } from "../lib/sse";
 
 const router: Router = Router();
 
-async function checkDriverDeviceLock(normalizedPhone: string, reqSessionId?: string): Promise<{ locked: boolean; reason?: string }> {
-  const [driver] = await db.select().from(driversTable).where(eq(driversTable.phone, normalizedPhone)).limit(1);
-  if (!driver) return { locked: false };
-
-  // If driver has an activeSessionId and it's different from the incoming session ID, block login!
-  if (driver.activeSessionId && driver.activeSessionId !== reqSessionId) {
-    return {
-      locked: true,
-      reason: "This Driver account is currently active on another device. Please sign out from the previous device before signing in here.",
-    };
-  }
-
-  return { locked: false };
-}
-
-async function registerDriverSession(normalizedPhone: string): Promise<string> {
+async function registerDriverSession(normalizedPhone: string, tenantId?: number | null): Promise<string> {
   const newSessionId = randomUUID();
   await db.update(driversTable).set({ activeSessionId: newSessionId }).where(eq(driversTable.phone, normalizedPhone));
   await db.update(usersTable).set({ activeSessionId: newSessionId }).where(eq(usersTable.phone, normalizedPhone));
+  // Broadcast SSE event so old device gets immediately notified to logout & turn off GPS
+  broadcast(tenantId ?? 1, "driver_session_invalidated", {
+    phone: normalizedPhone,
+    newSessionId,
+  });
   return newSessionId;
 }
 
@@ -116,17 +107,6 @@ router.post("/check-phone", async (req, res) => {
       });
     }
 
-    if (user.role === "driver") {
-      const reqSessionId = (req.headers["x-session-id"] as string) || (req.body as any)?.sessionId;
-      const lockCheck = await checkDriverDeviceLock(normalized, reqSessionId);
-      if (lockCheck.locked) {
-        return res.status(409).json({
-          error: lockCheck.reason,
-          driverActiveOnOtherDevice: true,
-        });
-      }
-    }
-
     let tenant = null;
     if (user.tenantId) {
       const [t] = await db
@@ -174,15 +154,7 @@ router.post("/verify-otp", async (req, res) => {
   const { user } = await syncUserAndProfiles(normalized);
   if (!user) return res.status(403).json({ error: "Access denied." });
 
-  if (user.role === "driver") {
-    const reqSessionId = (req.headers["x-session-id"] as string) || (req.body as any)?.sessionId;
-    const lockCheck = await checkDriverDeviceLock(normalized, reqSessionId);
-    if (lockCheck.locked) {
-      return res.status(409).json({ error: lockCheck.reason, driverActiveOnOtherDevice: true });
-    }
-  }
-
-  const sessionId = user.role === "driver" ? await registerDriverSession(normalized) : undefined;
+  const sessionId = user.role === "driver" ? await registerDriverSession(normalized, user.tenantId) : undefined;
 
   let tenant = null;
   if (user.tenantId) {
@@ -195,7 +167,7 @@ router.post("/verify-otp", async (req, res) => {
   }
   return res.json({
     verified: true,
-    user: { ...user, tenant },
+    user: { ...user, activeSessionId: sessionId ?? user.activeSessionId ?? null, tenant },
     token: signToken({ userId: user.id, role: user.role, tenantId: user.tenantId ?? null }),
     sessionId,
   });
@@ -222,18 +194,10 @@ router.post("/login-password", async (req, res) => {
   if (!user)
     return res.status(401).json({ error: "No account found for this number" });
 
-  if (user.role === "driver") {
-    const reqSessionId = (req.headers["x-session-id"] as string) || (req.body as any)?.sessionId;
-    const lockCheck = await checkDriverDeviceLock(normalized, reqSessionId);
-    if (lockCheck.locked) {
-      return res.status(409).json({ error: lockCheck.reason, driverActiveOnOtherDevice: true });
-    }
-  }
-
   const valid = await bcrypt.compare(password, user.passwordHash || "");
   if (!valid) return res.status(401).json({ error: "Incorrect password" });
 
-  const sessionId = user.role === "driver" ? await registerDriverSession(normalized) : undefined;
+  const sessionId = user.role === "driver" ? await registerDriverSession(normalized, user.tenantId) : undefined;
 
   let tenant = null;
   if (user.tenantId) {
@@ -246,7 +210,7 @@ router.post("/login-password", async (req, res) => {
   }
   return res.json({
     verified: true,
-    user: { ...user, tenant },
+    user: { ...user, activeSessionId: sessionId ?? user.activeSessionId ?? null, tenant },
     token: signToken({ userId: user.id, role: user.role, tenantId: user.tenantId ?? null }),
     sessionId,
   });
