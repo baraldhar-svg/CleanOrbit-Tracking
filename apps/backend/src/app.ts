@@ -35,23 +35,34 @@ import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 
 let columnsEnsured = false;
-async function ensureDbColumns() {
+export async function ensureDbColumns() {
   if (columnsEnsured) return;
   try {
+    const statements = [
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active_session_id text;`,
+      sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS active_session_id text;`,
+      sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS trip_completed_at timestamp with time zone;`,
+      sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending';`,
+      sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS approved_at timestamp with time zone;`,
+    ];
+    for (const stmt of statements) {
+      try {
+        await db.execute(stmt);
+      } catch (err) {
+        logger.warn({ err }, "Individual DB column migration statement warning");
+      }
+    }
     columnsEnsured = true;
-    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active_session_id text;`);
-    await db.execute(sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS active_session_id text;`);
-    await db.execute(sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS trip_completed_at timestamp with time zone;`);
-    await db.execute(sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending';`);
-    await db.execute(sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS approved_at timestamp with time zone;`);
   } catch (e) {
     logger.warn({ err: e }, "DB column check warning");
   }
 }
 
 app.use(cors());
-app.use((req, _res, next) => {
-  ensureDbColumns().catch(() => {});
+app.use(async (req, _res, next) => {
+  if (!columnsEnsured) {
+    await ensureDbColumns().catch(() => {});
+  }
   const raw = req.headers["x-tenant-id"];
   const parsed = raw ? parseInt(String(Array.isArray(raw) ? raw[0] : raw), 10) : NaN;
   req.tenantId = !isNaN(parsed) && parsed > 0 ? parsed : 1;

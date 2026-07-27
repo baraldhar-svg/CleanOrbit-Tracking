@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
 import { usersTable, passengersTable, driversTable, tenantsTable, stationsTable } from "@workspace/db";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq, and, isNotNull, sql } from "drizzle-orm";
 
 export function normalizePhone(raw: string): string {
   const stripped = raw.replace(/[\s\-()]/g, "");
@@ -23,12 +23,30 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
     .where(and(eq(passengersTable.phone, normalizedPhone), isNotNull(passengersTable.phone)))
     .limit(1);
 
-  // 3. Fetch driver
-  let [driver] = await db
-    .select()
-    .from(driversTable)
-    .where(eq(driversTable.phone, normalizedPhone))
-    .limit(1);
+  // 3. Fetch driver with migration fallback
+  let driver: typeof driversTable.$inferSelect | undefined = undefined;
+  try {
+    const rows = await db
+      .select()
+      .from(driversTable)
+      .where(eq(driversTable.phone, normalizedPhone))
+      .limit(1);
+    driver = rows[0];
+  } catch {
+    try {
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active_session_id text;`);
+      await db.execute(sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS active_session_id text;`);
+      await db.execute(sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS trip_completed_at timestamp with time zone;`);
+      const retryRows = await db
+        .select()
+        .from(driversTable)
+        .where(eq(driversTable.phone, normalizedPhone))
+        .limit(1);
+      driver = retryRows[0];
+    } catch {
+      driver = undefined;
+    }
+  }
 
   // Case A: Passenger exists, but User does not
   if (passenger && !user) {
