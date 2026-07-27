@@ -21,6 +21,7 @@ export const driversTable = pgTable("drivers", {
   speedKmh: real("speed_kmh"),
   // Trip lifecycle timestamps — used by the delay watchdog
   tripStartedAt: timestamp("trip_started_at"),
+  tripCompletedAt: timestamp("trip_completed_at"),
   delayAlertSentAt: timestamp("delay_alert_sent_at"),
   activeSessionId: text("active_session_id"),
 });

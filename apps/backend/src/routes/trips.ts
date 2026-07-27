@@ -160,6 +160,11 @@ router.get("/active", async (req, res) => {
 
   const stationState = driver?.id != null ? driverStationState.get(driver.id) : undefined;
 
+  const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+  const completedAtTime = driver?.tripCompletedAt ? new Date(driver.tripCompletedAt).getTime() : null;
+  const isFreezeActive = completedAtTime != null && (Date.now() - completedAtTime) < FOUR_HOURS_MS;
+  const freezeRemainingMs = isFreezeActive && completedAtTime ? Math.max(0, FOUR_HOURS_MS - (Date.now() - completedAtTime)) : 0;
+
   return res.json({
     tripId: driver?.id ?? 1,
     currentLat,
@@ -168,6 +173,10 @@ router.get("/active", async (req, res) => {
     isLive,
     speedKmh,
     isJourneyActive: driver?.isOnline === true || isRecentlyUpdated || driver?.tripStartedAt != null,
+    isJourneyCompleted: isFreezeActive || driver?.tripCompletedAt != null,
+    tripCompletedAt: driver?.tripCompletedAt ? new Date(driver.tripCompletedAt).toISOString() : null,
+    isFreezeActive,
+    freezeRemainingMs,
     stationIdx: stationState?.stationIdx ?? null,
     stationName: stationState?.stationName ?? null,
     etaMinutes: 5,
@@ -673,9 +682,9 @@ router.post("/complete", async (req, res) => {
   const [activeDriver] = await db.select().from(driversTable).where(driverCondition).limit(1);
   const busLabel = activeDriver?.vehicleNumber ? `Bus ${activeDriver.vehicleNumber}` : "Bus";
 
-  // Clear trip lifecycle timestamps on completion
+  // Set tripCompletedAt timestamp on completion
   await db.update(driversTable)
-    .set({ isOnline: false, tripStartedAt: null, delayAlertSentAt: null, speedKmh: null })
+    .set({ isOnline: false, tripStartedAt: null, tripCompletedAt: now, delayAlertSentAt: null, speedKmh: null })
     .where(driverCondition);
 
   // Clear in-memory station index + speed tracking on trip end
@@ -695,6 +704,7 @@ router.post("/complete", async (req, res) => {
     driverId: activeDriver?.id ?? null,
     vehicleNumber: activeDriver?.vehicleNumber ?? null,
     time: timeStr,
+    completedAt: now.toISOString(),
   });
 
   // ── Stamp completedAt on the open trip log + fill passenger counts ──────

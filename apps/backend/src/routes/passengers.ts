@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { db } from "@workspace/db";
-import { passengersTable, stationsTable, usersTable, tenantsTable, boardingLogsTable, driversTable, driverNotificationsTable, routesTable } from "@workspace/db";
+import { passengersTable, stationsTable, usersTable, tenantsTable, boardingLogsTable, driversTable, driverNotificationsTable, routesTable, announcementsTable } from "@workspace/db";
 import { eq, desc, and, or, ne, isNull, isNotNull } from "drizzle-orm";
 import { broadcast } from "../lib/sse";
 import { normalizePhone, syncUserAndProfiles } from "../lib/sync";
@@ -608,6 +608,47 @@ router.post("/:id/driver-notify", async (req, res) => {
 
   broadcast(req.tenantId, "driver_notification", { tenantId: req.tenantId, passengerId: id, message: notification.message });
   return res.json({ ok: true, alreadySent: false, notification });
+});
+
+// POST /api/passengers/:id/message-admin — student or parent sends direct message to admin
+router.post("/:id/message-admin", async (req, res) => {
+  const id = Number(req.params.id);
+  const { message } = req.body as { message?: string };
+  if (!message || !message.trim()) {
+    return res.status(400).json({ error: "Message is required" });
+  }
+
+  const [passenger] = await db
+    .select(PASSENGER_SELECT)
+    .from(passengersTable)
+    .leftJoin(stationsTable, eq(passengersTable.stationId, stationsTable.id))
+    .where(eq(passengersTable.id, id));
+
+  const passengerName = passenger?.name ?? "Student";
+
+  await db.insert(announcementsTable).values({
+    tenantId: req.tenantId,
+    message: `📩 Message from ${passengerName}: "${message.trim()}"`,
+    severity: "info",
+  });
+
+  void createNotification({
+    tenantId: req.tenantId,
+    passengerId: id,
+    type: "announcement",
+    title: `Message sent to Admin`,
+    body: `Your message "${message.trim()}" has been delivered to School Admin.`,
+  });
+
+  broadcast(req.tenantId, "admin_message_received", {
+    tenantId: req.tenantId,
+    passengerId: id,
+    passengerName,
+    message: message.trim(),
+    sentAt: new Date().toISOString(),
+  });
+
+  return res.json({ success: true, message: "Message sent to Admin successfully" });
 });
 
 export default router;

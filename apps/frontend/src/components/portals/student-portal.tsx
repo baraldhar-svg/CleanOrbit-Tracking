@@ -20,7 +20,7 @@ import { useT, tpl } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 import { PhotoPicker } from "@/components/photo-picker";
 import {
-  Bus, ClipboardList, Map, Clock, MessageSquare, X,
+  Bus, ClipboardList, Map, Clock, MessageSquare, X, Send,
   User, Timer, Home, MapPin, HeartPulse, ThumbsUp, Route, Navigation, CheckCircle, RefreshCw,
   ShieldAlert, CreditCard, AlertTriangle, Lock, Building2, Phone, Mail, Globe, Facebook, Instagram, Youtube,
   ChevronDown, ChevronUp,
@@ -99,10 +99,43 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
   const [geoAlertDismissed, setGeoAlertDismissed] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [tripCompleted, setTripCompleted] = useState(false);
+  const [isFreezeActive, setIsFreezeActive] = useState(false);
+  const [freezeRemainingMinutes, setFreezeRemainingMinutes] = useState<number | null>(null);
+  const [completedTime, setCompletedTime] = useState<string | null>(null);
+  const [adminMsgModalOpen, setAdminMsgModalOpen] = useState(false);
+  const [adminMsgText, setAdminMsgText] = useState("");
+  const [adminMsgSending, setAdminMsgSending] = useState(false);
+  const [adminMsgToast, setAdminMsgToast] = useState<string | null>(null);
+
   // Live station state pushed via `station_changed` SSE when driver taps Next/Prev
   const [liveStation, setLiveStation] = useState<{ idx: number; name: string | null } | null>(null);
   // True from `trip_started` until `trip_completed` — lets us show "en route" even without GPS
   const [tripActive, setTripActive] = useState(false);
+
+  const handleSendAdminMessage = useCallback(async () => {
+    if (!adminMsgText.trim() || !me?.id) return;
+    setAdminMsgSending(true);
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const tenantId = getTenantId();
+      if (tenantId !== null) headers["x-tenant-id"] = String(tenantId);
+      const res = await fetch(`${BASE}/api/passengers/${me.id}/message-admin`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ message: adminMsgText.trim() }),
+      });
+      if (res.ok) {
+        setAdminMsgToast("Message sent to Admin successfully");
+        setAdminMsgText("");
+        setTimeout(() => {
+          setAdminMsgToast(null);
+          setAdminMsgModalOpen(false);
+        }, 2000);
+      }
+    } catch { /* ignore */ }
+    finally { setAdminMsgSending(false); }
+  }, [adminMsgText, me?.id]);
 
   // Transport Config state
   const [transportOpen, setTransportOpen] = useState(false);
@@ -396,19 +429,24 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
       setLiveStation(null); // reset to stop 0 for the new run
     });
 
-    es.addEventListener("trip_completed", () => {
+    es.addEventListener("trip_completed", (e) => {
       queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       setTripActive(false);
       setLiveStation(null);
       setTripCompleted(true);
-      setTimeout(() => setTripCompleted(false), 30_000);
+      setIsFreezeActive(true);
+      setFreezeRemainingMinutes(240); // 4 hours
+      try {
+        const d = JSON.parse((e as MessageEvent).data) as { time?: string };
+        if (d.time) setCompletedTime(d.time);
+      } catch { /* ignore */ }
     });
 
     return () => es.close();
   }, [queryClient]);
 
-  // Hydrate tripActive + liveStation on page load (mid-journey recovery via 10 s poll)
+  // Hydrate tripActive + liveStation + 4h freeze on page load (mid-journey recovery via 10 s poll)
   useEffect(() => {
     async function syncFromPoll() {
       try {
@@ -416,6 +454,9 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
         if (!r.ok) return;
         const d = await r.json() as {
           isJourneyActive?: boolean;
+          isJourneyCompleted?: boolean;
+          isFreezeActive?: boolean;
+          freezeRemainingMs?: number;
           stationIdx?: number | null;
           stationName?: string | null;
         };
@@ -423,6 +464,13 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
           setTripActive(true);
           if (typeof d.stationIdx === "number") {
             setLiveStation({ idx: d.stationIdx, name: d.stationName ?? null });
+          }
+        }
+        if (d.isFreezeActive || d.isJourneyCompleted) {
+          setIsFreezeActive(true);
+          setTripCompleted(true);
+          if (typeof d.freezeRemainingMs === "number") {
+            setFreezeRemainingMinutes(Math.ceil(d.freezeRemainingMs / 60000));
           }
         }
       } catch { /* ignore */ }
@@ -593,6 +641,38 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
       )}
       {/* ── Bus Status Banner — always visible, three lifecycle states ── */}
       {(() => {
+        // State 3: Journey Completed & 4-Hour Freeze Period — evaluated FIRST so boarded students see completion
+        if (tripCompleted || isFreezeActive) {
+          return (
+            <div className="rounded-xl border border-sky-400 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 p-4 text-white shadow-lg space-y-3">
+              <div className="flex items-center gap-3">
+                <CheckCircle size={36} className="text-white drop-shadow shrink-0 animate-bounce" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <p className="font-bold text-sm">Journey Completed! · यात्रा समाप्त भयो 🎒</p>
+                    <span className="rounded-full bg-sky-950/70 border border-sky-300/40 px-2 py-0.5 text-[10px] font-bold text-sky-200">
+                      🔒 4h Freeze Active {freezeRemainingMinutes ? `(${freezeRemainingMinutes}m left)` : ""}
+                    </span>
+                  </div>
+                  <p className="text-xs text-sky-100 mt-1 leading-snug">
+                    {completedTime ? `Bus reached destination at ${completedTime}. ` : "Bus has reached the destination. "}
+                    Driver activities are frozen for 4 hours.
+                  </p>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-sky-400/30 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-sky-100">Need help or have an inquiry for Admin?</span>
+                <button
+                  onClick={() => setAdminMsgModalOpen(true)}
+                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-blue-900 hover:bg-sky-50 shadow transition-colors flex items-center gap-1.5 shrink-0"
+                >
+                  <Send size={12} />
+                  Message Admin
+                </button>
+              </div>
+            </div>
+          );
+        }
         // State 2: After Boarding — live school distance + current station
         if (isBoarded) {
           const schoolStation = routeStations.length > 0 ? routeStations[routeStations.length - 1] : null;
@@ -613,22 +693,6 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
                       : passingStation
                         ? `Currently passing ${passingStation} · 🔒 Actions locked`
                         : "🔒 Dashboard actions are locked until the journey ends."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        }
-        // State 3: Journey Completed — driver ended the trip
-        if (tripCompleted) {
-          return (
-            <div className="rounded-xl border border-sky-400 bg-gradient-to-r from-sky-500 to-blue-600 p-4 text-white shadow-lg">
-              <div className="flex items-center gap-3">
-                <CheckCircle size={36} className="text-white drop-shadow shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-bold text-sm">Journey Completed!</p>
-                  <p className="text-xs text-sky-100 mt-0.5 leading-snug">
-                    Your bus has reached the destination. All actions restored.
                   </p>
                 </div>
               </div>
@@ -1282,6 +1346,88 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
           </div>
         )}
       </div>
+
+      {/* ── Direct Message to School Admin Section (Available even during 4h freeze) ── */}
+      <div className="rounded-xl border border-blue-500/40 bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-slate-900 p-4 space-y-2 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-blue-400">
+            <MessageSquare size={16} />
+            <p className="text-sm font-bold text-slate-100">Send Message to School Admin</p>
+          </div>
+          <span className="rounded-full bg-emerald-900/60 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+            ✓ Active & Available
+          </span>
+        </div>
+        <p className="text-xs text-slate-400">
+          Need help or have an inquiry after journey completion? Send a direct message to school administration.
+        </p>
+        <button
+          onClick={() => setAdminMsgModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 transition-colors shadow-md"
+        >
+          <Send size={14} />
+          Message Admin / प्रशासनलाई सन्देश पठाउनुहोस्
+        </button>
+      </div>
+
+      {/* ── Direct Message to School Admin Modal ── */}
+      {adminMsgModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+                  <Send size={16} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-sm">Send Message to School Admin</h3>
+                  <p className="text-[10px] text-muted-foreground">प्रशासनलाई प्रत्यक्ष सन्देश पठाउनुहोस्</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setAdminMsgModalOpen(false)}
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {adminMsgToast ? (
+              <div className="rounded-xl bg-emerald-950/40 border border-emerald-500/40 p-3 text-xs text-emerald-300 font-semibold text-center">
+                ✓ {adminMsgToast}
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Enter your question, feedback, or issue below. School administration will receive this message in real-time.
+                </p>
+                <textarea
+                  value={adminMsgText}
+                  onChange={(e) => setAdminMsgText(e.target.value)}
+                  placeholder="Type your message to admin here... (उदा: गाडी पुगेको पुष्टि भयो / प्रश्न)"
+                  rows={4}
+                  className="w-full rounded-xl border border-input bg-background p-3 text-sm text-foreground focus:border-blue-500 focus:outline-none resize-none"
+                />
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    onClick={() => setAdminMsgModalOpen(false)}
+                    className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSendAdminMessage}
+                    disabled={!adminMsgText.trim() || adminMsgSending}
+                    className="rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-5 py-2 text-xs font-bold text-white shadow-md transition-all flex items-center gap-1.5"
+                  >
+                    {adminMsgSending ? "Sending…" : "Send Message ✓"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );
