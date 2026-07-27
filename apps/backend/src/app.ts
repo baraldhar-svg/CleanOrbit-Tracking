@@ -3,6 +3,7 @@ import express, { type Express } from "express";
 import cors from "cors";
 import * as pinoHttp from "pino-http";
 import router from "./routes/index.js";
+import webhookRouter from "./routes/webhook.js";
 import { logger } from "./lib/logger.js";
 
 if (dns.setDefaultResultOrder) {
@@ -91,6 +92,7 @@ app.use((req: any, res: any, next: any) => {
 });
 
 app.use("/api", router);
+app.use("/webhook", webhookRouter);
 
 // Default error handler returning clean JSON
 app.use((err: any, _req: any, res: any, _next: any) => {

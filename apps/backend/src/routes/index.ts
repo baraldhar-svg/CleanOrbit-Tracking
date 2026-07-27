@@ -27,6 +27,7 @@ import vehicleDocumentsRouter from "./vehicle-documents";
 import budgetSettingsRouter from "./budget-settings";
 import pushTokensRouter from "./push-tokens";
 import adRequestsRouter from "./ad-requests";
+import webhookRouter from "./webhook";
 
 const router: Router = Router();
 
@@ -67,5 +68,6 @@ router.use("/vehicle-documents", vehicleDocumentsRouter);
 router.use("/budget-settings", budgetSettingsRouter);
 router.use("/push-tokens", pushTokensRouter);
 router.use("/ad-requests", adRequestsRouter);
+router.use("/webhook", webhookRouter);
 
 export default router;
