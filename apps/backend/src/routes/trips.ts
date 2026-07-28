@@ -174,7 +174,10 @@ router.get("/active", async (req, res) => {
 
   // Night Freeze Active between 20:00 (8:00 PM) and 04:30 AM (Auto-unfreezes after 4:45 AM)
   const isNightFreeze = ktmHour >= 20 || ktmHour < 4 || (ktmHour === 4 && ktmMinute < 30);
-  const isPostTripFreeze = completedAtTime != null && (Date.now() - completedAtTime) < FOUR_HOURS_MS;
+  
+  // If driver is marked Active by Admin or driver is running/online, post-trip freeze is OVERRIDDEN (FALSE)!
+  const isDriverActiveOnDuty = driver?.isActive === true || driver?.isOnline === true || driver?.tripStartedAt != null;
+  const isPostTripFreeze = !isDriverActiveOnDuty && completedAtTime != null && (Date.now() - completedAtTime) < FOUR_HOURS_MS;
   const isFreezeActive = isNightFreeze || isPostTripFreeze;
   const freezeRemainingMs = isNightFreeze
     ? 14400000
@@ -189,9 +192,9 @@ router.get("/active", async (req, res) => {
     speedKmh,
     isNightFreeze,
     nightFreezeLabel: "Night Off-Duty Freeze (8:00 PM – 4:30 AM)",
-    isJourneyActive: (driver?.isOnline === true || isRecentlyUpdated || driver?.tripStartedAt != null) && !isNightFreeze,
-    isJourneyCompleted: isFreezeActive || driver?.tripCompletedAt != null,
-    tripCompletedAt: driver?.tripCompletedAt ? new Date(driver.tripCompletedAt).toISOString() : null,
+    isJourneyActive: isDriverActiveOnDuty && !isNightFreeze,
+    isJourneyCompleted: !isDriverActiveOnDuty && (isPostTripFreeze || driver?.tripCompletedAt != null),
+    tripCompletedAt: !isDriverActiveOnDuty && driver?.tripCompletedAt ? new Date(driver.tripCompletedAt).toISOString() : null,
     isFreezeActive,
     freezeRemainingMs,
     stationIdx: stationState?.stationIdx ?? null,

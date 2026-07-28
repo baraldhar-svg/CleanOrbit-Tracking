@@ -484,6 +484,11 @@ Roll No.: ${roll}`;
       setFreezeRemainingMinutes(null);
     });
 
+    es.addEventListener("drivers_updated", () => {
+      queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
+      void syncFromPoll();
+    });
+
     es.addEventListener("trip_started", () => {
       queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       setTripActive(true);
@@ -521,38 +526,39 @@ Roll No.: ${roll}`;
   }, [queryClient, me?.id]);
 
   // Hydrate tripActive + liveStation + 4h freeze on page load (mid-journey recovery via 10 s poll)
-  useEffect(() => {
-    async function syncFromPoll() {
-      try {
-        const r = await fetch(`${BASE}/api/trips/active`);
-        if (!r.ok) return;
-        const d = await r.json() as {
-          isJourneyActive?: boolean;
-          isJourneyCompleted?: boolean;
-          isFreezeActive?: boolean;
-          freezeRemainingMs?: number;
-          stationIdx?: number | null;
-          stationName?: string | null;
-        };
-        if (d.isJourneyActive) {
-          setTripActive(true);
-          setTripCompleted(false);
-          setIsFreezeActive(false);
-          setFreezeRemainingMinutes(null);
-          if (typeof d.stationIdx === "number") {
-            setLiveStation({ idx: d.stationIdx, name: d.stationName ?? null });
-          }
-        } else if (d.isFreezeActive || d.isJourneyCompleted) {
-          setIsFreezeActive(true);
-          setTripCompleted(true);
-          if (typeof d.freezeRemainingMs === "number") {
-            setFreezeRemainingMinutes(Math.ceil(d.freezeRemainingMs / 60000));
-          }
+  async function syncFromPoll() {
+    try {
+      const r = await fetch(`${BASE}/api/trips/active`);
+      if (!r.ok) return;
+      const d = await r.json() as {
+        isJourneyActive?: boolean;
+        isJourneyCompleted?: boolean;
+        isFreezeActive?: boolean;
+        freezeRemainingMs?: number;
+        stationIdx?: number | null;
+        stationName?: string | null;
+      };
+      if (d.isJourneyActive || !d.isFreezeActive) {
+        setTripActive(!!d.isJourneyActive);
+        setTripCompleted(false);
+        setIsFreezeActive(false);
+        setFreezeRemainingMinutes(null);
+        if (typeof d.stationIdx === "number") {
+          setLiveStation({ idx: d.stationIdx, name: d.stationName ?? null });
         }
-      } catch { /* ignore */ }
-    }
+      } else if (d.isFreezeActive || d.isJourneyCompleted) {
+        setIsFreezeActive(true);
+        setTripCompleted(true);
+        if (typeof d.freezeRemainingMs === "number") {
+          setFreezeRemainingMinutes(Math.ceil(d.freezeRemainingMs / 60000));
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  useEffect(() => {
     void syncFromPoll();
-    const interval = setInterval(syncFromPoll, 10_000);
+    const interval = setInterval(syncFromPoll, 5_000);
     return () => clearInterval(interval);
   }, []);
 
