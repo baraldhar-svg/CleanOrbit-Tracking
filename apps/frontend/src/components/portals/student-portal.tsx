@@ -16,6 +16,7 @@ import {
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import OsmMap from "@/components/osm-map";
 import PaymentModal from "@/components/PaymentModal";
+import AdCarousel, { type Ad } from "@/components/ad-carousel";
 import { useT, tpl } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 import { PhotoPicker } from "@/components/photo-picker";
@@ -107,6 +108,14 @@ export default function StudentPortal({ tenant }: { tenant?: any }) {
   const [adminMsgSending, setAdminMsgSending] = useState(false);
   const [adminMsgToast, setAdminMsgToast] = useState<string | null>(null);
   const [appApproved, setAppApproved] = useState(false);
+  const [ads, setAds] = useState<Ad[]>([]);
+
+  useEffect(() => {
+    fetch(`${BASE}/api/advertisements`)
+      .then((r) => r.json())
+      .then((data: Ad[]) => setAds(data))
+      .catch(() => {});
+  }, []);
 
   // Live station state pushed via `station_changed` SSE when driver taps Next/Prev
   const [liveStation, setLiveStation] = useState<{ idx: number; name: string | null } | null>(null);
@@ -720,23 +729,23 @@ Roll No.: ${roll}`;
         // State 3: Journey Completed & 4-Hour Freeze Period — evaluated FIRST so boarded students see completion
         if (tripCompleted || isFreezeActive) {
           return (
-            <div className="rounded-xl border border-sky-400 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 p-4 text-white shadow-lg space-y-3">
+            <div className="rounded-xl border border-sky-400 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 py-2.5 px-4 text-white shadow-lg space-y-2">
               <div className="flex items-center gap-3">
-                <CheckCircle size={36} className="text-white drop-shadow shrink-0 animate-bounce" />
+                <CheckCircle size={30} className="text-white drop-shadow shrink-0 animate-bounce" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between flex-wrap gap-1">
-                    <p className="font-bold text-sm">Journey Completed! · यात्रा समाप्त भयो 🎒</p>
+                    <p className="font-bold text-sm">Journey Completed! 🎒</p>
                     <span className="rounded-full bg-sky-950/70 border border-sky-300/40 px-2 py-0.5 text-[10px] font-bold text-sky-200">
                       🔒 4h Freeze Active {freezeRemainingMinutes ? `(${freezeRemainingMinutes}m left)` : ""}
                     </span>
                   </div>
-                  <p className="text-xs text-sky-100 mt-1 leading-snug">
+                  <p className="text-xs text-sky-100 mt-0.5 leading-snug">
                     {completedTime ? `Bus reached destination at ${completedTime}. ` : "Bus has reached the destination. "}
                     Driver activities are frozen for 4 hours.
                   </p>
                 </div>
               </div>
-              <div className="pt-2 border-t border-sky-400/30 flex items-center justify-between gap-2">
+              <div className="pt-1.5 border-t border-sky-400/30 flex items-center justify-between gap-2">
                 <span className="text-[11px] text-sky-100">Need help or have an inquiry for Admin?</span>
                 <button
                   onClick={() => setAdminMsgModalOpen(true)}
@@ -1018,6 +1027,12 @@ Roll No.: ${roll}`;
           </div>
         ) : null}
       </div>
+
+      {/* Featured School Spotlight Advertisement Board — placed between Today's Status and Notice Board */}
+      {ads.length > 0 && (
+        <AdCarousel ads={ads} />
+      )}
+
       {/* Notice Board */}
       <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 overflow-hidden shadow-sm">
         {/* Board header */}
