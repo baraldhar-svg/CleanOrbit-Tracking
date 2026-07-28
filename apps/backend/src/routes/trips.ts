@@ -162,8 +162,23 @@ router.get("/active", async (req, res) => {
 
   const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
   const completedAtTime = driver?.tripCompletedAt ? new Date(driver.tripCompletedAt).getTime() : null;
-  const isFreezeActive = completedAtTime != null && (Date.now() - completedAtTime) < FOUR_HOURS_MS;
-  const freezeRemainingMs = isFreezeActive && completedAtTime ? Math.max(0, FOUR_HOURS_MS - (Date.now() - completedAtTime)) : 0;
+  
+  // Calculate Kathmandu NPT time for Night Freeze (8:00 PM to 4:30 AM) & 4:45 AM Auto-Unfreeze
+  const ktmParts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kathmandu", hour12: false, hour: "2-digit", minute: "2-digit" }).formatToParts(new Date());
+  let ktmHour = 0;
+  let ktmMinute = 0;
+  for (const p of ktmParts) {
+    if (p.type === "hour") ktmHour = parseInt(p.value, 10);
+    if (p.type === "minute") ktmMinute = parseInt(p.value, 10);
+  }
+
+  // Night Freeze Active between 20:00 (8:00 PM) and 04:30 AM (Auto-unfreezes after 4:45 AM)
+  const isNightFreeze = ktmHour >= 20 || ktmHour < 4 || (ktmHour === 4 && ktmMinute < 30);
+  const isPostTripFreeze = completedAtTime != null && (Date.now() - completedAtTime) < FOUR_HOURS_MS;
+  const isFreezeActive = isNightFreeze || isPostTripFreeze;
+  const freezeRemainingMs = isNightFreeze
+    ? 14400000
+    : (isPostTripFreeze && completedAtTime ? Math.max(0, FOUR_HOURS_MS - (Date.now() - completedAtTime)) : 0);
 
   return res.json({
     tripId: driver?.id ?? 1,
@@ -172,7 +187,9 @@ router.get("/active", async (req, res) => {
     locationUpdatedAt,
     isLive,
     speedKmh,
-    isJourneyActive: driver?.isOnline === true || isRecentlyUpdated || driver?.tripStartedAt != null,
+    isNightFreeze,
+    nightFreezeLabel: "Night Off-Duty Freeze (8:00 PM – 4:30 AM)",
+    isJourneyActive: (driver?.isOnline === true || isRecentlyUpdated || driver?.tripStartedAt != null) && !isNightFreeze,
     isJourneyCompleted: isFreezeActive || driver?.tripCompletedAt != null,
     tripCompletedAt: driver?.tripCompletedAt ? new Date(driver.tripCompletedAt).toISOString() : null,
     isFreezeActive,

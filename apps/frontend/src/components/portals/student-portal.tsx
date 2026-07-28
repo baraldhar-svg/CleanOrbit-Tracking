@@ -475,7 +475,15 @@ Roll No.: ${roll}`;
       } catch { /* malformed event */ }
     });
 
-    // Driver started journey — UNFREEZE ALL STUDENT ACTIVITIES IMMEDIATELY!
+    // Admin activated driver or driver started journey — UNFREEZE ALL STUDENT ACTIVITIES IMMEDIATELY!
+    es.addEventListener("driver_activated", () => {
+      queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
+      setTripActive(false);
+      setTripCompleted(false);
+      setIsFreezeActive(false);
+      setFreezeRemainingMinutes(null);
+    });
+
     es.addEventListener("trip_started", () => {
       queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       setTripActive(true);

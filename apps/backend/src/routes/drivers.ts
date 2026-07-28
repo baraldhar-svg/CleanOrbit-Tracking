@@ -138,7 +138,12 @@ router.patch("/:id", async (req, res) => {
   if (vehicleNumber !== undefined) updates.vehicleNumber = vehicleNumber;
   if (photoUrl !== undefined) updates.photoUrl = photoUrl;
   if (gender !== undefined) updates.gender = gender;
-  if (isActive !== undefined) updates.isActive = isActive;
+  if (isActive !== undefined) {
+    updates.isActive = isActive;
+    if (isActive === true) {
+      (updates as any).tripCompletedAt = null;
+    }
+  }
   if (isOnline !== undefined) updates.isOnline = isOnline;
   const updated = await db
     .update(driversTable)
@@ -148,6 +153,10 @@ router.patch("/:id", async (req, res) => {
   if (!updated[0]) { return res.status(404).json({ error: "Driver not found" }); }
 
   broadcast(req.tenantId, "drivers_updated", { tenantId: req.tenantId, driverId: id });
+  if (isActive === true) {
+    broadcast(req.tenantId, "driver_activated", { tenantId: req.tenantId, driverId: id, unfreeze: true });
+    broadcast(req.tenantId, "trip_started", { tenantId: req.tenantId, driverId: id, adminActivated: true });
+  }
 
   if (updated[0] && updated[0].phone) {
     await syncUserAndProfiles(updated[0].phone);

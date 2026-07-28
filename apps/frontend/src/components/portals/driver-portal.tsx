@@ -621,12 +621,17 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
     return () => clearInterval(id);
   }, [refetch]);
 
-  // Listen for real-time passengers_updated SSE events to refetch immediately
+  // Listen for real-time passengers_updated and driver_activated SSE events to refetch immediately
   useEffect(() => {
     const es = new EventSource(`${BASE}/api/events`);
     es.addEventListener("passengers_updated", () => {
       void refetch();
       queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+    });
+    es.addEventListener("driver_activated", () => {
+      void refetch();
+      queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getListDriversQueryKey() });
     });
     return () => es.close();
   }, [refetch, queryClient]);
