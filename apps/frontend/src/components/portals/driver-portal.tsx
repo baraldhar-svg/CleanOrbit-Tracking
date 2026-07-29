@@ -262,6 +262,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
   // GPS tracking — driver's phone as the live tracker
   const watchIdRef = useRef<number | null>(null);
+  const wakeLockRef = useRef<any>(null);
   const [gpsActive, setGpsActive] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [speedKmh, setSpeedKmh] = useState<number | null>(null);
@@ -270,11 +271,36 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
   const BASE_GPS = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+  async function requestWakeLock() {
+    try {
+      if ("wakeLock" in navigator) {
+        wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
+        console.log("Screen Wake Lock is active (Screen will not turn off)");
+      } else {
+        console.warn("Wake Lock API is not supported by this browser");
+      }
+    } catch (err: any) {
+      console.error(`Wake Lock Error: ${err.name}, ${err.message}`);
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLockRef.current !== null) {
+      wakeLockRef.current.release().then(() => {
+        wakeLockRef.current = null;
+      });
+    }
+  }
+
   function startGpsTracking() {
     if (!("geolocation" in navigator)) {
       setGpsError("GPS not supported on this device");
       return;
     }
+    
+    // Request Screen Wake Lock to prevent screen sleep during tracking
+    void requestWakeLock();
+
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         setGpsActive(true);
@@ -348,6 +374,10 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
+    
+    // Release Screen Wake Lock so screen can dim/sleep again
+    releaseWakeLock();
+
     setGpsActive(false);
     setSpeedKmh(null);
     setOverspeedAlert(false);
@@ -356,6 +386,19 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
   // Cleanup on unmount
   useEffect(() => () => stopGpsTracking(), []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-acquire Wake Lock when tab becomes visible and GPS is active
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (gpsActive && wakeLockRef.current === null && document.visibilityState === "visible") {
+        await requestWakeLock();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [gpsActive]);
 
   // ── Effect A: Server re-sync & Journey state sync ───────────────────────────
   // Syncs active journey state and online status from server if driver is online on server
