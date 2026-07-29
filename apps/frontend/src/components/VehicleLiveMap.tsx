@@ -16,7 +16,9 @@ const supabaseAnonKey =
   (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY) || 
   "";
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = (supabaseUrl && supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface VehicleLocation {
@@ -68,6 +70,11 @@ export default function VehicleLiveMap() {
   // 1. Fetch initial bus locations from Supabase
   useEffect(() => {
     async function fetchInitialLocations() {
+      if (!supabase) {
+        setError("Supabase credentials (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY) are not configured in the environment.");
+        setLoading(false);
+        return;
+      }
       try {
         const { data, error } = await supabase
           .from("vehicle_locations")
@@ -93,6 +100,8 @@ export default function VehicleLiveMap() {
 
   // 2. Subscribe to Supabase Realtime postgres_changes
   useEffect(() => {
+    if (!supabase) return;
+    
     const channel = supabase
       .channel("live_vehicle_locations")
       .on(
@@ -125,7 +134,9 @@ export default function VehicleLiveMap() {
       });
 
     return () => {
-      supabase.removeChannel(channel);
+      if (supabase && channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, []);
 
