@@ -1525,24 +1525,24 @@ Roll No.: ${roll}`;
 
       {/* ── Direct Message to School Admin Section (Visible when unfrozen; during 4h freeze top blue banner handles this) ── */}
       {!(isFreezeActive || tripCompleted) && (
-        <div className="rounded-xl border border-blue-500/40 bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-slate-900 p-4 space-y-2 shadow-sm">
+        <div className="rounded-xl border border-slate-700 bg-slate-800 p-3 space-y-1.5 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-blue-400">
-              <MessageSquare size={16} />
-              <p className="text-sm font-bold text-slate-100">Send Message to School Admin</p>
+              <MessageSquare size={14} />
+              <p className="text-xs font-bold text-white">Send Message to School Admin</p>
             </div>
-            <span className="rounded-full bg-emerald-900/60 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+            <span className="rounded-full bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 text-[9px] font-bold text-emerald-400">
               ✓ Active & Available
             </span>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-[11px] text-slate-300 font-medium leading-relaxed">
             Need help or have an inquiry? Send a direct message to school administration.
           </p>
           <button
             onClick={openAdminMsgModal}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 transition-colors shadow-md"
+            className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] py-2 transition-colors shadow-md"
           >
-            <Send size={14} />
+            <Send size={12} />
             Message Admin / प्रशासनलाई सन्देश पठाउनुहोस्
           </button>
         </div>
