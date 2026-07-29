@@ -24,6 +24,7 @@ export const driversTable = pgTable("drivers", {
   tripCompletedAt: timestamp("trip_completed_at"),
   delayAlertSentAt: timestamp("delay_alert_sent_at"),
   activeSessionId: text("active_session_id"),
+  unfrozenAt: timestamp("unfrozen_at"),
 });
 
 export const insertDriverSchema = createInsertSchema(driversTable).omit({ id: true });
@@ -38,6 +39,7 @@ export const vehiclesTable = pgTable("vehicles", {
   capacity: integer("capacity").notNull().default(40),
   isActive: boolean("is_active").notNull().default(false),
   tag: text("tag"),
+  currentStopIndex: integer("current_stop_index").notNull().default(0),
 });
 
 export const insertVehicleSchema = createInsertSchema(vehiclesTable).omit({ id: true });

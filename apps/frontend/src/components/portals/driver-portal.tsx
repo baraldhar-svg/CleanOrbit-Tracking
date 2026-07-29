@@ -198,7 +198,22 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   // Ticker: cycles through upcoming-station users in the GPS bar
   const [tickerIdx, setTickerIdx] = useState(0);
 
-  const [stationIdx, setStationIdx] = useState(0);
+  const [stationIdx, setStationIdx] = useState<number>(() => {
+    if (!sessionPhone) return 0;
+    const saved = localStorage.getItem(`orbittrack_station_idx_${sessionPhone}`);
+    if (saved != null) {
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed >= 0) return parsed;
+    }
+    return 0;
+  });
+
+  useEffect(() => {
+    if (sessionPhone) {
+      localStorage.setItem(`orbittrack_station_idx_${sessionPhone}`, String(stationIdx));
+    }
+  }, [stationIdx, sessionPhone]);
+
   const [boardingId, setBoardingId] = useState<number | null>(null);
   const [unboardingId, setUnboardingId] = useState<number | null>(null);
   const [sosActive, setSosActive] = useState(false);
@@ -421,6 +436,37 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
     }).catch(() => { /* fire-and-forget — UI is already updated locally */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stationIdx, journeyStarted, journeyCompleted, myDriver?.id]);
+
+  // Hydrate stationIdx from backend on load/mount if available
+  useEffect(() => {
+    if (!myDriver?.id) return;
+    fetch(`${BASE}/api/trips/active?driverId=${myDriver.id}`)
+      .then((r) => r.json())
+      .then((data: { stationIdx?: number | null }) => {
+        if (typeof data.stationIdx === "number" && data.stationIdx >= 0) {
+          setStationIdx(data.stationIdx);
+        }
+      })
+      .catch(() => {});
+  }, [myDriver?.id]);
+
+  // ── Auto GPS Station Detection ──
+  // As the bus travels, automatically detect when the bus is within 250m of a station
+  useEffect(() => {
+    if (!driverPos || !driverStations || driverStations.length === 0 || !journeyStarted || journeyCompleted) return;
+
+    for (let i = 0; i < driverStations.length; i++) {
+      const st = driverStations[i];
+      if (typeof st.lat === "number" && typeof st.lng === "number") {
+        const distKm = haversineKm(driverPos.lat, driverPos.lng, st.lat, st.lng);
+        // If bus is within 250m of station i, and station i > current stationIdx
+        if (distKm <= 0.25 && i > stationIdx) {
+          setStationIdx(i);
+          break;
+        }
+      }
+    }
+  }, [driverPos, driverStations, stationIdx, journeyStarted, journeyCompleted]);
 
   // ── Effect C: fetch THIS driver's route stations ────────────────────────────
   // Also polls every 30s so admin-added stops appear without a page reload.

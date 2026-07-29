@@ -1,11 +1,12 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { driversTable, passengersTable, stationsTable, announcementsTable, routesTable, pushTokensTable, tripLogsTable, tenantsTable } from "@workspace/db";
-import { eq, count, and, isNotNull, isNull, sql, lt, inArray, desc } from "drizzle-orm";
+import { driversTable, passengersTable, stationsTable, announcementsTable, routesTable, pushTokensTable, tripLogsTable, tenantsTable, gpsLogsTable } from "@workspace/db";
+import { eq, count, and, isNotNull, isNull, sql, lt, inArray, desc, asc } from "drizzle-orm";
 import { broadcast } from "../lib/sse";
 import { logger } from "../lib/logger";
 import { createNotification } from "../lib/notifications";
 import { sendExpoPushNotifications } from "../lib/expoPush";
+import jwt from "jsonwebtoken";
 
 const router: Router = Router();
 
@@ -105,12 +106,38 @@ async function sendDelayPushNotifications(opts: {
 }
 
 // GET /api/trips/active — returns the active driver's real-time location.
-// Optional ?driverId=N query param scopes the response to a specific driver.
+// Query params: ?driverId=N or ?passengerId=N or ?routeId=N to scope strictly to that driver/route.
 router.get("/active", async (req, res) => {
   const driverIdParam = req.query.driverId ? Number(req.query.driverId) : null;
+  const passengerIdParam = req.query.passengerId ? Number(req.query.passengerId) : null;
+  const routeIdParam = req.query.routeId ? Number(req.query.routeId) : null;
 
-  const driverCondition = driverIdParam
-    ? and(eq(driversTable.tenantId, req.tenantId), eq(driversTable.id, driverIdParam))
+  let targetDriverId: number | null = driverIdParam;
+
+  if (targetDriverId == null && routeIdParam != null) {
+    const [r] = await db
+      .select({ driverId: routesTable.driverId })
+      .from(routesTable)
+      .where(and(eq(routesTable.tenantId, req.tenantId), eq(routesTable.id, routeIdParam)));
+    targetDriverId = r?.driverId ?? null;
+  }
+
+  if (targetDriverId == null && passengerIdParam != null) {
+    const [p] = await db
+      .select({ routeId: passengersTable.routeId })
+      .from(passengersTable)
+      .where(and(eq(passengersTable.tenantId, req.tenantId), eq(passengersTable.id, passengerIdParam)));
+    if (p?.routeId != null) {
+      const [r] = await db
+        .select({ driverId: routesTable.driverId })
+        .from(routesTable)
+        .where(and(eq(routesTable.tenantId, req.tenantId), eq(routesTable.id, p.routeId)));
+      targetDriverId = r?.driverId ?? null;
+    }
+  }
+
+  const driverCondition = targetDriverId != null
+    ? and(eq(driversTable.tenantId, req.tenantId), eq(driversTable.id, targetDriverId))
     : and(eq(driversTable.tenantId, req.tenantId), eq(driversTable.isActive, true));
 
   let [driver] = await db
@@ -135,15 +162,25 @@ router.get("/active", async (req, res) => {
     });
   }
 
+  const { resolvedRouteId } = await resolveRoutePassengers(
+    req.tenantId,
+    driver?.id ?? null,
+    routeIdParam
+  );
+
+  const passengerFilter = resolvedRouteId != null
+    ? and(eq(passengersTable.tenantId, req.tenantId), eq(passengersTable.routeId, resolvedRouteId))
+    : eq(passengersTable.tenantId, req.tenantId);
+
   const [allCount] = await db
     .select({ count: count() })
     .from(passengersTable)
-    .where(eq(passengersTable.tenantId, req.tenantId));
+    .where(passengerFilter);
 
   const [boardedCount] = await db
     .select({ count: count() })
     .from(passengersTable)
-    .where(eq(passengersTable.status, "boarded"));
+    .where(and(passengerFilter, eq(passengersTable.status, "boarded")));
 
   const [nextStation] = await db
     .select()
@@ -162,6 +199,8 @@ router.get("/active", async (req, res) => {
 
   const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
   const completedAtTime = driver?.tripCompletedAt ? new Date(driver.tripCompletedAt).getTime() : null;
+  const unfrozenAtTime = driver?.unfrozenAt ? new Date(driver.unfrozenAt).getTime() : null;
+  const isManuallyUnfrozen = completedAtTime != null && unfrozenAtTime != null && unfrozenAtTime > completedAtTime;
   
   // Calculate Kathmandu NPT time for Night Freeze (8:00 PM to 4:30 AM) & 4:45 AM Auto-Unfreeze
   const ktmParts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kathmandu", hour12: false, hour: "2-digit", minute: "2-digit" }).formatToParts(new Date());
@@ -177,7 +216,7 @@ router.get("/active", async (req, res) => {
   
   // If driver is marked Active by Admin or driver is running/online, post-trip freeze is OVERRIDDEN (FALSE)!
   const isDriverActiveOnDuty = driver?.isActive === true || driver?.isOnline === true || driver?.tripStartedAt != null;
-  const isPostTripFreeze = !isDriverActiveOnDuty && completedAtTime != null && (Date.now() - completedAtTime) < FOUR_HOURS_MS;
+  const isPostTripFreeze = !isDriverActiveOnDuty && completedAtTime != null && (Date.now() - completedAtTime) < FOUR_HOURS_MS && !isManuallyUnfrozen;
   const isFreezeActive = isNightFreeze || isPostTripFreeze;
   const freezeRemainingMs = isNightFreeze
     ? 14400000
@@ -436,8 +475,8 @@ router.patch("/station", async (req, res) => {
 // When driverId is supplied the update is scoped to that specific driver row.
 // Without driverId the first isActive driver in the tenant is updated (backward-compat for single-driver tenants).
 router.post("/location", async (req, res) => {
-  const { lat, lng, accuracy, speed, driverId, activeSessionId } = req.body as {
-    lat?: number; lng?: number; accuracy?: number; speed?: number; driverId?: number; activeSessionId?: string;
+  const { lat, lng, accuracy, speed, heading, driverId, activeSessionId } = req.body as {
+    lat?: number; lng?: number; accuracy?: number; speed?: number; heading?: number; driverId?: number; activeSessionId?: string;
   };
 
   if (typeof lat !== "number" || typeof lng !== "number") {
@@ -497,6 +536,31 @@ router.post("/location", async (req, res) => {
       .update(driversTable)
       .set({ isOnline: true, currentLat: lat, currentLng: lng, locationUpdatedAt: now, speedKmh })
       .where(eq(driversTable.id, resolvedId));
+
+    // Log coordinate history for active trip logs
+    const [activeTrip] = await db
+      .select({ id: tripLogsTable.id })
+      .from(tripLogsTable)
+      .where(
+        and(
+          eq(tripLogsTable.tenantId, req.tenantId),
+          eq(tripLogsTable.driverId, resolvedId),
+          isNull(tripLogsTable.completedAt)
+        )
+      )
+      .limit(1);
+
+    if (activeTrip) {
+      await db.insert(gpsLogsTable).values({
+        tenantId: req.tenantId,
+        driverId: resolvedId,
+        tripId: activeTrip.id,
+        latitude: lat,
+        longitude: lng,
+        speed: speedKmh,
+        heading: typeof heading === "number" ? heading : null,
+      });
+    }
   }
 
   broadcast(req.tenantId, "location_update", {
@@ -768,6 +832,101 @@ router.post("/complete", async (req, res) => {
     .where(eq(passengersTable.tenantId, req.tenantId));
 
   return res.json({ acknowledged: true, message: `Journey completed at ${timeStr}. All passengers and admins notified.` });
+});
+
+// POST /api/trips/unfreeze — allows admins to manually unfreeze driver/passenger profile
+router.post("/unfreeze", async (req, res) => {
+  try {
+    const { driverId } = req.body as { driverId?: number };
+
+    const driverCondition = driverId
+      ? and(eq(driversTable.tenantId, req.tenantId), eq(driversTable.id, driverId))
+      : and(eq(driversTable.tenantId, req.tenantId), eq(driversTable.isActive, true));
+
+    const [driver] = await db.select().from(driversTable).where(driverCondition).limit(1);
+    if (!driver) {
+      return res.status(404).json({ error: "Driver not found" });
+    }
+
+    await db
+      .update(driversTable)
+      .set({ unfrozenAt: new Date() })
+      .where(eq(driversTable.id, driver.id));
+
+    broadcast(req.tenantId, "trip_unfrozen", {
+      tenantId: req.tenantId,
+      driverId: driver.id,
+    });
+
+    return res.json({ ok: true, message: `Bus tracking and profiles unfrozen successfully for driver ID ${driver.id}` });
+  } catch (err: any) {
+    logger.error({ err }, "Error unfreezing trip profiles");
+    return res.status(500).json({ error: "Failed to unfreeze profiles" });
+  }
+});
+
+// GET /api/trips/:tripId/gps-logs — returns historical coordinates for a specific journey/trip
+// Restrict access: Driver self and admin only.
+router.get("/:tripId/gps-logs", async (req, res) => {
+  try {
+    const tripId = Number(req.params.tripId);
+    if (isNaN(tripId)) {
+      return res.status(400).json({ error: "Invalid tripId parameter" });
+    }
+
+    const auth = req.headers.authorization;
+    const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const jwtSecret = process.env["SESSION_SECRET"] || "dev_secret_session_key_for_local_testing";
+    let payload: any;
+    try {
+      // Handle potential CommonJS/ESM compatibility variations
+      payload = (jwt as any).default ? (jwt as any).default.verify(token, jwtSecret) : jwt.verify(token, jwtSecret);
+    } catch {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+
+    const isUserAdmin = payload.role === "admin" || payload.role === "superadmin";
+
+    // Retrieve the trip log details
+    const [trip] = await db
+      .select()
+      .from(tripLogsTable)
+      .where(and(eq(tripLogsTable.tenantId, req.tenantId), eq(tripLogsTable.id, tripId)))
+      .limit(1);
+
+    if (!trip) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
+
+    const isUserDriverSelf = payload.role === "driver" && trip.driverId === payload.userId;
+
+    if (!isUserAdmin && !isUserDriverSelf) {
+      return res.status(403).json({ error: "Access denied. Only admins or the driver of this trip can view history." });
+    }
+
+    // Retrieve historical coordinates from gps_logs table ordered by time
+    const logs = await db
+      .select({
+        id: gpsLogsTable.id,
+        latitude: gpsLogsTable.latitude,
+        longitude: gpsLogsTable.longitude,
+        speed: gpsLogsTable.speed,
+        heading: gpsLogsTable.heading,
+        createdAt: gpsLogsTable.createdAt,
+      })
+      .from(gpsLogsTable)
+      .where(eq(gpsLogsTable.tripId, tripId))
+      .orderBy(asc(gpsLogsTable.createdAt));
+
+    return res.json(logs);
+  } catch (err: any) {
+    logger.error({ err }, "Error fetching trip GPS logs");
+    return res.status(500).json({ error: "Failed to fetch historical journey coordinates" });
+  }
 });
 
 // GET /api/trips/history — paginated list of trips for this tenant (newest first).

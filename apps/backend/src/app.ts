@@ -43,6 +43,7 @@ export async function ensureDbColumns() {
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active_session_id text;`,
       sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS active_session_id text;`,
       sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS trip_completed_at timestamp with time zone;`,
+      sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS unfrozen_at timestamp with time zone;`,
       sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending';`,
       sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS approved_at timestamp with time zone;`,
     ];

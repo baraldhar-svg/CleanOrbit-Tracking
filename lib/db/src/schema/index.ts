@@ -6,3 +6,6 @@ export * from "./subscriptions";
 export * from "./users";
 export * from "./advertisements";
 export * from "./calendar";
+export * from "./vehicle-locations";
+export * from "./gps-logs";
+

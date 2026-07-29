@@ -34,8 +34,31 @@ const DEFAULT_LOC: DriverLocation = {
   speedKmh: null,
 };
 
+const STORAGE_KEY = (driverId?: number) => `orbittrack_last_loc_driver_${driverId ?? "any"}`;
+
+function getInitialLoc(driverId?: number): DriverLocation {
+  if (typeof window === "undefined") return DEFAULT_LOC;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY(driverId));
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (typeof parsed.lat === "number" && typeof parsed.lng === "number") {
+        return {
+          lat: parsed.lat,
+          lng: parsed.lng,
+          isLive: false,
+          updatedAt: parsed.updatedAt || null,
+          vehicleNumber: parsed.vehicleNumber || null,
+          speedKmh: parsed.speedKmh || null,
+        };
+      }
+    }
+  } catch { /* ignore */ }
+  return DEFAULT_LOC;
+}
+
 export function useDriverLocation(driverId?: number): DriverLocation {
-  const [loc, setLoc] = useState<DriverLocation>(DEFAULT_LOC);
+  const [loc, setLoc] = useState<DriverLocation>(() => getInitialLoc(driverId));
 
   useEffect(() => {
     let destroyed = false;
@@ -49,11 +72,23 @@ export function useDriverLocation(driverId?: number): DriverLocation {
       const isRecent = updatedAt != null && (now - new Date(updatedAt).getTime()) < 300_000;
       const effectiveLive = isLive || isRecent;
 
-      setLoc((prev) => ({
-        lat, lng, isLive: effectiveLive, updatedAt,
-        vehicleNumber: vehicleNumber !== undefined && vehicleNumber !== null ? vehicleNumber : prev.vehicleNumber,
-        speedKmh: speedKmh !== undefined ? speedKmh : prev.speedKmh,
-      }));
+      setLoc((prev) => {
+        const next = {
+          lat, lng, isLive: effectiveLive, updatedAt,
+          vehicleNumber: vehicleNumber !== undefined && vehicleNumber !== null ? vehicleNumber : prev.vehicleNumber,
+          speedKmh: speedKmh !== undefined ? speedKmh : prev.speedKmh,
+        };
+        try {
+          localStorage.setItem(STORAGE_KEY(driverId), JSON.stringify({
+            lat: next.lat,
+            lng: next.lng,
+            updatedAt: next.updatedAt,
+            vehicleNumber: next.vehicleNumber,
+            speedKmh: next.speedKmh,
+          }));
+        } catch { /* ignore */ }
+        return next;
+      });
     }
 
     const tenantId = getTenantId();

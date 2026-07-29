@@ -12,6 +12,7 @@ import AdminVerifyScreen from "@/pages/admin-verify";
 import Dashboard from "@/pages/dashboard";
 import SchoolProfile from "@/pages/school-profile";
 import AdvertisePage from "@/pages/advertise";
+import VehicleLiveMap from "@/components/VehicleLiveMap";
 import { useEffect, useRef } from "react";
 import { useRealtime } from "@/hooks/use-realtime";
 
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/admin-verify" component={AdminVerifyScreen} />
       <Route path="/advertise" component={AdvertisePage} />
       <Route path="/school/:id" component={SchoolProfile} />
+      <Route path="/live-tracking" component={VehicleLiveMap} />
       <Route path="/dashboard">
         <AuthGuard>
           <DashboardKeyed />
