@@ -189,18 +189,6 @@ export default function RegisterScreen() {
         requiresPassword: data.requiresPassword ?? false,
       };
 
-      if (fu.requiresPassword) {
-        setFoundUser(fu);
-        setStep("login");
-        return;
-      }
-
-      if (data.verified && data.user) {
-        login({ ...data.user, tenant: data.user.tenant ?? null }, data.token as string | undefined);
-        navigate("/dashboard");
-        return;
-      }
-
       setFoundUser(fu);
       const digits = String(fu.demoCode).split("").slice(0, 6);
       setOtp(digits.concat(Array(6 - digits.length).fill("")));
@@ -413,29 +401,52 @@ export default function RegisterScreen() {
           </>
         )}
 
-        {/* ── STEP: Existing account found — OTP login ── */}
+        {/* ── STEP: Existing account found — School Code input like first image ── */}
         {step === "login" && foundUser && (
           <>
-            {/* Account found banner */}
-            <div className="mb-5 flex items-center gap-3 rounded-xl border border-green-700/40 bg-green-950/30 px-4 py-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-400 font-black text-sm">
+            {/* Welcome card */}
+            <div className="mb-5 rounded-xl border border-slate-700 bg-slate-900/60 p-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-black text-sm">
                 {foundUser.name.charAt(0).toUpperCase()}
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-green-300">Account already exists!</p>
-                <p className="text-sm font-bold text-white truncate">{foundUser.name}</p>
-                <p className="text-xs text-slate-400">{ROLE_LABELS[foundUser.role] ?? foundUser.role}</p>
+              <div className="min-w-0 text-left">
+                <p className="text-sm font-bold text-white truncate">
+                  Welcome back, {foundUser.name.split(" ")[0]}! 👋
+                </p>
+                <p className="text-xs text-slate-400">
+                  {ROLE_LABELS[foundUser.role] ?? foundUser.role}
+                </p>
               </div>
             </div>
 
-            <p className="mb-4 text-center text-sm text-slate-400">
-              Sign in to your existing account instead
-            </p>
+            {/* School Code Input (if required by role) */}
+            {foundUser.requiresSchoolCode && (
+              <div className="mb-5">
+                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide text-left">
+                  School Code
+                </label>
+                <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
+                  <span className="text-slate-400 text-sm">🏫</span>
+                  <input
+                    type="text"
+                    placeholder="e.g. APEX-ALPHA-1234"
+                    value={schoolCode}
+                    onChange={(e) => {
+                      setSchoolCode(e.target.value.toUpperCase());
+                      setErr("");
+                    }}
+                    className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none font-mono tracking-wider"
+                    autoCapitalize="characters"
+                  />
+                </div>
+              </div>
+            )}
 
-            {foundUser.requiresPassword ? (
-              <div className="mb-4">
-                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
-                  Super Admin Password
+            {/* Password input for super admin if required */}
+            {foundUser.requiresPassword && (
+              <div className="mb-5">
+                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide text-left">
+                  Password
                 </label>
                 <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
                   <span className="text-slate-400 text-sm">🔒</span>
@@ -456,78 +467,39 @@ export default function RegisterScreen() {
                   </button>
                 </div>
               </div>
-            ) : (
-              <>
-                {/* School code */}
-                {foundUser.requiresSchoolCode && (
-                  <div className="mb-4">
-                    <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">School Code</label>
-                    <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
-                      <span className="text-slate-400 text-sm">🏫</span>
-                      <input
-                        type="text"
-                        placeholder="e.g. APEX-ALPHA-1234"
-                        value={schoolCode}
-                        onChange={(e) => { setSchoolCode(e.target.value.toUpperCase()); setErr(""); }}
-                        className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none font-mono tracking-wider"
-                        autoCapitalize="characters"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* OTP */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Verification Code</label>
-                    <span className="text-xs text-slate-500">Sent to +977 {phone}</span>
-                  </div>
-                  <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
-                    {otp.map((digit, i) => (
-                      <input
-                        key={i}
-                        ref={(el) => { otpRefs.current[i] = el; }}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => { handleOtpKey(i, e.target.value); setErr(""); }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
-                          if (e.key === "Enter" && otp.every(Boolean)) handleVerifyOtp();
-                        }}
-                        className="h-12 w-10 rounded-xl border border-slate-600 bg-slate-900 text-center text-lg font-bold text-white focus:border-amber-500 focus:outline-none transition-colors"
-                      />
-                    ))}
-                  </div>
-                  <div className="mt-3 rounded-lg border border-amber-800/40 bg-amber-900/20 px-3 py-2 flex items-center gap-2">
-                    <span className="text-amber-400 text-xs">💡</span>
-                    <p className="text-xs text-amber-300">
-                      <span className="font-semibold">Demo mode:</span> Code <span className="font-mono font-bold tracking-widest">{foundUser.demoCode}</span> is auto-filled
-                    </p>
-                  </div>
-                </div>
-              </>
             )}
 
             {err && (
               <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
                 <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
-                <p className="text-xs text-red-300 leading-relaxed">{err}</p>
+                <p className="text-xs text-red-300 leading-relaxed text-left">{err}</p>
               </div>
             )}
 
             <button
               onClick={foundUser.requiresPassword ? handleLoginPassword : handleVerifyOtp}
-              disabled={loading || (foundUser.requiresPassword ? !password : (otp.some(d => !d) || (foundUser.requiresSchoolCode && !schoolCode.trim())))}
-              className="w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors"
+              disabled={
+                loading ||
+                (foundUser.requiresSchoolCode && !schoolCode.trim()) ||
+                (foundUser.requiresPassword && !password.trim())
+              }
+              className="w-full rounded-xl bg-emerald-800 hover:bg-emerald-700 py-3.5 font-bold text-white disabled:opacity-40 transition-colors shadow-lg"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="h-4 w-4 rounded-full border-2 border-slate-900/30 border-t-slate-900 animate-spin" />
+                  <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                   Signing in…
                 </span>
-              ) : foundUser.requiresPassword ? "Sign In to Super Admin →" : "Sign In to Existing Account →"}
+              ) : (
+                "Sign In to Existing Account →"
+              )}
+            </button>
+
+            <button
+              onClick={resetToPhone}
+              className="mt-4 w-full text-center text-xs text-slate-500 hover:text-slate-300 py-1.5"
+            >
+              ← Change number
             </button>
           </>
         )}
