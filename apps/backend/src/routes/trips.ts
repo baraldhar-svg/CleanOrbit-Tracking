@@ -10,6 +10,74 @@ import jwt from "jsonwebtoken";
 
 const router: Router = Router();
 
+function getDriverFreezeStatus(driver: typeof driversTable.$inferSelect | null | undefined) {
+  if (!driver) {
+    return {
+      isNightFreeze: false,
+      isPostTripFreeze: false,
+      isFreezeActive: false,
+      freezeRemainingMs: 0,
+    };
+  }
+
+  const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+  const completedAtTime = driver.tripCompletedAt ? new Date(driver.tripCompletedAt).getTime() : null;
+  const unfrozenAtTime = driver.unfrozenAt ? new Date(driver.unfrozenAt).getTime() : null;
+  const isManuallyUnfrozen = completedAtTime != null && unfrozenAtTime != null && unfrozenAtTime > completedAtTime;
+  
+  // Calculate Kathmandu NPT time for Night Freeze (8:00 PM to 4:30 AM)
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kathmandu",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hour12: false
+  });
+  const parts = formatter.formatToParts(new Date());
+  let year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
+  for (const p of parts) {
+    if (p.type === "year") year = parseInt(p.value, 10);
+    if (p.type === "month") month = parseInt(p.value, 10);
+    if (p.type === "day") day = parseInt(p.value, 10);
+    if (p.type === "hour") hour = parseInt(p.value, 10);
+    if (p.type === "minute") minute = parseInt(p.value, 10);
+    if (p.type === "second") second = parseInt(p.value, 10);
+  }
+
+  // Night Freeze Active between 20:00 (8:00 PM) and 04:30 AM (Auto-unfreezes at 4:30 AM)
+  const isNightFreeze = hour >= 20 || hour < 4 || (hour === 4 && minute < 30);
+  
+  // Bug fix: The driver is running if they are online or if the trip started timestamp exists.
+  // Note: we do NOT include driver.isActive here so that post-trip freeze works even for active drivers.
+  const isDriverRunning = driver.isOnline === true || driver.tripStartedAt != null;
+  const isPostTripFreeze = !isDriverRunning && completedAtTime != null && (Date.now() - completedAtTime) < FOUR_HOURS_MS && !isManuallyUnfrozen;
+  const isFreezeActive = isNightFreeze || isPostTripFreeze;
+  
+  let freezeRemainingMs = 0;
+  if (isNightFreeze) {
+    // Construct Date objects in UTC representation of KTM time to calculate difference accurately
+    const ktmNow = Date.UTC(year, month - 1, day, hour, minute, second);
+    let targetDay = day;
+    if (hour >= 20) {
+      targetDay += 1;
+    }
+    const ktmUnfreeze = Date.UTC(year, month - 1, targetDay, 4, 30, 0);
+    freezeRemainingMs = Math.max(0, ktmUnfreeze - ktmNow);
+  } else if (isPostTripFreeze && completedAtTime) {
+    freezeRemainingMs = Math.max(0, FOUR_HOURS_MS - (Date.now() - completedAtTime));
+  }
+
+  return {
+    isNightFreeze,
+    isPostTripFreeze,
+    isFreezeActive,
+    freezeRemainingMs,
+  };
+}
+
 // How many minutes a trip must be running before a delay alert fires automatically.
 // Overridable via environment variable for testing/staging.
 const DELAY_THRESHOLD_MINUTES = Number(process.env["DELAY_THRESHOLD_MINUTES"] ?? 15);
@@ -197,30 +265,12 @@ router.get("/active", async (req, res) => {
 
   const stationState = driver?.id != null ? driverStationState.get(driver.id) : undefined;
 
-  const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
-  const completedAtTime = driver?.tripCompletedAt ? new Date(driver.tripCompletedAt).getTime() : null;
-  const unfrozenAtTime = driver?.unfrozenAt ? new Date(driver.unfrozenAt).getTime() : null;
-  const isManuallyUnfrozen = completedAtTime != null && unfrozenAtTime != null && unfrozenAtTime > completedAtTime;
-  
-  // Calculate Kathmandu NPT time for Night Freeze (8:00 PM to 4:30 AM) & 4:45 AM Auto-Unfreeze
-  const ktmParts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kathmandu", hour12: false, hour: "2-digit", minute: "2-digit" }).formatToParts(new Date());
-  let ktmHour = 0;
-  let ktmMinute = 0;
-  for (const p of ktmParts) {
-    if (p.type === "hour") ktmHour = parseInt(p.value, 10);
-    if (p.type === "minute") ktmMinute = parseInt(p.value, 10);
-  }
-
-  // Night Freeze Active between 20:00 (8:00 PM) and 04:30 AM (Auto-unfreezes after 4:45 AM)
-  const isNightFreeze = ktmHour >= 20 || ktmHour < 4 || (ktmHour === 4 && ktmMinute < 30);
-  
-  // If driver is marked Active by Admin or driver is running/online, post-trip freeze is OVERRIDDEN (FALSE)!
-  const isDriverActiveOnDuty = driver?.isActive === true || driver?.isOnline === true || driver?.tripStartedAt != null;
-  const isPostTripFreeze = !isDriverActiveOnDuty && completedAtTime != null && (Date.now() - completedAtTime) < FOUR_HOURS_MS && !isManuallyUnfrozen;
-  const isFreezeActive = isNightFreeze || isPostTripFreeze;
-  const freezeRemainingMs = isNightFreeze
-    ? 14400000
-    : (isPostTripFreeze && completedAtTime ? Math.max(0, FOUR_HOURS_MS - (Date.now() - completedAtTime)) : 0);
+  const freeze = getDriverFreezeStatus(driver);
+  const isNightFreeze = freeze.isNightFreeze;
+  const isPostTripFreeze = freeze.isPostTripFreeze;
+  const isFreezeActive = freeze.isFreezeActive;
+  const freezeRemainingMs = freeze.freezeRemainingMs;
+  const isDriverRunning = driver?.isOnline === true || driver?.tripStartedAt != null;
 
   return res.json({
     tripId: driver?.id ?? 1,
@@ -231,9 +281,9 @@ router.get("/active", async (req, res) => {
     speedKmh,
     isNightFreeze,
     nightFreezeLabel: "Night Off-Duty Freeze (8:00 PM – 4:30 AM)",
-    isJourneyActive: isDriverActiveOnDuty && !isNightFreeze,
-    isJourneyCompleted: !isDriverActiveOnDuty && (isPostTripFreeze || driver?.tripCompletedAt != null),
-    tripCompletedAt: !isDriverActiveOnDuty && driver?.tripCompletedAt ? new Date(driver.tripCompletedAt).toISOString() : null,
+    isJourneyActive: isDriverRunning && !isNightFreeze,
+    isJourneyCompleted: !isDriverRunning && (isPostTripFreeze || driver?.tripCompletedAt != null),
+    tripCompletedAt: !isDriverRunning && driver?.tripCompletedAt ? new Date(driver.tripCompletedAt).toISOString() : null,
     isFreezeActive,
     freezeRemainingMs,
     stationIdx: stationState?.stationIdx ?? null,
@@ -487,16 +537,25 @@ router.post("/location", async (req, res) => {
 
   if (driverId) {
     const [driver] = await db
-      .select({ id: driversTable.id, activeSessionId: driversTable.activeSessionId })
+      .select()
       .from(driversTable)
       .where(and(eq(driversTable.tenantId, req.tenantId), eq(driversTable.id, driverId)))
       .limit(1);
 
-    if (driver?.activeSessionId && driver.activeSessionId !== reqSessionId) {
-      return res.status(401).json({
-        sessionInvalidated: true,
-        error: "Logged in from another device. GPS tracking has been stopped on this device.",
-      });
+    if (driver) {
+      if (driver.activeSessionId && driver.activeSessionId !== reqSessionId) {
+        return res.status(401).json({
+          sessionInvalidated: true,
+          error: "Logged in from another device. GPS tracking has been stopped on this device.",
+        });
+      }
+      
+      const freeze = getDriverFreezeStatus(driver);
+      if (freeze.isFreezeActive) {
+        return res.status(403).json({
+          error: "Driver profile is frozen (Night Off-Duty or Post-Trip). GPS tracking is disabled.",
+        });
+      }
     }
   }
 
@@ -603,6 +662,12 @@ router.post("/start", async (req, res) => {
     : and(eq(driversTable.tenantId, req.tenantId), eq(driversTable.isActive, true));
 
   const [activeDriver] = await db.select().from(driversTable).where(driverCondition).limit(1);
+  if (activeDriver) {
+    const freeze = getDriverFreezeStatus(activeDriver);
+    if (freeze.isFreezeActive) {
+      return res.status(403).json({ error: "Cannot start journey while profile is frozen" });
+    }
+  }
   const busLabel = activeDriver?.vehicleNumber ? `Bus ${activeDriver.vehicleNumber}` : "Bus";
 
   // Stamp trip start time and clear any prior delay alert so the watchdog can re-arm

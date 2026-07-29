@@ -43,17 +43,43 @@ router.patch("/:id", async (req, res) => {
     res.status(400).json({ error: "Invalid id", details: paramsParsed.error.issues });
     return;
   }
-  const bodyParsed = PatchVehicleBody.safeParse(req.body);
-  if (!bodyParsed.success) {
-    res.status(400).json({ error: "Invalid vehicle data", details: bodyParsed.error.issues });
+  
+  const id = paramsParsed.data.id;
+  const { plateNumber, model, capacity, tag } = req.body;
+
+  const updateFields: any = {};
+  if (typeof plateNumber === "string") {
+    if (!plateNumber.trim()) {
+      res.status(400).json({ error: "Plate number cannot be empty" });
+      return;
+    }
+    updateFields.plateNumber = plateNumber.trim();
+  }
+  if (typeof model === "string") {
+    if (!model.trim()) {
+      res.status(400).json({ error: "Model cannot be empty" });
+      return;
+    }
+    updateFields.model = model.trim();
+  }
+  if (capacity !== undefined) {
+    updateFields.capacity = capacity === null ? null : Number(capacity);
+  }
+  if (tag !== undefined) {
+    updateFields.tag = tag;
+  }
+
+  if (Object.keys(updateFields).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
     return;
   }
-  const { tag } = bodyParsed.data;
+
   const updated = await db
     .update(vehiclesTable)
-    .set({ tag: tag ?? null })
-    .where(and(eq(vehiclesTable.id, paramsParsed.data.id), eq(vehiclesTable.tenantId, req.tenantId)))
+    .set(updateFields)
+    .where(and(eq(vehiclesTable.id, id), eq(vehiclesTable.tenantId, req.tenantId)))
     .returning();
+
   if (!updated[0]) { res.status(404).json({ error: "Vehicle not found" }); return; }
   res.json(updated[0]);
 });

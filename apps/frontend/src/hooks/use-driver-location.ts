@@ -125,7 +125,7 @@ export function useDriverLocation(driverId?: number): DriverLocation {
     }
 
     void poll();
-    const pollInterval = setInterval(poll, 3_000);
+    const pollInterval = setInterval(poll, 30_000);
 
     const es = new EventSource(`${BASE}/api/events`);
 

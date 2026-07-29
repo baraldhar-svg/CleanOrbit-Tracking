@@ -498,6 +498,15 @@ Roll No.: ${roll}`;
       setLiveStation(null); // reset to stop 0 for the new run
     });
 
+    es.addEventListener("trip_unfrozen", () => {
+      queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
+      setTripActive(false);
+      setTripCompleted(false);
+      setIsFreezeActive(false);
+      setFreezeRemainingMinutes(null);
+      void syncFromPoll();
+    });
+
     es.addEventListener("trip_completed", (e) => {
       queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
@@ -525,10 +534,12 @@ Roll No.: ${roll}`;
     return () => es.close();
   }, [queryClient, me?.id]);
 
-  // Hydrate tripActive + liveStation + 4h freeze on page load (mid-journey recovery via 10 s poll)
+  // Hydrate tripActive + liveStation + 4h freeze on page load (mid-journey recovery via 30 s poll)
   async function syncFromPoll() {
+    const pid = me?.id;
+    if (!pid) return;
     try {
-      const r = await fetch(`${BASE}/api/trips/active`);
+      const r = await fetch(`${BASE}/api/trips/active?passengerId=${pid}`);
       if (!r.ok) return;
       const d = await r.json() as {
         isJourneyActive?: boolean;
@@ -557,10 +568,11 @@ Roll No.: ${roll}`;
   }
 
   useEffect(() => {
+    if (!me?.id) return;
     void syncFromPoll();
-    const interval = setInterval(syncFromPoll, 5_000);
+    const interval = setInterval(syncFromPoll, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [me?.id]);
 
   // Hydrate student leave approval notification status on load
   useEffect(() => {

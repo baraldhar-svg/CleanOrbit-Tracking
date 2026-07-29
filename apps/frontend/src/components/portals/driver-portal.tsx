@@ -244,6 +244,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   });
 
   const [journeyCompleted, setJourneyCompleted] = useState(false);
+  const [isFreezeActive, setIsFreezeActive] = useState(false);
   const [completedTime, setCompletedTime] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number } | null>(null);
@@ -431,7 +432,12 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         };
         if (tenantId !== null) headers["x-tenant-id"] = String(tenantId);
         const res = await fetch(`${BASE_GPS}/api/trips/active?driverId=${myDriver.id}`, { headers });
-        if (res.status === 401) {
+        if (res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { isFreezeActive?: boolean };
+          if (typeof data.isFreezeActive === "boolean") {
+            setIsFreezeActive(data.isFreezeActive);
+          }
+        } else if (res.status === 401) {
           const data = (await res.json().catch(() => ({}))) as { sessionInvalidated?: boolean };
           if (data.sessionInvalidated) {
             stopGpsTracking();
@@ -440,7 +446,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
           }
         }
       } catch { /* ignore */ }
-    }, 4000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [myDriver?.id, user, logout]);
@@ -462,6 +468,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   const lastBroadcastIdx = useRef<number | null>(null);
   useEffect(() => {
     if (!journeyStarted || journeyCompleted || !myDriver?.id) return;
+    if (driverStations.length === 0 || !driverStations[stationIdx]) return;
     if (lastBroadcastIdx.current === stationIdx) return;
     lastBroadcastIdx.current = stationIdx;
     const station = driverStations[stationIdx];
@@ -478,16 +485,19 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       }),
     }).catch(() => { /* fire-and-forget — UI is already updated locally */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stationIdx, journeyStarted, journeyCompleted, myDriver?.id]);
+  }, [stationIdx, journeyStarted, journeyCompleted, myDriver?.id, driverStations]);
 
-  // Hydrate stationIdx from backend on load/mount if available
+  // Hydrate stationIdx and freeze status from backend on load/mount if available
   useEffect(() => {
     if (!myDriver?.id) return;
     fetch(`${BASE}/api/trips/active?driverId=${myDriver.id}`)
       .then((r) => r.json())
-      .then((data: { stationIdx?: number | null }) => {
+      .then((data: { stationIdx?: number | null; isFreezeActive?: boolean }) => {
         if (typeof data.stationIdx === "number" && data.stationIdx >= 0) {
           setStationIdx(data.stationIdx);
+        }
+        if (typeof data.isFreezeActive === "boolean") {
+          setIsFreezeActive(data.isFreezeActive);
         }
       })
       .catch(() => {});
@@ -530,8 +540,16 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       fetch(`${BASE_GPS}/api/routes/${myRoute.id}/stations`, { headers })
         .then((r) => r.json())
         .then((data: unknown) => {
-          setDriverStations(Array.isArray(data) ? (data as DriverRouteStation[]) : []);
-          if (initial) setStationIdx(0);
+          const stations = Array.isArray(data) ? (data as DriverRouteStation[]) : [];
+          setDriverStations(stations);
+          if (initial) {
+            setStationIdx((prev) => {
+              if (prev >= 0 && prev < stations.length) {
+                return prev;
+              }
+              return 0;
+            });
+          }
         })
         .catch(() => { if (initial) setDriverStations([]); })
         .finally(() => { if (initial) setLoadingStations(false); });
@@ -704,9 +722,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
     }
   };
 
-  // Auto-refresh passengers every 8s so boarding changes from admin show up
+  // Auto-refresh passengers every 60s so boarding changes from admin show up
   useEffect(() => {
-    const id = setInterval(() => { void refetch(); }, 8000);
+    const id = setInterval(() => { void refetch(); }, 60000);
     return () => clearInterval(id);
   }, [refetch]);
 
@@ -721,6 +739,13 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       void refetch();
       queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
       queryClient.invalidateQueries({ queryKey: getListDriversQueryKey() });
+      setIsFreezeActive(false);
+    });
+    es.addEventListener("trip_unfrozen", () => {
+      void refetch();
+      queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getListDriversQueryKey() });
+      setIsFreezeActive(false);
     });
     return () => es.close();
   }, [refetch, queryClient]);
@@ -1001,7 +1026,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       )}
 
       {/* Off-Duty / Freezed Banner */}
-      {(myDriver?.isActive === false || isHolidayToday) && (
+      {(myDriver?.isActive === false || isHolidayToday || isFreezeActive) && (
         <div className="mx-4 mt-3 rounded-2xl border border-amber-500/40 bg-amber-950/40 p-4 space-y-1.5 text-amber-200 shadow-md">
           <div className="flex items-center gap-2">
             <Lock size={18} className="text-amber-400 shrink-0" />
@@ -1018,7 +1043,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       )}
 
       {/* Offline banner */}
-      {isOffline && !isHolidayToday && myDriver?.isActive !== false && (
+      {isOffline && !isHolidayToday && myDriver?.isActive !== false && !isFreezeActive && (
         <div className="flex items-center gap-2 bg-slate-800 border-b border-slate-700 px-4 py-2.5">
           <WifiOff size={16} className="shrink-0 text-slate-300" />
           <p className="text-xs text-slate-300 font-medium flex-1">Location sharing paused — you are offline. Admin has been notified.</p>
@@ -1032,10 +1057,10 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         <div>
           {!journeyStarted ? (
             <button
-              onClick={isOffline || myDriver?.isActive === false || isHolidayToday ? undefined : handleStartJourney}
-              disabled={isOffline || myDriver?.isActive === false || isHolidayToday}
+              onClick={isOffline || myDriver?.isActive === false || isHolidayToday || isFreezeActive ? undefined : handleStartJourney}
+              disabled={isOffline || myDriver?.isActive === false || isHolidayToday || isFreezeActive}
               className={`w-full rounded-2xl py-4 text-center font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
-                isOffline || myDriver?.isActive === false || isHolidayToday
+                isOffline || myDriver?.isActive === false || isHolidayToday || isFreezeActive
                   ? "bg-slate-700 shadow-none opacity-50 cursor-not-allowed"
                   : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 shadow-green-900/40"
               }`}
@@ -1043,8 +1068,8 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
               <Navigation size={20} className="inline mr-2" />
               {isHolidayToday
                 ? "Holiday Today (Off Duty)"
-                : myDriver?.isActive === false
-                  ? "Profile Freezed by Admin"
+                : (myDriver?.isActive === false || isFreezeActive)
+                  ? "Profile Freezed"
                   : isOffline
                     ? "Go Live first to Start Journey"
                     : "Start Journey"}

@@ -262,7 +262,24 @@ type CalendarEvent = {
 
 // ── 🛠️ १. VEHICLE SERVICE & MANAGEMENT PANEL COMPONENT (ब्याकटिक्स एरर फिक्स गरिएको) ──
 function VehicleServiceTabs({ vehicles }: { vehicles: any[] | undefined }) {
-  const [subTab, setSubTab] = useState<"fuel" | "service" | "docs">("fuel");
+  const queryClient = useQueryClient();
+  const [subTab, setSubTab] = useState<"fuel" | "service" | "docs" | "buses">("fuel");
+  
+  // Fleet Management (buses sub-tab) state
+  const [editingVehicleId, setEditingVehicleId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({
+    plateNumber: "",
+    model: "",
+    capacity: "",
+  });
+  const [fleetForm, setFleetForm] = useState({
+    plateNumber: "",
+    model: "",
+    capacity: "40",
+  });
+  const [fleetError, setFleetError] = useState("");
+  const [fleetSaving, setFleetSaving] = useState(false);
+
   const [fuelRows, setFuelRows] = useState<FuelLogRow[]>([]);
   const [fuelForm, setFuelForm] = useState({
     vehicleId: "",
@@ -295,6 +312,73 @@ function VehicleServiceTabs({ vehicles }: { vehicles: any[] | undefined }) {
   const [uploadingDocPhoto, setUploadingDocPhoto] = useState(false);
   const [loading, setLoading] = useState(false);
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
+
+  async function handleAddFleet() {
+    if (!fleetForm.plateNumber.trim() || !fleetForm.model.trim()) {
+      setFleetError("Plate number and model are required");
+      return;
+    }
+    setFleetError("");
+    setFleetSaving(true);
+    try {
+      await apiPost("/vehicles", {
+        plateNumber: fleetForm.plateNumber.trim(),
+        model: fleetForm.model.trim(),
+        capacity: fleetForm.capacity ? Number(fleetForm.capacity) : 40,
+      });
+      queryClient.invalidateQueries({ queryKey: getListVehiclesQueryKey() });
+      setFleetForm({ plateNumber: "", model: "", capacity: "40" });
+    } catch (e: unknown) {
+      setFleetError(e instanceof Error ? e.message : "Failed to add bus");
+    } finally {
+      setFleetSaving(false);
+    }
+  }
+
+  async function handleEditFleetSave(id: number) {
+    if (!editForm.plateNumber.trim() || !editForm.model.trim()) {
+      setFleetError("Plate number and model are required");
+      return;
+    }
+    setFleetError("");
+    setFleetSaving(true);
+    try {
+      await apiPatch(`/vehicles/${id}`, {
+        plateNumber: editForm.plateNumber.trim(),
+        model: editForm.model.trim(),
+        capacity: editForm.capacity ? Number(editForm.capacity) : 40,
+      });
+      queryClient.invalidateQueries({ queryKey: getListVehiclesQueryKey() });
+      setEditingVehicleId(null);
+    } catch (e: unknown) {
+      setFleetError(e instanceof Error ? e.message : "Failed to save changes");
+    } finally {
+      setFleetSaving(false);
+    }
+  }
+
+  async function handleDeleteFleet(id: number) {
+    if (!confirm("Are you sure you want to delete this vehicle? This action cannot be undone.")) return;
+    setFleetSaving(true);
+    try {
+      await apiDelete(`/vehicles/${id}`);
+      queryClient.invalidateQueries({ queryKey: getListVehiclesQueryKey() });
+      if (editingVehicleId === id) setEditingVehicleId(null);
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Failed to delete vehicle");
+    } finally {
+      setFleetSaving(false);
+    }
+  }
+
+  function startEditing(v: any) {
+    setEditingVehicleId(v.id);
+    setEditForm({
+      plateNumber: v.plateNumber,
+      model: v.model,
+      capacity: String(v.capacity ?? 40),
+    });
+  }
 
   async function loadAllData() {
     setLoading(true);
@@ -442,6 +526,12 @@ function VehicleServiceTabs({ vehicles }: { vehicles: any[] | undefined }) {
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg transition-colors ${subTab === "docs" ? "bg-amber-500 text-slate-900 font-bold" : "text-muted-foreground"}`}
         >
           <FileText size={13} /> Documents
+        </button>
+        <button
+          onClick={() => setSubTab("buses")}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg transition-colors ${subTab === "buses" ? "bg-amber-500 text-slate-900 font-bold" : "text-muted-foreground"}`}
+        >
+          <Bus size={13} /> Buses
         </button>
       </div>
       <div className="p-4">

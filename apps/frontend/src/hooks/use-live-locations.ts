@@ -59,7 +59,7 @@ export function useLiveLocations(): LiveDriverLocation[] {
     }
 
     void poll();
-    const pollInterval = setInterval(poll, 3_000);
+    const pollInterval = setInterval(poll, 30_000);
 
     // SSE: EventSource cannot send custom headers — pass tenantId as query param.
     // The server joins this client into the tenant-scoped room immediately on connect,
