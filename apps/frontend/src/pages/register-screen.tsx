@@ -299,6 +299,7 @@ export default function RegisterScreen() {
 
   const handleRegister = useCallback(async () => {
     if (!name.trim()) { setErr("Name is required"); return; }
+    if (role !== "admin" && !regSchoolCode.trim()) { setErr("School Code is required"); return; }
     if (role === "staff" && !designation) { setErr("Please select your Designation"); return; }
     if (role === "staff" && designation === "Others" && !customDesignation.trim()) { setErr("Please enter your custom designation"); return; }
     if (password && password.length < 6) { setErr("Password must be at least 6 characters"); return; }
@@ -753,7 +754,7 @@ export default function RegisterScreen() {
                 {role !== "admin" && (
                   <div className="mb-4">
                     <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
-                      School Code <span className="text-slate-500 normal-case font-normal">(optional)</span>
+                      School Code <span className="text-amber-400">*</span>
                     </label>
                     <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
                       <span className="text-slate-400 text-sm">🏫</span>
