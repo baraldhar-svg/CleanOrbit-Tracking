@@ -1,8 +1,113 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import AppFooter from "@/components/app-footer";
 
+interface FeatureDetail {
+  id: string;
+  title: string;
+  icon: string;
+  context: string;
+  details: string;
+  colorClass: string;
+  iconBg: string;
+}
+
+const FEATURE_DETAILS: Record<string, FeatureDetail> = {
+  "live-gps": {
+    id: "live-gps",
+    title: "LIVE GPS TRACKING",
+    icon: "🛰️",
+    context: "Real-time location tracking of school buses.",
+    details: "The system utilizes OpenStreetMap to monitor the live movement, coordinates, and routes of school buses. It ensures continuous visibility, allowing administrators and parents to know the exact physical location of the bus at any given moment during transit.",
+    colorClass: "text-blue-300 border-blue-500/30",
+    iconBg: "bg-blue-600/20 border-blue-600/40 text-blue-300",
+  },
+  "parent-portal": {
+    id: "parent-portal",
+    title: "PARENT PORTAL",
+    icon: "👨‍👩‍👧",
+    context: "Direct communication and updates sent to parents.",
+    details: "Dedicated guardian portal designed to prioritize student safety and convenience. Parents receive direct updates, live tracking access, and timely notifications on their registered mobile devices regarding their child's transit status.",
+    colorClass: "text-green-300 border-green-500/30",
+    iconBg: "bg-green-600/20 border-green-600/40 text-green-300",
+  },
+  "driver-dashboard": {
+    id: "driver-dashboard",
+    title: "DRIVER DASHBOARD",
+    icon: "🚍",
+    context: "Interactive interface for bus drivers.",
+    details: "A streamlined mobile-friendly dashboard that provides drivers with turn-by-turn navigation and a station-by-station checkpoint interface, making it easy to manage route progressions and communicate updates back to the central system seamlessly.",
+    colorClass: "text-amber-300 border-amber-500/30",
+    iconBg: "bg-amber-600/20 border-amber-600/40 text-amber-300",
+  },
+  "bus-location": {
+    id: "bus-location",
+    title: "Bus Location on Map",
+    icon: "🗺️",
+    context: "Map integration and spatial updates.",
+    details: "Provides an interactive visual representation of the active transit route. Users can instantly view running buses, designated stops, and overall path progress on a clear digital map interface.",
+    colorClass: "text-blue-400 border-blue-500/30",
+    iconBg: "bg-blue-600 text-white shadow-lg shadow-blue-900/40",
+  },
+  "eta-updates": {
+    id: "eta-updates",
+    title: "ETA & Stop Updates",
+    icon: "⏱️",
+    context: "Automated arrival alerts and timing estimates via SMS/WhatsApp.",
+    details: "Automatically calculates Estimated Time of Arrival (ETA) for upcoming stops and triggers automated alerts to parents or staff (e.g., notifying them a few stops prior to arrival) so students are ready at their pick-up points on time.",
+    colorClass: "text-amber-400 border-amber-500/30",
+    iconBg: "bg-amber-500 text-slate-950 shadow-lg shadow-amber-900/40",
+  },
+  "ride-history": {
+    id: "ride-history",
+    title: "Ride History & Reports",
+    icon: "📋",
+    context: "Logging historical transit data for administrative audits.",
+    details: "Maintains detailed digital archives of past trips, student boarding logs, and transit durations. This data can be exported into reports for administrative reviews, compliance, and safety audits.",
+    colorClass: "text-purple-400 border-purple-500/30",
+    iconBg: "bg-purple-600 text-white shadow-lg shadow-purple-900/40",
+  },
+  "realtime-alerts": {
+    id: "realtime-alerts",
+    title: "Real-Time Alerts",
+    icon: "🔔",
+    context: "Emergency broadcast and instant push/SMS notifications.",
+    details: "An instant notification mechanism that broadcasts critical updates—such as unexpected route deviations, traffic delays, vehicle breakdowns, or successful drop-off confirmations—directly to stakeholders.",
+    colorClass: "text-yellow-400 border-yellow-800/50",
+    iconBg: "bg-yellow-900/30 border-yellow-800/50 text-yellow-400",
+  },
+  "bs-calendar": {
+    id: "bs-calendar",
+    title: "BS Calendar",
+    icon: "📅",
+    context: "Localized date-time scheduling.",
+    details: "Fully integrated Bikram Sambat (BS) calendar system built to synchronize school terms, holidays, and daily operational schedules seamlessly with the local academic calendar of Nepal.",
+    colorClass: "text-sky-400 border-sky-800/50",
+    iconBg: "bg-sky-900/30 border-sky-800/50 text-sky-400",
+  },
+  "boarding-checklist": {
+    id: "boarding-checklist",
+    title: "Boarding Checklist",
+    icon: "📋",
+    context: "Attendance verification during boarding and de-boarding.",
+    details: "A digital manifest system used by drivers or bus assistants to verify and check off students as they successfully board or exit the bus, ensuring that no child is left behind or dropped off at the wrong station.",
+    colorClass: "text-green-400 border-green-800/50",
+    iconBg: "bg-green-900/30 border-green-800/50 text-green-400",
+  },
+  "fleet-management": {
+    id: "fleet-management",
+    title: "Fleet Management",
+    icon: "🛡️",
+    context: "Centralized command center for multiple buses.",
+    details: "An administrative overarching tool used to oversee multiple school buses, assign drivers to specific routes, monitor vehicle health metrics, and manage transport operations across the entire educational institution efficiently.",
+    colorClass: "text-purple-400 border-purple-800/50",
+    iconBg: "bg-purple-900/30 border-purple-800/50 text-purple-400",
+  },
+};
+
 export default function Landing() {
   const [, navigate] = useLocation();
+  const [selectedFeature, setSelectedFeature] = useState<FeatureDetail | null>(null);
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col overflow-y-scroll bg-[#0F172A] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-slate-900 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-700 hover:[&::-webkit-scrollbar-thumb]:bg-amber-500">
@@ -65,7 +170,10 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {/* Live GPS Tracking */}
-            <div className="rounded-2xl border border-blue-800/60 bg-blue-950/40 p-5 hover:border-blue-500/60 transition-colors">
+            <div 
+              onClick={() => setSelectedFeature(FEATURE_DETAILS["live-gps"])}
+              className="rounded-2xl border border-blue-800/60 bg-blue-950/40 p-5 hover:border-blue-500/60 transition-all cursor-pointer hover:bg-blue-950/60 active:scale-[0.98]"
+            >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 border border-blue-600/40 text-2xl">
                 🛰️
               </div>
@@ -74,7 +182,10 @@ export default function Landing() {
             </div>
 
             {/* Parent Portal */}
-            <div className="rounded-2xl border border-green-800/60 bg-green-950/40 p-5 hover:border-green-500/60 transition-colors">
+            <div 
+              onClick={() => setSelectedFeature(FEATURE_DETAILS["parent-portal"])}
+              className="rounded-2xl border border-green-800/60 bg-green-950/40 p-5 hover:border-green-500/60 transition-all cursor-pointer hover:bg-green-950/60 active:scale-[0.98]"
+            >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-green-600/20 border border-green-600/40 text-2xl">
                 👨‍👩‍👧
               </div>
@@ -83,7 +194,10 @@ export default function Landing() {
             </div>
 
             {/* Driver Dashboard */}
-            <div className="rounded-2xl border border-amber-800/60 bg-amber-950/30 p-5 hover:border-amber-500/60 transition-colors">
+            <div 
+              onClick={() => setSelectedFeature(FEATURE_DETAILS["driver-dashboard"])}
+              className="rounded-2xl border border-amber-800/60 bg-amber-950/30 p-5 hover:border-amber-500/60 transition-all cursor-pointer hover:bg-amber-950/50 active:scale-[0.98]"
+            >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-600/20 border border-amber-600/40 text-2xl">
                 🚍
               </div>
@@ -98,8 +212,11 @@ export default function Landing() {
           {/* Sub-features */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* View Bus Location on Map */}
-            <div className="flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 hover:border-blue-500/40 transition-colors">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl shadow-lg shadow-blue-900/40">
+            <div 
+              onClick={() => setSelectedFeature(FEATURE_DETAILS["bus-location"])}
+              className="flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 hover:border-blue-500/40 transition-all cursor-pointer hover:bg-slate-800 active:scale-[0.98]"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl shadow-lg shadow-blue-900/40 animate-pulse-slow">
                 🗺️
               </div>
               <div>
@@ -109,7 +226,10 @@ export default function Landing() {
             </div>
 
             {/* ETA & Stop Updates */}
-            <div className="flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 hover:border-amber-500/40 transition-colors">
+            <div 
+              onClick={() => setSelectedFeature(FEATURE_DETAILS["eta-updates"])}
+              className="flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 hover:border-amber-500/40 transition-all cursor-pointer hover:bg-slate-800 active:scale-[0.98]"
+            >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-xl shadow-lg shadow-amber-900/40">
                 ⏱️
               </div>
@@ -120,7 +240,10 @@ export default function Landing() {
             </div>
 
             {/* Ride History */}
-            <div className="flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 hover:border-purple-500/40 transition-colors">
+            <div 
+              onClick={() => setSelectedFeature(FEATURE_DETAILS["ride-history"])}
+              className="flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 hover:border-purple-500/40 transition-all cursor-pointer hover:bg-slate-800 active:scale-[0.98]"
+            >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-600 text-xl shadow-lg shadow-purple-900/40">
                 📋
               </div>
@@ -134,14 +257,15 @@ export default function Landing() {
           {/* Additional feature strip */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
-              { icon: "🔔", label: "Real-Time Alerts",    color: "text-yellow-400", bg: "bg-yellow-900/30 border-yellow-800/50" },
-              { icon: "📅", label: "BS Calendar",         color: "text-sky-400",    bg: "bg-sky-900/30 border-sky-800/50" },
-              { icon: "📋", label: "Boarding Checklist",  color: "text-green-400",  bg: "bg-green-900/30 border-green-800/50" },
-              { icon: "🛡️", label: "Fleet Management",    color: "text-purple-400", bg: "bg-purple-900/30 border-purple-800/50" },
+              { key: "realtime-alerts",    icon: "🔔", label: "Real-Time Alerts",    color: "text-yellow-400", bg: "bg-yellow-900/30 border-yellow-800/50" },
+              { key: "bs-calendar",         icon: "📅", label: "BS Calendar",         color: "text-sky-400",    bg: "bg-sky-900/30 border-sky-800/50" },
+              { key: "boarding-checklist",  icon: "📋", label: "Boarding Checklist",  color: "text-green-400",  bg: "bg-green-900/30 border-green-800/50" },
+              { key: "fleet-management",    icon: "🛡️", label: "Fleet Management",    color: "text-purple-400", bg: "bg-purple-900/30 border-purple-800/50" },
             ].map((f) => (
               <div
                 key={f.label}
-                className={`rounded-xl border ${f.bg} p-3 flex flex-col items-center gap-2 text-center`}
+                onClick={() => setSelectedFeature(FEATURE_DETAILS[f.key])}
+                className={`rounded-xl border ${f.bg} p-3 flex flex-col items-center gap-2 text-center cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all`}
               >
                 <span className="text-xl">{f.icon}</span>
                 <span className={`text-xs font-semibold ${f.color}`}>{f.label}</span>
@@ -212,6 +336,98 @@ export default function Landing() {
       </a>
 
       <AppFooter variant="dark" />
+
+      {/* ── Feature Detail Modal ─────────────────────────────────────── */}
+      {selectedFeature && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md px-4 py-6 transition-all duration-300 animate-fadeIn"
+          onClick={() => setSelectedFeature(null)}
+        >
+          <div 
+            className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-700/60 bg-gradient-to-b from-slate-800 to-slate-900 p-6 sm:p-8 shadow-2xl transition-all duration-300 transform scale-100 animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button top-right */}
+            <button
+              onClick={() => setSelectedFeature(null)}
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-slate-700/40 text-slate-400 hover:bg-slate-700/80 hover:text-white transition-colors text-sm font-bold"
+            >
+              ✕
+            </button>
+
+            {/* Header info */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border text-3xl ${selectedFeature.iconBg}`}>
+                {selectedFeature.icon}
+              </div>
+              <div>
+                <h3 className="text-lg font-black tracking-tight text-white uppercase sm:text-xl">
+                  {selectedFeature.title}
+                </h3>
+                <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mt-0.5">OrbitTrack Feature</p>
+              </div>
+            </div>
+
+            {/* Content Body */}
+            <div className="space-y-4 text-left">
+              {/* Context Block */}
+              <div className="rounded-2xl border border-slate-700 bg-slate-900/60 p-4">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Integration Context</h4>
+                <p className="text-xs sm:text-sm text-amber-300 font-medium leading-relaxed">
+                  {selectedFeature.context}
+                </p>
+              </div>
+
+              {/* Details Block */}
+              <div className="p-1">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Description &amp; Details</h4>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  {selectedFeature.details}
+                </p>
+              </div>
+            </div>
+
+            {/* Footer buttons */}
+            <div className="mt-8 flex items-center justify-end gap-3 border-t border-slate-700/50 pt-5">
+              <button
+                onClick={() => setSelectedFeature(null)}
+                className="rounded-xl bg-slate-700/50 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+              >
+                Close Window
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedFeature(null);
+                  navigate("/auth");
+                }}
+                className="rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-black text-slate-900 hover:bg-amber-400 transition-all shadow-md shadow-black/20"
+              >
+                Try OrbitTrack Now →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out forwards;
+        }
+        .animate-slideUp {
+          animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-pulse-slow {
+          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+      `}</style>
     </div>
   );
 }
