@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
@@ -8,8 +8,13 @@ const rawPort = process.env.PORT ?? "5173";
 const port = Number(rawPort);
 const basePath = process.env.BASE_PATH ?? "/";
 
-export default defineConfig({
-  base: basePath,
+export default defineConfig(async ({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  console.log("VITE_SUPABASE_URL from loadEnv:", env.VITE_SUPABASE_URL);
+  console.log("VITE_SUPABASE_ANON_KEY from loadEnv:", env.VITE_SUPABASE_ANON_KEY);
+
+  return {
+    base: basePath,
   plugins: [
     react(),
     tailwindcss(),
@@ -37,7 +42,7 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
   },
   server: {
@@ -60,4 +65,5 @@ export default defineConfig({
     host: "0.0.0.0",
     allowedHosts: true,
   },
+};
 });

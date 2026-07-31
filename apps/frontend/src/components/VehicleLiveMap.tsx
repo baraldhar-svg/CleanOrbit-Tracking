@@ -7,13 +7,13 @@ import "leaflet/dist/leaflet.css";
 // ── Supabase Setup ──────────────────────────────────────────────────────────
 // Support both Vite (import.meta.env.VITE_SUPABASE_URL) and Next.js (process.env.NEXT_PUBLIC_SUPABASE_URL)
 const supabaseUrl = 
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_URL) || 
-  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_SUPABASE_URL) || 
+  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_SUPABASE_URL) || 
+  (typeof process !== "undefined" && process.env && process.env.NEXT_PUBLIC_SUPABASE_URL) || 
   "";
 
 const supabaseAnonKey = 
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_ANON_KEY) || 
-  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY) || 
+  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY) || 
+  (typeof process !== "undefined" && process.env && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || 
   "";
 
 export const supabase = (supabaseUrl && supabaseAnonKey)
