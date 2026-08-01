@@ -2,6 +2,8 @@ import dns from "dns";
 import express, { type Express } from "express";
 import cors from "cors";
 import * as pinoHttp from "pino-http";
+import path from "path";
+import fs from "fs";
 import router from "./routes/index.js";
 import webhookRouter from "./routes/webhook.js";
 import { logger } from "./lib/logger.js";
@@ -94,6 +96,32 @@ app.use((req: any, res: any, next: any) => {
 
 app.use("/api", router);
 app.use("/webhook", webhookRouter);
+
+// Serve frontend static files in production
+const staticPaths = [
+  path.resolve(import.meta.dirname, "../../frontend/dist"),
+  path.resolve(process.cwd(), "apps/frontend/dist"),
+  path.resolve(process.cwd(), "../frontend/dist"),
+];
+let staticPath = "";
+for (const p of staticPaths) {
+  if (fs.existsSync(p)) {
+    staticPath = p;
+    break;
+  }
+}
+if (staticPath) {
+  logger.info({ staticPath }, "Serving static frontend files");
+  app.use(express.static(staticPath));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.startsWith("/webhook")) {
+      return next();
+    }
+    res.sendFile(path.resolve(staticPath, "index.html"));
+  });
+} else {
+  logger.warn("Static frontend path not found. Static serving disabled.");
+}
 
 // Default error handler returning clean JSON
 app.use((err: any, _req: any, res: any, _next: any) => {
