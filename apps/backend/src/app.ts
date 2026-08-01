@@ -113,7 +113,7 @@ for (const p of staticPaths) {
 if (staticPath) {
   logger.info({ staticPath }, "Serving static frontend files");
   app.use(express.static(staticPath));
-  app.get("/:pathMatch(.*)", (req, res, next) => {
+  app.get(/.*/, (req, res, next) => {
     if (req.path.startsWith("/api") || req.path.startsWith("/webhook")) {
       return next();
     }
