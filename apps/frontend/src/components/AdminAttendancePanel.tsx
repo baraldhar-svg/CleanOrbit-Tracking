@@ -210,7 +210,6 @@ export default function AdminAttendancePanel() {
 
     let groupedHtml = "";
     groupedData.forEach(group => {
-      const key = `${group.className}-${group.section}`;
       groupedHtml += `
         <div class="class-section-block">
           <h2>Class ${group.className} - ${group.section}</h2>
@@ -332,11 +331,9 @@ export default function AdminAttendancePanel() {
 
     doc.close();
 
-    // Give iframe time to render, then print
     setTimeout(() => {
       printFrame.contentWindow?.focus();
       printFrame.contentWindow?.print();
-      // Remove iframe from DOM after print dialog is closed
       setTimeout(() => {
         document.body.removeChild(printFrame);
       }, 500);
@@ -347,10 +344,10 @@ export default function AdminAttendancePanel() {
     <div className="p-4 md:p-6 space-y-6">
 
       {/* Header and Controls */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
         <div>
-          <h1 className="text-xl font-black text-white">Attendance Panel & Reports</h1>
-          <p className="text-slate-400 text-xs mt-1">
+          <h1 className="text-xl font-black text-foreground">Attendance Panel & Reports</h1>
+          <p className="text-muted-foreground text-xs mt-1">
             Group classroom attendance class-wise and section-wise, view history, and export data.
           </p>
         </div>
@@ -358,19 +355,19 @@ export default function AdminAttendancePanel() {
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           {/* Date Selector */}
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 h-4 w-4" />
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="pl-9 pr-3 py-2 rounded-xl border border-slate-800 bg-slate-950 text-xs text-white outline-none focus:border-amber-500"
+              className="pl-9 pr-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground outline-none focus:border-amber-500"
             />
           </div>
           
           {/* Export Excel Button */}
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white hover:border-slate-700 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-background px-3.5 py-2 text-xs font-bold text-foreground hover:bg-muted transition-colors cursor-pointer"
           >
             <Download size={14} />
             Excel
@@ -379,7 +376,7 @@ export default function AdminAttendancePanel() {
           {/* Export PDF / Print Button */}
           <button
             onClick={handleExportPDF}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white hover:border-slate-700 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-background px-3.5 py-2 text-xs font-bold text-foreground hover:bg-muted transition-colors cursor-pointer"
           >
             <Printer size={14} />
             PDF Report
@@ -389,52 +386,52 @@ export default function AdminAttendancePanel() {
 
       {/* Summary Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="bg-slate-900/40 border border-slate-800/80 p-4 rounded-xl">
-          <div className="text-lg font-black text-white">{stats.total}</div>
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Total Registered</div>
+        <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+          <div className="text-lg font-black text-foreground">{stats.total}</div>
+          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">Total Registered</div>
         </div>
-        <div className="bg-slate-900/40 border border-slate-800/80 p-4 rounded-xl border-l-2 border-l-emerald-500">
-          <div className="text-lg font-black text-emerald-400">{stats.present}</div>
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Present Today</div>
+        <div className="bg-card border border-border p-4 rounded-xl border-l-2 border-l-emerald-500 shadow-sm">
+          <div className="text-lg font-black text-emerald-600 dark:text-emerald-400">{stats.present}</div>
+          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">Present Today</div>
         </div>
-        <div className="bg-slate-900/40 border border-slate-800/80 p-4 rounded-xl border-l-2 border-l-rose-500">
-          <div className="text-lg font-black text-rose-400">{stats.absent}</div>
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Absent Today</div>
+        <div className="bg-card border border-border p-4 rounded-xl border-l-2 border-l-rose-500 shadow-sm">
+          <div className="text-lg font-black text-rose-600 dark:text-rose-400">{stats.absent}</div>
+          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">Absent Today</div>
         </div>
-        <div className="bg-slate-900/40 border border-slate-800/80 p-4 rounded-xl border-l-2 border-l-amber-500">
-          <div className="text-lg font-black text-amber-500">{stats.pending}</div>
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Pending Status</div>
+        <div className="bg-card border border-border p-4 rounded-xl border-l-2 border-l-amber-500 shadow-sm">
+          <div className="text-lg font-black text-amber-600 dark:text-amber-500">{stats.pending}</div>
+          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">Pending Status</div>
         </div>
-        <div className="bg-slate-900/40 border border-slate-800/80 p-4 rounded-xl border-l-2 border-l-blue-500">
-          <div className="text-lg font-black text-blue-400">{stats.percentage}%</div>
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 font-semibold">Attendance Rate</div>
+        <div className="bg-card border border-border p-4 rounded-xl border-l-2 border-l-blue-500 shadow-sm">
+          <div className="text-lg font-black text-blue-600 dark:text-blue-400">{stats.percentage}%</div>
+          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5 font-semibold">Attendance Rate</div>
         </div>
       </div>
 
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 h-4.5 w-4.5" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4.5 w-4.5" />
         <input
           type="text"
           placeholder="Search student by name to inspect attendance details…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-800 bg-slate-900 placeholder:text-slate-500 text-sm text-white outline-none focus:border-amber-500"
+          className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-border bg-card placeholder:text-muted-foreground text-sm text-foreground outline-none focus:border-amber-500"
         />
       </div>
 
       {/* Attendance List grouped Class-wise */}
       <div className="space-y-4">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-3 bg-slate-900/10 border border-slate-800 rounded-2xl">
+          <div className="flex flex-col items-center justify-center py-20 space-y-3 bg-muted/10 border border-border rounded-2xl">
             <RefreshCw className="animate-spin text-amber-500" size={32} />
-            <p className="text-slate-400 text-sm">Loading attendance groups...</p>
+            <p className="text-muted-foreground text-sm">Loading attendance groups...</p>
           </div>
         ) : groupedData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-slate-900/10 border border-slate-800 rounded-2xl text-center px-4">
-            <Users className="text-slate-600 mb-2" size={36} />
-            <h3 className="text-white font-bold text-sm">No records found</h3>
-            <p className="text-slate-500 text-xs mt-1">There are no registered students or attendance logs for this school on the selected date.</p>
+          <div className="flex flex-col items-center justify-center py-20 bg-muted/10 border border-border rounded-2xl text-center px-4">
+            <Users className="text-muted-foreground mb-2" size={36} />
+            <h3 className="text-foreground font-bold text-sm">No records found</h3>
+            <p className="text-muted-foreground text-xs mt-1">There are no registered students or attendance logs for this school on the selected date.</p>
           </div>
         ) : (
           groupedData.map((group) => {
@@ -442,27 +439,27 @@ export default function AdminAttendancePanel() {
             const isExpanded = expandedClasses[key] !== false;
 
             return (
-              <div key={key} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+              <div key={key} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
                 
                 {/* Collapsible Header */}
                 <button
                   onClick={() => toggleExpand(key)}
-                  className="w-full flex items-center justify-between p-4 bg-slate-950/80 border-b border-slate-800/60 hover:bg-slate-950 transition-colors text-left"
+                  className="w-full flex items-center justify-between p-4 bg-muted/30 border-b border-border hover:bg-muted/50 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-amber-500 font-bold border border-slate-800 text-sm">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-background text-amber-600 dark:text-amber-500 font-bold border border-border text-sm">
                       {group.className[0]}
                     </span>
                     <div>
-                      <h3 className="text-sm font-bold text-white leading-tight">
+                      <h3 className="text-sm font-bold text-foreground leading-tight">
                         Class {group.className} — Section {group.section}
                       </h3>
-                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                      <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">
                         {group.present.length} Present • {group.absent.length} Absent • {group.pending.length} Pending
                       </p>
                     </div>
                   </div>
-                  {isExpanded ? <ChevronUp className="text-slate-400 h-5 w-5" /> : <ChevronDown className="text-slate-400 h-5 w-5" />}
+                  {isExpanded ? <ChevronUp className="text-muted-foreground h-5 w-5" /> : <ChevronDown className="text-muted-foreground h-5 w-5" />}
                 </button>
 
                 {/* Collapsible Content */}
@@ -473,24 +470,24 @@ export default function AdminAttendancePanel() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       
                       {/* Left: Present Students Table */}
-                      <div className="border border-slate-800/80 rounded-xl overflow-hidden bg-slate-950/20">
-                        <div className="p-3 bg-emerald-500/10 border-b border-slate-800/80 flex items-center gap-2">
-                          <CheckCircle size={15} className="text-emerald-400" />
-                          <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                      <div className="border border-border rounded-xl overflow-hidden bg-background">
+                        <div className="p-3 bg-emerald-500/10 dark:bg-emerald-500/20 border-b border-border flex items-center gap-2">
+                          <CheckCircle size={15} className="text-emerald-600 dark:text-emerald-400" />
+                          <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                             Present Students ({group.present.length})
                           </h4>
                         </div>
                         {group.present.length === 0 ? (
-                          <div className="p-4 text-center text-slate-500 text-xs italic">
+                          <div className="p-4 text-center text-muted-foreground text-xs italic">
                             No students marked present.
                           </div>
                         ) : (
-                          <div className="divide-y divide-slate-800/40">
+                          <div className="divide-y divide-border">
                             {group.present.map((student) => (
-                              <div key={student.studentId} className="p-3 flex items-center justify-between text-xs hover:bg-slate-900/30 transition-colors">
-                                <span className="font-semibold text-slate-200">{student.fullName}</span>
+                              <div key={student.studentId} className="p-3 flex items-center justify-between text-xs hover:bg-muted/20 transition-colors">
+                                <span className="font-semibold text-foreground">{student.fullName}</span>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[10px] text-slate-500">Bus: {student.busStatus}</span>
+                                  <span className="text-[10px] text-muted-foreground">Bus: {student.busStatus}</span>
                                   <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
                                 </div>
                               </div>
@@ -500,24 +497,24 @@ export default function AdminAttendancePanel() {
                       </div>
 
                       {/* Right: Absent Students Table */}
-                      <div className="border border-slate-800/80 rounded-xl overflow-hidden bg-slate-950/20">
-                        <div className="p-3 bg-rose-500/10 border-b border-slate-800/80 flex items-center gap-2">
-                          <XCircle size={15} className="text-rose-400" />
-                          <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider">
+                      <div className="border border-border rounded-xl overflow-hidden bg-background">
+                        <div className="p-3 bg-rose-500/10 dark:bg-rose-500/20 border-b border-border flex items-center gap-2">
+                          <XCircle size={15} className="text-rose-600 dark:text-rose-400" />
+                          <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                             Absent Students ({group.absent.length})
                           </h4>
                         </div>
                         {group.absent.length === 0 ? (
-                          <div className="p-4 text-center text-slate-500 text-xs italic">
+                          <div className="p-4 text-center text-muted-foreground text-xs italic">
                             No students marked absent.
                           </div>
                         ) : (
-                          <div className="divide-y divide-slate-800/40">
+                          <div className="divide-y divide-border">
                             {group.absent.map((student) => (
-                              <div key={student.studentId} className="p-3 flex items-center justify-between text-xs hover:bg-slate-900/30 transition-colors">
-                                <span className="font-semibold text-rose-400">{student.fullName}</span>
+                              <div key={student.studentId} className="p-3 flex items-center justify-between text-xs hover:bg-muted/20 transition-colors">
+                                <span className="font-semibold text-rose-600 dark:text-rose-400">{student.fullName}</span>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[10px] text-slate-500">Bus: {student.busStatus}</span>
+                                  <span className="text-[10px] text-muted-foreground">Bus: {student.busStatus}</span>
                                   <span className="h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]" />
                                 </div>
                               </div>
@@ -530,18 +527,18 @@ export default function AdminAttendancePanel() {
 
                     {/* Pending Students list (below if any exist) */}
                     {group.pending.length > 0 && (
-                      <div className="border border-slate-800/80 rounded-xl overflow-hidden bg-slate-950/20">
-                        <div className="p-2.5 bg-amber-500/10 border-b border-slate-800/80 flex items-center gap-2">
-                          <AlertCircle size={14} className="text-amber-400" />
-                          <h4 className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                      <div className="border border-border rounded-xl overflow-hidden bg-background">
+                        <div className="p-2.5 bg-amber-500/10 dark:bg-amber-500/20 border-b border-border flex items-center gap-2">
+                          <AlertCircle size={14} className="text-amber-600 dark:text-amber-400" />
+                          <h4 className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                             Pending Registration Status ({group.pending.length})
                           </h4>
                         </div>
                         <div className="p-3 flex flex-wrap gap-2">
                           {group.pending.map((student) => (
-                            <div key={student.studentId} className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-400 flex items-center gap-1.5">
+                            <div key={student.studentId} className="px-2.5 py-1 rounded-lg bg-card border border-border text-[11px] text-muted-foreground flex items-center gap-1.5 shadow-sm">
                               <span>{student.fullName}</span>
-                              <span className="text-[8px] bg-slate-850 px-1 py-0.2 rounded border border-slate-800 uppercase text-slate-500">
+                              <span className="text-[8px] bg-muted px-1.5 py-0.5 rounded border border-border uppercase text-muted-foreground font-semibold">
                                 Bus: {student.busStatus}
                               </span>
                             </div>
