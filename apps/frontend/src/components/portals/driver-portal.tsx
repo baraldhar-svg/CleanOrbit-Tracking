@@ -1130,6 +1130,60 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
+        {/* At This Station — Waiting Passengers */}
+        {journeyStarted && !journeyCompleted && currentStation && (() => {
+          const waiting = riderPassengers.filter(
+            (p) => (p.stationId === currentStation.stationId || p.stationId === currentStation.id) && p.status === "pending" && p.quickMessage !== "Staying home today"
+          );
+          return (
+            <div className="rounded-2xl border border-amber-600/40 bg-amber-950/20 overflow-hidden shadow-md">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-amber-700/30">
+                <div>
+                  <p className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <MapPin size={12} /> At This Stop
+                  </p>
+                  <p className="text-[10px] text-amber-600 mt-0.5">{currentStation.stopLabel || currentStation.stationName || "—"} · {waiting.length} waiting</p>
+                </div>
+                {waiting.length === 0 && (
+                  <span className="text-[10px] text-slate-500 italic">All accounted for</span>
+                )}
+              </div>
+              {waiting.length > 0 ? (
+                <div className="divide-y divide-amber-900/30">
+                  {waiting.map((p) => (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+                      <Avatar name={p.name} photoUrl={p.photoUrl} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-100 text-sm">{p.name}</p>
+                        <p className="text-[10px] text-slate-400 capitalize">{p.role} · {p.stationName}</p>
+                        {p.quickMessage && <p className="text-[10px] text-blue-400 italic truncate">"{p.quickMessage}"</p>}
+                      </div>
+                      <div className="shrink-0 flex gap-1.5">
+                        <button
+                          onClick={() => handleBoard(p.id)}
+                          disabled={boardingId === p.id || absentId === p.id || isOffline}
+                          className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+                        >
+                          {boardingId === p.id ? "…" : "Board ✓"}
+                        </button>
+                        <button
+                          onClick={() => handleAbsent(p.id)}
+                          disabled={boardingId === p.id || absentId === p.id || isOffline}
+                          className="rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-slate-600 disabled:opacity-50 transition-colors border border-red-700/30"
+                        >
+                          {absentId === p.id ? "…" : "Absent"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-3 text-center text-xs text-amber-500/60 font-medium italic">No pending passengers at this stop</div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Start Journey Button */}
         <div>
           {!journeyStarted ? (
@@ -1513,59 +1567,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
           </div>
         )}
 
-        {/* At This Station — Waiting Passengers */}
-        {journeyStarted && !journeyCompleted && currentStation && (() => {
-          const waiting = riderPassengers.filter(
-            (p) => (p.stationId === currentStation.stationId || p.stationId === currentStation.id) && p.status === "pending" && p.quickMessage !== "Staying home today"
-          );
-          return (
-            <div className="rounded-2xl border border-amber-600/40 bg-amber-950/20 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-amber-700/30">
-                <div>
-                  <p className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <MapPin size={12} /> At This Stop
-                  </p>
-                  <p className="text-[10px] text-amber-600 mt-0.5">{currentStation.stopLabel || currentStation.stationName || "—"} · {waiting.length} waiting</p>
-                </div>
-                {waiting.length === 0 && (
-                  <span className="text-[10px] text-slate-500 italic">All accounted for</span>
-                )}
-              </div>
-              {waiting.length > 0 ? (
-                <div className="divide-y divide-amber-900/30">
-                  {waiting.map((p) => (
-                    <div key={p.id} className="flex items-center gap-3 px-4 py-3">
-                      <Avatar name={p.name} photoUrl={p.photoUrl} />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-100 text-sm">{p.name}</p>
-                        <p className="text-[10px] text-slate-400 capitalize">{p.role} · {p.stationName}</p>
-                        {p.quickMessage && <p className="text-[10px] text-blue-400 italic truncate">"{p.quickMessage}"</p>}
-                      </div>
-                      <div className="shrink-0 flex gap-1.5">
-                        <button
-                          onClick={() => handleBoard(p.id)}
-                          disabled={boardingId === p.id || absentId === p.id || isOffline}
-                          className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
-                        >
-                          {boardingId === p.id ? "…" : "Board ✓"}
-                        </button>
-                        <button
-                          onClick={() => handleAbsent(p.id)}
-                          disabled={boardingId === p.id || absentId === p.id || isOffline}
-                          className="rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-slate-600 disabled:opacity-50 transition-colors border border-red-700/30"
-                        >
-                          {absentId === p.id ? "…" : "Absent"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="px-4 py-3 text-center text-xs text-slate-500">No pending passengers at this stop</div>
-              )}
-            </div>
-          );
-        })()}
+
 
         {/* Passenger Checklist */}
         <div>
