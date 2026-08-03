@@ -354,6 +354,39 @@ router.post("/logout", async (req, res) => {
   }
 });
 
+router.post("/verify-otp-register", async (req, res) => {
+  const { phone, code } = req.body as { phone?: string; code?: string };
+  if (!phone) return res.status(400).json({ error: "Phone required" });
+  if (!code) return res.status(400).json({ error: "OTP code required" });
+
+  const normalized = normalizePhone(phone);
+  
+  const [validOtp] = await db
+    .select()
+    .from(otpCodesTable)
+    .where(
+      and(
+        eq(otpCodesTable.phone, normalized),
+        eq(otpCodesTable.used, 0),
+        gt(otpCodesTable.expiresAt, new Date())
+      )
+    )
+    .orderBy(desc(otpCodesTable.id))
+    .limit(1);
+
+  if (!validOtp || validOtp.code !== code.trim()) {
+    return res.status(401).json({ error: "Invalid or expired OTP code" });
+  }
+
+  // Mark OTP as used
+  await db
+    .update(otpCodesTable)
+    .set({ used: 1 })
+    .where(eq(otpCodesTable.id, validOtp.id));
+
+  return res.json({ verified: true });
+});
+
 router.post("/register", async (req, res) => {
   const {
     phone,
