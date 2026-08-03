@@ -1,0 +1,9 @@
+{
+  "appId": "com.orbit.schoolbustrack",
+  "appName": "Orbit School Bus Track",
+  "webDir": "dist",
+  "server": {
+    "url": "https://www.orbitbustrack.com",
+    "cleartext": true
+  }
+}
