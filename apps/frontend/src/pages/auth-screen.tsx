@@ -547,6 +547,37 @@ export default function AuthScreen() {
                 </div>
               )}
 
+              {/* OTP Input for regular login */}
+              {loginMethod === "otp" && (
+                <div className="mb-6 flex justify-center gap-2">
+                  {otp.map((digit, i) => (
+                    <input
+                      key={i}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      ref={(el) => (otpRefs.current[i] = el)}
+                      value={digit}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "");
+                        const newOtp = [...otp];
+                        newOtp[i] = val;
+                        setOtp(newOtp);
+                        if (val && i < 5) otpRefs.current[i + 1]?.focus();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Backspace" && !otp[i] && i > 0) {
+                          otpRefs.current[i - 1]?.focus();
+                        } else if (e.key === "Enter" && otp.join("").length === 6) {
+                          handleVerifyOtp();
+                        }
+                      }}
+                      className="h-12 w-10 md:h-14 md:w-12 rounded-xl border border-slate-600 bg-slate-900 text-center text-lg font-bold text-white focus:border-amber-500 focus:bg-slate-800 outline-none transition-all shadow-inner"
+                    />
+                  ))}
+                </div>
+              )}
+
               {err && (
                 <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
                   <span className="text-red-400 mt-0.5 text-sm shrink-0">
@@ -556,13 +587,14 @@ export default function AuthScreen() {
                 </div>
               )}
 
-              {/* 🚀 ओटिपी इनपुट बक्स हटाएर सिधै लगिन गर्ने हरियो बटन */}
+              {/* 🚀 Login Button */}
               <button
                 onClick={loginMethod === "password" ? handleLoginPassword : handleVerifyOtp}
                 disabled={
                   loading ||
                   (foundUser.requiresSchoolCode && !schoolCode.trim()) ||
-                  (loginMethod === "password" && !password.trim())
+                  (loginMethod === "password" && !password.trim()) ||
+                  (loginMethod === "otp" && !foundUser.demoCode && otp.join("").length < 6)
                 }
                 className="w-full rounded-xl bg-green-600 py-3.5 font-bold text-white hover:bg-green-500 disabled:opacity-40 transition-colors shadow-lg"
               >
