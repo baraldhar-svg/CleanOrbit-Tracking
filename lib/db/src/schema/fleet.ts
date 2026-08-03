@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, real, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, real, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -102,6 +102,7 @@ export const tripLogsTable = pgTable("trip_logs", {
   passengersTotal: integer("passengers_total").notNull().default(0),
   passengersBoarded: integer("passengers_boarded").notNull().default(0),
   boardedPassengerIds: integer("boarded_passenger_ids").array().notNull().default([]),
+  stationLogs: jsonb("station_logs").$type<{ stationName: string; time: string }[]>().notNull().default([]),
 });
 
 export type TripLog = typeof tripLogsTable.$inferSelect;

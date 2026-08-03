@@ -5017,6 +5017,69 @@ function AdminContactTab({
     </div>
   );
 }
+function AdminTripAccordionItem({ t }: { t: any }) {
+  const [expanded, setExpanded] = useState(false);
+  
+  const startD = new Date(t.startedAt);
+  const startLabel = startD.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+  const durationLabel = t.completedAt
+    ? (() => { const mins = Math.round((new Date(t.completedAt).getTime() - startD.getTime()) / 60000); return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`; })()
+    : "In progress";
+
+  const logs = Array.isArray(t.stationLogs) ? t.stationLogs : [];
+
+  return (
+    <div className="border-b border-border last:border-0">
+      <button 
+        onClick={() => setExpanded(!expanded)} 
+        className="w-full flex items-start gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors text-left"
+      >
+        <div className={`mt-0.5 h-2.5 w-2.5 rounded-full shrink-0 ${t.completedAt ? "bg-green-500" : "bg-amber-400 animate-pulse"}`} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-foreground">{t.driverName ?? "—"}</span>
+            {t.vehicleNumber && (
+              <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-mono text-muted-foreground">{t.vehicleNumber}</span>
+            )}
+            {t.routeName && (
+              <span className="text-xs text-muted-foreground">· {t.routeName}</span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">{startLabel} · {durationLabel}</p>
+        </div>
+        <div className="text-right shrink-0 flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-sm font-bold text-foreground">{t.passengersBoarded}/{t.passengersTotal}</p>
+            <p className="text-[10px] text-muted-foreground">boarded</p>
+          </div>
+          {expanded ? <ChevronUp size={16} className="text-muted-foreground mt-1" /> : <ChevronDown size={16} className="text-muted-foreground mt-1" />}
+        </div>
+      </button>
+      
+      {expanded && (
+        <div className="bg-muted/10 px-5 py-4 border-t border-border">
+          <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-3">Journey History</p>
+          {logs.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic text-center py-2">No station history recorded for this trip.</p>
+          ) : (
+            <div className="relative pl-3 border-l-2 border-border space-y-4 ml-2 mb-2">
+              {logs.map((log: any, idx: number) => {
+                const logTime = new Date(log.time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+                return (
+                  <div key={idx} className="relative">
+                    <span className="absolute -left-[17px] top-1.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-4 ring-card" />
+                    <p className="text-xs font-semibold text-foreground leading-tight">{log.stationName}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{logTime}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminPortal({
   tenant,
@@ -5226,34 +5289,9 @@ export default function AdminPortal({
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {tripHistory.map((t) => {
-                  const startD = new Date(t.startedAt);
-                  const startLabel = startD.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
-                  const durationLabel = t.completedAt
-                    ? (() => { const mins = Math.round((new Date(t.completedAt).getTime() - startD.getTime()) / 60000); return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`; })()
-                    : "In progress";
-                  return (
-                    <div key={t.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors">
-                      <div className={`mt-0.5 h-2.5 w-2.5 rounded-full shrink-0 ${t.completedAt ? "bg-green-500" : "bg-amber-400 animate-pulse"}`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-foreground">{t.driverName ?? "—"}</span>
-                          {t.vehicleNumber && (
-                            <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-mono text-muted-foreground">{t.vehicleNumber}</span>
-                          )}
-                          {t.routeName && (
-                            <span className="text-xs text-muted-foreground">· {t.routeName}</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{startLabel} · {durationLabel}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-foreground">{t.passengersBoarded}/{t.passengersTotal}</p>
-                        <p className="text-[10px] text-muted-foreground">boarded</p>
-                      </div>
-                    </div>
-                  );
-                })}
+                {tripHistory.map((t) => (
+                  <AdminTripAccordionItem key={t.id} t={t} />
+                ))}
               </div>
             )}
           </div>

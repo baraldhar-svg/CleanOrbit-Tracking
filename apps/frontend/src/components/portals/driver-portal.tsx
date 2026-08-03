@@ -8,7 +8,7 @@ import {
   Navigation, Flag, WifiOff, BellOff, CheckCircle, CheckCircle2, Home,
   MessageSquare, Send, Megaphone, AlertTriangle, Users, Building2,
   Wrench, Clock, Bus, CloudRain, Gauge, MapPin, Bell, History as HistoryIcon, X, User, Lock,
-  Phone, Mail, Globe, Facebook, Instagram, Youtube,
+  Phone, Mail, Globe, Facebook, Instagram, Youtube, ChevronDown, ChevronUp
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -92,6 +92,63 @@ function TikTokIcon({ size = 13 }: { size?: number }) {
     </svg>
   );
 }
+
+function TripAccordionItem({ t }: { t: any }) {
+  const [expanded, setExpanded] = useState(false);
+  
+  const startD = new Date(t.startedAt);
+  const startLabel = startD.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+  const durationLabel = t.completedAt
+    ? (() => { const mins = Math.round((new Date(t.completedAt).getTime() - startD.getTime()) / 60000); return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`; })()
+    : "In progress";
+
+  const logs = Array.isArray(t.stationLogs) ? t.stationLogs : [];
+
+  return (
+    <div className="border-b border-slate-700/60 last:border-0">
+      <button 
+        onClick={() => setExpanded(!expanded)} 
+        className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-slate-700/30 transition-colors text-left"
+      >
+        <div className={`h-2 w-2 rounded-full shrink-0 ${t.completedAt ? "bg-green-500" : "bg-amber-400 animate-pulse"}`} />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-slate-200 truncate">{startLabel}{t.routeName ? ` · ${t.routeName}` : ""}</p>
+          <p className="text-[11px] text-slate-500">{durationLabel}</p>
+        </div>
+        <div className="text-right shrink-0 flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-xs font-bold text-slate-200">{t.passengersBoarded}/{t.passengersTotal}</p>
+            <p className="text-[10px] text-slate-500">boarded</p>
+          </div>
+          {expanded ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
+        </div>
+      </button>
+      
+      {expanded && (
+        <div className="bg-slate-900/50 px-4 py-3 border-t border-slate-800/60">
+          <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-3">Journey History</p>
+          {logs.length === 0 ? (
+            <p className="text-xs text-slate-500 italic text-center py-2">No station history recorded for this trip.</p>
+          ) : (
+            <div className="relative pl-3 border-l-2 border-slate-700/50 space-y-4 ml-2 mb-2">
+              {logs.map((log: any, idx: number) => {
+                const logTime = new Date(log.time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+                return (
+                  <div key={idx} className="relative">
+                    <span className="absolute -left-[17px] top-1.5 h-2 w-2 rounded-full bg-amber-400 ring-4 ring-slate-900/50" />
+                    <p className="text-xs font-medium text-slate-300 leading-tight">{log.stationName}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{logTime}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 export default function DriverPortal({ tenant }: { tenant?: any }) {
   const { user, login, logout } = useAuth();
@@ -1690,26 +1747,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
               </div>
             ) : (
               <div className="divide-y divide-slate-700/60">
-                {myTripHistory.map((t) => {
-                  const startD = new Date(t.startedAt);
-                  const startLabel = startD.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
-                  const durationLabel = t.completedAt
-                    ? (() => { const mins = Math.round((new Date(t.completedAt).getTime() - startD.getTime()) / 60000); return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`; })()
-                    : "In progress";
-                  return (
-                    <div key={t.id} className="flex items-center gap-2.5 px-4 py-2.5">
-                      <div className={`h-2 w-2 rounded-full shrink-0 ${t.completedAt ? "bg-green-500" : "bg-amber-400 animate-pulse"}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-slate-200 truncate">{startLabel}{t.routeName ? ` · ${t.routeName}` : ""}</p>
-                        <p className="text-[11px] text-slate-500">{durationLabel}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs font-bold text-slate-200">{t.passengersBoarded}/{t.passengersTotal}</p>
-                        <p className="text-[10px] text-slate-500">boarded</p>
-                      </div>
-                    </div>
-                  );
-                })}
+                {myTripHistory.map((t) => (
+                  <TripAccordionItem key={t.id} t={t} />
+                ))}
               </div>
             )}
           </div>

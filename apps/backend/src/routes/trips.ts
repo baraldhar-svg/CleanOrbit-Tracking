@@ -506,6 +506,37 @@ router.patch("/station", async (req, res) => {
   const resolvedId = resolved?.id ?? driverId ?? null;
   if (resolvedId != null) {
     driverStationState.set(resolvedId, { stationIdx, stationName: stationName ?? null, updatedAt: now });
+
+    if (stationName) {
+      try {
+        const [activeTrip] = await db
+          .select({ id: tripLogsTable.id, stationLogs: tripLogsTable.stationLogs })
+          .from(tripLogsTable)
+          .where(
+            and(
+              eq(tripLogsTable.tenantId, req.tenantId),
+              eq(tripLogsTable.driverId, resolvedId),
+              isNull(tripLogsTable.completedAt)
+            )
+          )
+          .limit(1);
+
+        if (activeTrip) {
+          const currentLogs = Array.isArray(activeTrip.stationLogs) ? activeTrip.stationLogs : [];
+          const lastLog = currentLogs[currentLogs.length - 1] as { stationName: string; time: string } | undefined;
+          
+          if (!lastLog || lastLog.stationName !== stationName) {
+            const newLogs = [...currentLogs, { stationName, time: now }];
+            await db
+              .update(tripLogsTable)
+              .set({ stationLogs: newLogs })
+              .where(eq(tripLogsTable.id, activeTrip.id));
+          }
+        }
+      } catch (err) {
+        req.log.error(err, "Failed to update station logs");
+      }
+    }
   }
 
   broadcast(req.tenantId, "station_changed", {
