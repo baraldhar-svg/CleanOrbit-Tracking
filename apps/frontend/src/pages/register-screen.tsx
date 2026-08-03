@@ -284,12 +284,17 @@ export default function RegisterScreen() {
   const [gender, setGender] = useState("male");
   const [designation, setDesignation] = useState("");
   const [customDesignation, setCustomDesignation] = useState("");
+  const [isClassTeacher, setIsClassTeacher] = useState(false);
 
   const handleRegister = useCallback(async () => {
     if (!name.trim()) { setErr("Name is required"); return; }
     if (role !== "admin" && !regSchoolCode.trim()) { setErr("School Code is required"); return; }
     if (role === "staff" && !designation) { setErr("Please select your Designation"); return; }
     if (role === "staff" && designation === "Others" && !customDesignation.trim()) { setErr("Please enter your custom designation"); return; }
+    if (role === "staff" && isClassTeacher) {
+      if (!className) { setErr("Please select your assigned Class"); return; }
+      if (!section.trim()) { setErr("Please enter your assigned Section"); return; }
+    }
     if (password && password.length < 6) { setErr("Password must be at least 6 characters"); return; }
     if (password && password !== confirmPassword) { setErr("Passwords do not match"); return; }
     setErr(""); setLoading(true);
@@ -304,12 +309,13 @@ export default function RegisterScreen() {
         designation: role === "staff" ? effectiveDesignation || undefined : undefined,
         schoolCode: regSchoolCode.trim() || undefined,
         password: password || undefined,
-        ...(role === "student" ? {
+        isClassTeacher: role === "staff" ? isClassTeacher : false,
+        ...((role === "student" || (role === "staff" && isClassTeacher)) ? {
           className: effectiveClass || undefined,
           customClass: className === "Others" ? customClass.trim() || undefined : undefined,
           section: section.trim() || undefined,
-          rollNumber: rollNumber.trim() || undefined,
-          faculty: FACULTY_CLASSES.has(className)
+          rollNumber: role === "student" ? (rollNumber.trim() || undefined) : undefined,
+          faculty: (role === "student" && FACULTY_CLASSES.has(className))
             ? (faculty === "Others" ? customFaculty.trim() || "Others" : faculty || undefined)
             : undefined,
         } : {}),
@@ -324,7 +330,7 @@ export default function RegisterScreen() {
         setErr(msg);
       }
     } finally { setLoading(false); }
-  }, [phone, name, role, gender, designation, customDesignation, regSchoolCode, password, confirmPassword, className, customClass, section, rollNumber, faculty, customFaculty, login, navigate]);
+  }, [phone, name, role, gender, designation, customDesignation, regSchoolCode, password, confirmPassword, className, customClass, section, rollNumber, faculty, customFaculty, isClassTeacher, login, navigate]);
 
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#0F172A] px-4 py-8">
@@ -630,6 +636,86 @@ export default function RegisterScreen() {
                         autoFocus
                       />
                     )}
+                  </div>
+                )}
+
+                {/* Staff Role Type — Class Teacher vs General Staff */}
+                {role === "staff" && (
+                  <div className="mb-3">
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                      Staff Role Type <span className="text-amber-400">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setIsClassTeacher(true); setErr(""); }}
+                        className={`rounded-xl border py-2.5 text-xs font-semibold transition-all ${
+                          isClassTeacher
+                            ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                            : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500"
+                        }`}
+                      >
+                        👨‍🏫 Class Teacher
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setIsClassTeacher(false); setClassName(""); setSection(""); setCustomClass(""); setErr(""); }}
+                        className={`rounded-xl border py-2.5 text-xs font-semibold transition-all ${
+                          !isClassTeacher
+                            ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                            : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500"
+                        }`}
+                      >
+                        📚 General Staff
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Conditional Class & Section for Class Teacher */}
+                {role === "staff" && isClassTeacher && (
+                  <div className="mb-3 grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">Assigned Class <span className="text-amber-400">*</span></label>
+                      <select
+                        value={className}
+                        onChange={(e) => { setClassName(e.target.value); setCustomClass(""); setErr(""); }}
+                        className="w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500 transition-colors appearance-none"
+                      >
+                        <option value="">Select Class…</option>
+                        {CLASS_OPTIONS.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">Assigned Section <span className="text-amber-400">*</span></label>
+                      <input
+                        type="text"
+                        placeholder="e.g. A"
+                        value={section}
+                        maxLength={5}
+                        onChange={(e) => { setSection(e.target.value.toUpperCase()); setErr(""); }}
+                        className="w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Conditional custom class text input for Class Teacher */}
+                {role === "staff" && isClassTeacher && className === "Others" && (
+                  <div className="mb-3">
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                      Custom Class Name <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. BBA, MBA"
+                      value={customClass}
+                      onChange={(e) => { setCustomClass(e.target.value); setErr(""); }}
+                      className="w-full rounded-xl border border-amber-600/60 bg-slate-900 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none focus:border-amber-500 transition-colors"
+                      autoFocus
+                    />
                   </div>
                 )}
 

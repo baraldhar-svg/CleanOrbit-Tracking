@@ -13,6 +13,9 @@ export type AuthUser = {
   biometricEnabled?: boolean;
   activeSessionId?: string | null;
   tenant?: { id: number; name: string; bannerUrl?: string | null; address?: string | null; schoolCode?: string | null } | null;
+  isClassTeacher?: boolean;
+  assignedClass?: string | null;
+  assignedSection?: string | null;
 };
 
 const SESSION_KEY = "orbittrack_user";

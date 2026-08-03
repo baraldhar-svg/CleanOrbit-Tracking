@@ -69,6 +69,7 @@ import {
   History as HistoryIcon,
 } from "lucide-react";
 import StationMapPicker from "@/components/station-map-picker";
+import AdminAttendancePanel from "@/components/AdminAttendancePanel";
 import OsmMap, { RouteStop, FleetBus } from "@/components/osm-map";
 import { useLiveLocations } from "@/hooks/use-live-locations";
 import {
@@ -5046,7 +5047,7 @@ export default function AdminPortal({
 
   const tenantId = user?.tenantId ?? 1;
   const [mainTab, setMainTab] = useState<
-    "overview" | "students" | "drivers" | "staff" | "route" | "vehicleService" | "tripHistory" | "contact" | "advertise"
+    "overview" | "students" | "drivers" | "staff" | "route" | "vehicleService" | "tripHistory" | "contact" | "advertise" | "attendance"
   >("overview");
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -5120,6 +5121,7 @@ export default function AdminPortal({
         {(
           [
             { key: "overview",       label: "Dashboard", icon: null },
+            { key: "attendance",     label: "Attendance", icon: <ClipboardList size={13} /> },
             { key: "students",       label: "Students",  icon: <User size={13} /> },
             { key: "drivers",        label: "Driver",    icon: <Bus size={13} /> },
             { key: "staff",          label: "Staff",     icon: <User size={13} /> },
@@ -5196,6 +5198,10 @@ export default function AdminPortal({
         <div className="space-y-6">
           <VehicleServiceTabs vehicles={vehicles as any[] | undefined} />
         </div>
+      )}
+
+      {mainTab === "attendance" && (
+        <AdminAttendancePanel />
       )}
 
       {mainTab === "advertise" && (

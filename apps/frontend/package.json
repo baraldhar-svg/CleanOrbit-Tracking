@@ -81,6 +81,7 @@
         "axios": "^1.18.0",
         "leaflet": "^1.9.4",
         "nepali-date-converter": "^3.4.0",
-        "react-leaflet": "^5.0.0"
+        "react-leaflet": "^5.0.0",
+        "xlsx": "^0.18.5"
     }
 }

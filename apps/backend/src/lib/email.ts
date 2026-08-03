@@ -89,4 +89,56 @@ export const sendSchoolApprovalEmail = async (
   }
 };
 
-export default { sendSchoolApprovalEmail };
+/**
+ * Sends a Super Admin OTP email to baraldhar@gmail.com
+ */
+export const sendSuperAdminOtpEmail = async (otp: string): Promise<SendSchoolApprovalEmailResult> => {
+  try {
+    const fromUser = process.env.SMTP_USER || process.env.EMAIL_USER || "orbitbustracker@gmail.com";
+
+    const mailOptions = {
+      from: `"OrbitTrack Platform" <${fromUser}>`,
+      to: "baraldhar@gmail.com",
+      subject: `OrbitTrack Super Admin OTP: ${otp}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 25px; background-color: #0f172a; color: #ffffff; border-radius: 12px; max-width: 600px; margin: auto; border: 1px solid #334155;">
+          <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #1e293b;">
+            <h2 style="color: #fbbf24; margin: 0; font-size: 24px; font-weight: bold;">OrbitTrack — Super Admin Security</h2>
+            <p style="color: #94a3b8; font-size: 13px; margin-top: 4px; margin-bottom: 0;">Verification Code for Super Admin Access</p>
+          </div>
+          
+          <div style="padding: 20px 0; text-align: center;">
+            <p style="font-size: 15px; color: #f8fafc; text-align: left;">Dear Super Admin,</p>
+            <p style="font-size: 14px; color: #cbd5e1; line-height: 1.6; text-align: left;">
+              A login request was initiated for the OrbitTrack Super Admin account. Use the following One-Time Password (OTP) to complete your login. This OTP is valid for 10 minutes.
+            </p>
+            
+            <div style="margin: 30px auto; background-color: #1e293b; border: 1px solid #334155; padding: 20px; border-radius: 10px; width: 220px; text-align: center;">
+              <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 0; margin-bottom: 10px; font-weight: bold;">YOUR OTP CODE</p>
+              <div style="font-size: 34px; font-family: monospace; font-weight: 900; color: #fbbf24; letter-spacing: 6px;">
+                ${otp}
+              </div>
+            </div>
+            
+            <p style="font-size: 13px; color: #f43f5e; font-weight: bold; text-align: left;">
+              If you did not initiate this login request, please change your credentials immediately.
+            </p>
+          </div>
+          
+          <div style="margin-top: 30px; font-size: 12px; color: #64748b; border-top: 1px solid #1e293b; padding-top: 20px; text-align: center;">
+            <p style="margin: 0;">Thank you,<br><b>OrbitTrack Support Team</b></p>
+          </div>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    logger.info({ messageId: info.messageId }, "Super Admin OTP email sent successfully");
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    logger.error({ error }, "Error sending Super Admin OTP email");
+    return { success: false, error };
+  }
+};
+
+export default { sendSchoolApprovalEmail, sendSuperAdminOtpEmail };

@@ -96,6 +96,11 @@ function TikTokIcon({ size = 13 }: { size?: number }) {
 export default function DriverPortal({ tenant }: { tenant?: any }) {
   const { user, login, logout } = useAuth();
   const [driverProfileOpen, setDriverProfileOpen] = useState(false);
+  // Attendance popup modal for geofenced stations
+  const [activeStationModal, setActiveStationModal] = useState<string | null>(null);
+  const [modalStudents, setModalStudents] = useState<any[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
+
   // Route list used to find THIS driver's assigned route → scope the station navigator
   const { data: routes } = useListRoutes();
   const { data: passengers, refetch } = useListPassengers();
@@ -570,6 +575,39 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   // currentStation is scoped to THIS route — uses route_station row, not global station
   const currentStation = driverStations[stationIdx] ?? null;
 
+  // Trigger popup when station index changes during active journey
+  useEffect(() => {
+    if (!journeyStarted || journeyCompleted || !currentStation) return;
+    const stationName = currentStation.stopLabel || currentStation.stationName;
+    if (!stationName) return;
+
+    const loadStationStudents = async () => {
+      try {
+        setModalLoading(true);
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (user?.tenantId) {
+          headers["x-tenant-id"] = String(user.tenantId);
+        }
+        
+        const res = await fetch(`/api/attendance/status?stationName=${encodeURIComponent(stationName)}`, { headers });
+        if (!res.ok) throw new Error("Failed to load students");
+        const data = await res.json();
+        
+        // Show modal if there are students mapped to this station
+        if (data && data.length > 0) {
+          setModalStudents(data);
+          setActiveStationModal(stationName);
+        }
+      } catch (e) {
+        console.error("Geofence student loading error:", e);
+      } finally {
+        setModalLoading(false);
+      }
+    };
+    
+    loadStationStudents();
+  }, [stationIdx, journeyStarted, journeyCompleted, currentStation, user?.tenantId]);
+
   const driverStationIds = useMemo(() => new Set(driverStations.map((s) => s.stationId || s.id)), [driverStations]);
 
   const [localBoardedIds, setLocalBoardedIds] = useState<Set<number>>(new Set());
@@ -719,6 +757,45 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       setTimeout(() => setDelayToast(null), 3000);
     } finally {
       setDelayPending(false);
+    }
+  };
+
+  const handleMarkModalStudent = (studentId: string, status: 'PRESENT' | 'ABSENT') => {
+    setModalStudents((prev) =>
+      prev.map((s) => (s.studentId === studentId ? { ...s, busStatus: status } : s))
+    );
+  };
+
+  const handleSaveModalAttendance = async () => {
+    try {
+      const recordsToMark = modalStudents.map((s) => ({
+        studentId: s.studentId,
+        date: new Date().toISOString().split("T")[0],
+        busStatus: s.busStatus === 'PENDING' ? 'ABSENT' : s.busStatus,
+        markedByDriver: true
+      }));
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (user?.tenantId) {
+        headers["x-tenant-id"] = String(user.tenantId);
+      }
+
+      const res = await fetch("/api/attendance/mark", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ records: recordsToMark })
+      });
+
+      if (!res.ok) throw new Error("Failed to save bus attendance");
+
+      setActiveStationModal(null);
+      queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+      
+      setDelayToast("Bus attendance saved successfully");
+      setTimeout(() => setDelayToast(null), 3500);
+    } catch (e: any) {
+      setDelayToast("Error saving attendance: " + e.message);
+      setTimeout(() => setDelayToast(null), 3500);
     }
   };
 
@@ -1762,6 +1839,105 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
               </div>
             </div>
             <div className="pb-6" />
+          </div>
+        </div>
+      )}
+
+      {/* Geofenced Station Attendance Modal */}
+      {activeStationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4 py-8">
+          <div className="w-full max-w-md rounded-2xl bg-[#0f172a] border border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/50">
+              <div>
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded text-[9px] font-black uppercase tracking-wider">
+                  Station Geofence Reached
+                </span>
+                <h2 className="text-sm font-black text-white mt-1">
+                  Arrived at: {activeStationModal}
+                </h2>
+              </div>
+              <button
+                onClick={() => setActiveStationModal(null)}
+                className="flex h-7 w-7 items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors cursor-pointer text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Student List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              <p className="text-[11px] text-slate-400 mb-1">
+                Mark bus attendance for students registered at this station:
+              </p>
+              
+              {modalStudents.map((student) => {
+                const avatar = student.photoUrl ||
+                  `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(student.fullName)}&backgroundColor=0f172a`;
+
+                return (
+                  <div
+                    key={student.studentId}
+                    className="p-3 bg-slate-900/50 border border-slate-800/80 rounded-xl flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={avatar}
+                        alt={student.fullName}
+                        className="h-9 w-9 rounded-lg bg-slate-950 object-cover border border-slate-800 shrink-0"
+                      />
+                      <div>
+                        <h4 className="text-xs font-bold text-white leading-tight">
+                          {student.fullName}
+                        </h4>
+                        <p className="text-[9px] text-slate-500 mt-0.5 font-semibold">
+                          Class {student.className} - {student.section}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleMarkModalStudent(student.studentId, 'PRESENT')}
+                        className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border cursor-pointer ${
+                          student.busStatus === 'PRESENT'
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.1)]'
+                            : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        Present
+                      </button>
+                      <button
+                        onClick={() => handleMarkModalStudent(student.studentId, 'ABSENT')}
+                        className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border cursor-pointer ${
+                          student.busStatus === 'ABSENT'
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.1)]'
+                            : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-white'
+                        }`}
+                      >
+                        Absent
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer actions */}
+            <div className="p-3 border-t border-slate-800 bg-slate-900/30 flex gap-2">
+              <button
+                onClick={() => setActiveStationModal(null)}
+                className="flex-1 py-2 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-900 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                Skip
+              </button>
+              <button
+                onClick={handleSaveModalAttendance}
+                className="flex-1 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs font-black uppercase tracking-wide text-white transition-colors cursor-pointer"
+              >
+                Save
+              </button>
+            </div>
           </div>
         </div>
       )}

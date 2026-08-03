@@ -7,12 +7,13 @@ import StudentPortal from "@/components/portals/student-portal";
 import DriverPortal from "@/components/portals/driver-portal";
 import AdminPortal from "@/components/portals/admin-portal";
 import SuperadminPortal from "@/components/portals/superadmin-portal";
+import TeacherPortal from "@/components/TeacherPortal";
 import PaywallModal from "@/components/paywall-modal";
 import AppFooter from "@/components/app-footer";
 import BiometricSetupModal from "@/components/BiometricSetupModal";
 import { useGetMySubscription } from "@workspace/api-client-react";
 
-type Role = "student" | "driver" | "admin" | "superadmin";
+type Role = "student" | "driver" | "admin" | "superadmin" | "teacher";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -672,6 +673,7 @@ export default function Dashboard() {
     if (user?.role === "admin") return "admin";
     if (user?.role === "driver") return "driver";
     if (user?.role === "superadmin") return "superadmin";
+    if (user?.role === "staff" && user?.isClassTeacher) return "teacher";
     return "student";
   })();
 
@@ -714,6 +716,7 @@ export default function Dashboard() {
     driver: "Driver",
     admin: "Admin",
     superadmin: "Superadmin",
+    teacher: "Class Teacher",
   };
 
   const avatarSrc = user?.photoUrl ||
@@ -761,6 +764,7 @@ export default function Dashboard() {
         {/* Main Portal */}
         <main className="flex-1 bg-background">
           {userRole === "student" && <StudentPortal tenant={tenant} />}
+          {userRole === "teacher" && <TeacherPortal tenant={tenant} />}
           {userRole === "driver" && <DriverPortal tenant={tenant} />}
           {userRole === "admin" && <AdminPortal tenant={tenant} onTenantUpdate={setTenant} />}
           {userRole === "superadmin" && <SuperadminPortal />}

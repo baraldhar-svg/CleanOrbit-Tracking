@@ -8,4 +8,6 @@ export * from "./advertisements";
 export * from "./calendar";
 export * from "./vehicle-locations";
 export * from "./gps-logs";
+export * from "./attendance";
+
 

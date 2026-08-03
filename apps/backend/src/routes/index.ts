@@ -29,6 +29,7 @@ import pushTokensRouter from "./push-tokens";
 import adRequestsRouter from "./ad-requests";
 import webhookRouter from "./webhook";
 import gpsRouter from "./gps";
+import attendanceRouter from "./attendance";
 
 const router: Router = Router();
 
@@ -71,5 +72,6 @@ router.use("/push-tokens", pushTokensRouter);
 router.use("/ad-requests", adRequestsRouter);
 router.use("/webhook", webhookRouter);
 router.use("/gps", gpsRouter);
+router.use("/attendance", attendanceRouter);
 
 export default router;

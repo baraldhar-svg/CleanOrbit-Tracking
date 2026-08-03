@@ -48,6 +48,36 @@ export async function ensureDbColumns() {
       sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS unfrozen_at timestamp with time zone;`,
       sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending';`,
       sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS approved_at timestamp with time zone;`,
+      // New columns for class teacher configuration
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_class_teacher boolean DEFAULT false NOT NULL;`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_class text;`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_section text;`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS designation text;`,
+      // Create students table
+      sql`CREATE TABLE IF NOT EXISTS students (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id INTEGER REFERENCES tenants(id) ON DELETE SET NULL,
+        full_name TEXT NOT NULL,
+        photo_url TEXT,
+        class_name TEXT,
+        section TEXT,
+        station_name TEXT,
+        parent_id UUID
+      );`,
+      // Create attendance_records table
+      sql`CREATE TABLE IF NOT EXISTS attendance_records (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+        date DATE DEFAULT CURRENT_DATE NOT NULL,
+        bus_status TEXT DEFAULT 'PENDING' CHECK (bus_status IN ('PRESENT', 'ABSENT', 'PENDING')),
+        class_status TEXT DEFAULT 'PENDING' CHECK (class_status IN ('PRESENT', 'ABSENT', 'PENDING')),
+        marked_by_driver BOOLEAN DEFAULT false NOT NULL,
+        marked_by_teacher BOOLEAN DEFAULT false NOT NULL,
+        UNIQUE (student_id, date)
+      );`,
+      // Enable Realtime (Supabase WebSocket)
+      sql`ALTER PUBLICATION supabase_realtime ADD TABLE attendance_records;`,
+      sql`ALTER PUBLICATION supabase_realtime ADD TABLE students;`,
     ];
     for (const stmt of statements) {
       try {

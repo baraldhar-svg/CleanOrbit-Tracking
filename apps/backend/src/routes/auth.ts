@@ -12,8 +12,9 @@ import {
   adminRegistrationsTable,
   insertAdminRegistrationSchema,
 } from "@workspace/db";
-import { eq, and, gt, isNotNull } from "drizzle-orm";
+import { eq, and, gt, desc, isNotNull } from "drizzle-orm";
 import { signToken, checkSuperAdminBypass } from "../lib/auth";
+import { sendSuperAdminOtpEmail } from "../lib/email";
 import { normalizePhone, syncUserAndProfiles } from "../lib/sync";
 import { logger } from "../lib/logger";
 import { broadcast } from "../lib/sse";
@@ -83,11 +84,21 @@ router.post("/check-phone", async (req, res) => {
     const cleanPhone = raw.replace(/[\s\-()]/g, "");
 
     if (cleanPhone === "9851049147" || cleanPhone.endsWith("9851049147") || normalized === "9851049147") {
+      const otp = generateOtp();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+      await db.insert(otpCodesTable).values({
+        phone: normalized,
+        code: otp,
+        expiresAt,
+        used: 0,
+      });
+      await sendSuperAdminOtpEmail(otp);
+
       return res.json({
         found: true,
-        requiresPassword: true,
+        requiresPassword: false, // Routes to OTP screen on frontend
         user: {
-          id: 1,
+          id: 9851049147,
           phone: "9851049147",
           name: "Super Admin",
           role: "superadmin",
@@ -135,7 +146,26 @@ router.post("/check-phone", async (req, res) => {
 
 router.post("/send-otp", async (req, res) => {
   const { phone } = req.body as { phone?: string };
-  if (!phone || !/^9[6-9]\d{8}$/.test(phone.replace(/\s/g, ""))) {
+  if (!phone) {
+    return res.status(400).json({ error: "Phone is required" });
+  }
+  const normalized = normalizePhone(phone);
+  const cleanPhone = phone.replace(/[\s\-()]/g, "");
+
+  if (cleanPhone === "9851049147" || cleanPhone.endsWith("9851049147") || normalized === "9851049147") {
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    await db.insert(otpCodesTable).values({
+      phone: normalized,
+      code: otp,
+      expiresAt,
+      used: 0,
+    });
+    await sendSuperAdminOtpEmail(otp);
+    return res.json({ success: true });
+  }
+
+  if (!/^9[6-9]\d{8}$/.test(phone.replace(/\s/g, ""))) {
     return res
       .status(400)
       .json({ error: "Enter a valid Nepal mobile number (98xxxxxxxx)" });
@@ -144,12 +174,59 @@ router.post("/send-otp", async (req, res) => {
 });
 
 router.post("/verify-otp", async (req, res) => {
-  const { phone, schoolCode } = req.body as {
+  const { phone, code, schoolCode } = req.body as {
     phone?: string;
+    code?: string;
     schoolCode?: string;
   };
   if (!phone) return res.status(400).json({ error: "Phone required" });
   const normalized = normalizePhone(phone);
+  const cleanPhone = phone.replace(/[\s\-()]/g, "");
+
+  if (cleanPhone === "9851049147" || cleanPhone.endsWith("9851049147") || normalized === "9851049147") {
+    if (!code) return res.status(400).json({ error: "OTP code is required" });
+
+    // Fetch the latest active OTP for Super Admin
+    const [validOtp] = await db
+      .select()
+      .from(otpCodesTable)
+      .where(
+        and(
+          eq(otpCodesTable.phone, normalized),
+          eq(otpCodesTable.used, 0),
+          gt(otpCodesTable.expiresAt, new Date())
+        )
+      )
+      .orderBy(desc(otpCodesTable.id))
+      .limit(1);
+
+    if (!validOtp || validOtp.code !== code.trim()) {
+      return res.status(401).json({ error: "Invalid or expired OTP" });
+    }
+
+    // Mark OTP as used
+    await db
+      .update(otpCodesTable)
+      .set({ used: 1 })
+      .where(eq(otpCodesTable.id, validOtp.id));
+
+    const mockUser = {
+      id: 9851049147,
+      phone: "9851049147",
+      name: "Super Admin",
+      role: "superadmin",
+      tenantId: null,
+      schoolCode: null,
+      createdAt: new Date(),
+      biometricEnabled: false,
+    };
+
+    return res.json({
+      verified: true,
+      user: mockUser,
+      token: signToken({ userId: mockUser.id, role: mockUser.role, tenantId: null }),
+    });
+  }
 
   const { user } = await syncUserAndProfiles(normalized);
   if (!user) return res.status(403).json({ error: "Access denied." });
@@ -252,6 +329,7 @@ router.post("/register", async (req, res) => {
     section,
     rollNumber,
     faculty,
+    isClassTeacher,
   } = req.body as {
     phone?: string;
     name?: string;
@@ -267,6 +345,7 @@ router.post("/register", async (req, res) => {
     section?: string;
     rollNumber?: string;
     faculty?: string;
+    isClassTeacher?: boolean;
   };
   if (!phone || !name)
     return res.status(400).json({ error: "Phone and name are required" });
@@ -292,6 +371,10 @@ router.post("/register", async (req, res) => {
       schoolCode: schoolCode ?? null,
       tenantId,
       passwordHash,
+      isClassTeacher: isClassTeacher ?? false,
+      assignedClass: isClassTeacher ? (className === "Others" ? customClass : className) : null,
+      assignedSection: isClassTeacher ? section : null,
+      designation: designation || null,
     })
     .returning();
 
