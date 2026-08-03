@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { Bus, Globe, Phone, Building2, Sun, Moon, Upload, Camera, Copy, Check, Facebook, Instagram, Youtube, Mail } from "lucide-react";
+import { Bus, Globe, Phone, Building2, Sun, Moon, Upload, Camera, Copy, Check, Facebook, Instagram, Youtube, Mail, CheckCircle } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/use-auth";
 import { useLang, useT, LANGUAGES } from "@/lib/i18n";
 import StudentPortal from "@/components/portals/student-portal";
