@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 
-type Step = "phone" | "login" | "new" | "admin_form" | "admin_pending";
+type Step = "phone" | "login" | "verify_new_otp" | "new" | "admin_form" | "admin_pending";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -150,9 +150,14 @@ export default function RegisterScreen() {
     if (paramPhone && paramPhone.replace(/\D/g, "").length >= 7 && !phone) {
       setPhone(paramPhone);
       apiPost("/auth/check-phone", { phone: paramPhone })
-        .then((data) => {
+        .then(async (data) => {
           if (data.found === false) {
-            setStep("new");
+            try {
+              await apiPost("/auth/send-otp", { phone: paramPhone });
+              setStep("verify_new_otp");
+            } catch (e) {
+              setErr(e instanceof Error ? e.message : "Failed to send OTP");
+            }
           } else if (data.user) {
             const fu: FoundUser = {
               name: data.user?.name ?? data.name ?? "User",
@@ -165,7 +170,7 @@ export default function RegisterScreen() {
             setStep("login");
           }
         })
-        .catch(() => { setStep("new"); });
+        .catch(() => { setStep("phone"); });
     }
   }, [paramPhone]);
 
@@ -177,7 +182,8 @@ export default function RegisterScreen() {
       const data = await apiPost("/auth/check-phone", { phone });
       
       if (data.found === false) {
-        setStep("new");
+        await apiPost("/auth/send-otp", { phone });
+        setStep("verify_new_otp");
         return;
       }
 
@@ -196,7 +202,8 @@ export default function RegisterScreen() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error";
       if (msg.toLowerCase().includes("not registered") || msg.toLowerCase().includes("not found")) {
-        setStep("new");
+        await apiPost("/auth/send-otp", { phone });
+        setStep("verify_new_otp");
       } else {
         setErr(msg);
       }
@@ -242,6 +249,20 @@ export default function RegisterScreen() {
       });
       login({ ...result.user, tenant: result.user?.tenant ?? null });
       navigate("/dashboard");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Verification failed");
+    } finally { setLoading(false); }
+  }
+
+  async function handleVerifyNewOtp() {
+    setErr(""); setLoading(true);
+    try {
+      const code = otp.join("");
+      await apiPost("/auth/verify-otp-register", {
+        phone,
+        code,
+      });
+      setStep("new");
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Verification failed");
     } finally { setLoading(false); }
@@ -498,6 +519,70 @@ export default function RegisterScreen() {
                 </span>
               ) : (
                 "Sign In to Existing Account →"
+              )}
+            </button>
+
+            <button
+              onClick={resetToPhone}
+              className="mt-4 w-full text-center text-xs text-slate-500 hover:text-slate-300 py-1.5"
+            >
+              ← Change number
+            </button>
+          </>
+        )}
+
+        {/* ── STEP: Verify OTP for New Account ── */}
+        {step === "verify_new_otp" && (
+          <>
+            <div className="mb-6 flex flex-col items-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 mb-3 shadow-inner ring-1 ring-amber-500/20">
+                <span className="text-2xl">💬</span>
+              </div>
+              <h2 className="text-xl font-bold text-white mb-1">Verify Mobile</h2>
+              <p className="text-xs text-slate-400 text-center px-4 leading-relaxed">
+                We sent a 6-digit code to<br />
+                <strong className="text-white">+977 {phone}</strong>
+              </p>
+            </div>
+
+            <div className="mb-6 flex justify-center gap-2" onPaste={handleOtpPaste}>
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { otpRefs.current[i] = el; }}
+                  type="tel"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpKey(i, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Backspace" && !digit && i > 0) {
+                      otpRefs.current[i - 1]?.focus();
+                    }
+                  }}
+                  className="h-12 w-10 md:h-14 md:w-12 rounded-xl border border-slate-700 bg-slate-900 text-center text-lg md:text-xl font-bold text-white shadow-inner focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all outline-none"
+                />
+              ))}
+            </div>
+
+            {err && (
+              <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
+                <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
+                <p className="text-xs text-red-300 leading-relaxed text-left">{err}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleVerifyNewOtp}
+              disabled={loading || otp.join("").length < 6}
+              className="w-full rounded-xl bg-amber-500 hover:bg-amber-400 py-3.5 font-bold text-slate-900 disabled:opacity-40 transition-colors shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)]"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 rounded-full border-2 border-slate-900/30 border-t-slate-900 animate-spin" />
+                  Verifying…
+                </span>
+              ) : (
+                "Verify & Continue →"
               )}
             </button>
 

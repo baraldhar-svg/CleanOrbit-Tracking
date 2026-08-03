@@ -16,6 +16,7 @@ import { eq, and, gt, desc, isNotNull } from "drizzle-orm";
 import { signToken, checkSuperAdminBypass } from "../lib/auth";
 import { sendSuperAdminOtpEmail } from "../lib/email";
 import { normalizePhone, syncUserAndProfiles } from "../lib/sync";
+import { sendOtpSms } from "../utils/sms";
 import { logger } from "../lib/logger";
 import { broadcast } from "../lib/sse";
 
@@ -170,7 +171,22 @@ router.post("/send-otp", async (req, res) => {
       .status(400)
       .json({ error: "Enter a valid Nepal mobile number (98xxxxxxxx)" });
   }
-  return res.json({ success: true, demoCode: "123456" });
+  
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+  await db.insert(otpCodesTable).values({
+    phone: normalized,
+    code: otp,
+    expiresAt,
+    used: 0,
+  });
+
+  try {
+    await sendOtpSms(normalized, otp);
+    return res.json({ success: true, message: "OTP sent successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to send OTP SMS" });
+  }
 });
 
 router.post("/verify-otp", async (req, res) => {
@@ -227,6 +243,31 @@ router.post("/verify-otp", async (req, res) => {
       token: signToken({ userId: mockUser.id, role: mockUser.role, tenantId: null }),
     });
   }
+
+  // Verify OTP for normal users
+  if (!code) return res.status(400).json({ error: "OTP code is required" });
+
+  const [validOtp] = await db
+    .select()
+    .from(otpCodesTable)
+    .where(
+      and(
+        eq(otpCodesTable.phone, normalized),
+        eq(otpCodesTable.used, 0),
+        gt(otpCodesTable.expiresAt, new Date())
+      )
+    )
+    .orderBy(desc(otpCodesTable.id))
+    .limit(1);
+
+  if (!validOtp || validOtp.code !== code.trim()) {
+    return res.status(401).json({ error: "Invalid or expired OTP" });
+  }
+
+  await db
+    .update(otpCodesTable)
+    .set({ used: 1 })
+    .where(eq(otpCodesTable.id, validOtp.id));
 
   const { user } = await syncUserAndProfiles(normalized);
   if (!user) return res.status(403).json({ error: "Access denied." });
