@@ -3,7 +3,7 @@
     "version": "0.0.0",
     "license": "MIT",
     "scripts": {
-        "build": "pnpm run typecheck && pnpm -r --if-present run build",
+        "build": "pnpm run typecheck && pnpm --filter @workspace/api-server --filter @workspace/fleetsaas --if-present run build",
         "build:backend": "pnpm --filter @workspace/api-server run build",
         "build:frontend": "pnpm --filter @workspace/fleetsaas run build",
         "start": "pnpm --filter @workspace/api-server start",
