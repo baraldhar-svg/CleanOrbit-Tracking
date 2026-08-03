@@ -667,6 +667,7 @@ export default function Dashboard() {
   const [ads, setAds] = useState<Ad[]>([]);
   const [tenant, setTenant] = useState<TenantInfo | null>(user?.tenant ?? null);
   const { data: subscription } = useGetMySubscription();
+  const [staffActiveTab, setStaffActiveTab] = useState<"tracking" | "attendance">("tracking");
 
   // Derive single role from logged-in user
   const userRole: Role = (() => {
@@ -762,9 +763,42 @@ export default function Dashboard() {
         )}
 
         {/* Main Portal */}
-        <main className="flex-1 bg-background">
+        <main className="flex-1 bg-background flex flex-col relative">
           {userRole === "student" && <StudentPortal tenant={tenant} />}
-          {userRole === "teacher" && <TeacherPortal tenant={tenant} />}
+          {userRole === "teacher" && (
+            <div className="flex flex-col h-full w-full">
+              {/* Tab Switcher for Teacher */}
+              <div className="px-4 py-3 border-b border-border bg-card sticky top-14 z-40 flex justify-center gap-2 shadow-sm">
+                <button 
+                  onClick={() => setStaffActiveTab("tracking")}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    staffActiveTab === "tracking" 
+                      ? "bg-amber-500 text-slate-900 shadow-md scale-100 ring-2 ring-amber-500/50" 
+                      : "bg-muted text-muted-foreground hover:bg-muted/80 scale-95"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <Bus size={16} /> Bus Tracking
+                  </span>
+                </button>
+                <button 
+                  onClick={() => setStaffActiveTab("attendance")}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    staffActiveTab === "attendance" 
+                      ? "bg-amber-500 text-slate-900 shadow-md scale-100 ring-2 ring-amber-500/50" 
+                      : "bg-muted text-muted-foreground hover:bg-muted/80 scale-95"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <CheckCircle size={16} /> Class Attendance
+                  </span>
+                </button>
+              </div>
+              <div className="flex-1 w-full bg-background">
+                {staffActiveTab === "tracking" ? <StudentPortal tenant={tenant} /> : <TeacherPortal tenant={tenant} />}
+              </div>
+            </div>
+          )}
           {userRole === "driver" && <DriverPortal tenant={tenant} />}
           {userRole === "admin" && <AdminPortal tenant={tenant} onTenantUpdate={setTenant} />}
           {userRole === "superadmin" && <SuperadminPortal />}
