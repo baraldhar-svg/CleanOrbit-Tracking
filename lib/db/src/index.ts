@@ -28,6 +28,7 @@ const connectionString =
 export const pool = new Pool({
   connectionString,
   ssl: { rejectUnauthorized: false },
+  // @ts-ignore
   family: 4,
 });
 
