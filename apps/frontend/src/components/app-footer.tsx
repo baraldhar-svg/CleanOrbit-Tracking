@@ -30,7 +30,10 @@ export default function AppFooter({ variant = "light" }: { variant?: "light" | "
           </a>
         </p>
 
-
+        {/* Powered By */}
+        <p className={`mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${dark ? "text-slate-500" : "text-muted-foreground/80"}`}>
+          Powered By - Smart Soft International Trade Link
+        </p>
 
       </div>
     </footer>
