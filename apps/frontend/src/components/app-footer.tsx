@@ -9,13 +9,13 @@ export default function AppFooter({ variant = "light" }: { variant?: "light" | "
         <p className={`text-[11px] ${dark ? "text-slate-400" : "text-muted-foreground"}`}>
           © 2026 OrbitTrack. All Rights Reserved.{" "}
           <span className={`mx-1 ${dark ? "text-slate-600" : "text-border"}`}>|</span>
-          <button className={`underline-offset-2 hover:underline transition-colors ${dark ? "text-slate-400 hover:text-amber-400" : "text-muted-foreground hover:text-primary"}`}>
+          <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className={`underline-offset-2 hover:underline transition-colors ${dark ? "text-slate-400 hover:text-amber-400" : "text-muted-foreground hover:text-primary"}`}>
             Privacy Policy
-          </button>
+          </a>
           <span className={`mx-1 ${dark ? "text-slate-600" : "text-border"}`}>|</span>
-          <button className={`underline-offset-2 hover:underline transition-colors ${dark ? "text-slate-400 hover:text-amber-400" : "text-muted-foreground hover:text-primary"}`}>
+          <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className={`underline-offset-2 hover:underline transition-colors ${dark ? "text-slate-400 hover:text-amber-400" : "text-muted-foreground hover:text-primary"}`}>
             Terms of Service
-          </button>
+          </a>
           <span className={`mx-1 ${dark ? "text-slate-600" : "text-border"}`}>|</span>
           <a
             href="https://wa.me/9779747468885"
