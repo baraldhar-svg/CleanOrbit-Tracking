@@ -556,7 +556,9 @@ export default function AuthScreen() {
                       type="text"
                       inputMode="numeric"
                       maxLength={1}
-                      ref={(el) => (otpRefs.current[i] = el)}
+                      ref={(el) => {
+                        otpRefs.current[i] = el;
+                      }}
                       value={digit}
                       onChange={(e) => {
                         const val = e.target.value.replace(/\D/g, "");
