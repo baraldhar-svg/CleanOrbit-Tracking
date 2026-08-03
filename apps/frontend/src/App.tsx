@@ -12,6 +12,8 @@ import AdminVerifyScreen from "@/pages/admin-verify";
 import Dashboard from "@/pages/dashboard";
 import SchoolProfile from "@/pages/school-profile";
 import AdvertisePage from "@/pages/advertise";
+import PrivacyPolicy from "@/pages/privacy-policy";
+import TermsOfService from "@/pages/terms-of-service";
 import VehicleLiveMap from "@/components/VehicleLiveMap";
 import { useEffect, useRef } from "react";
 import { useRealtime } from "@/hooks/use-realtime";
@@ -70,6 +72,8 @@ function Router() {
       <Route path="/admin-verify" component={AdminVerifyScreen} />
       <Route path="/advertise" component={AdvertisePage} />
       <Route path="/school/:id" component={SchoolProfile} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/live-tracking" component={VehicleLiveMap} />
       <Route path="/dashboard">
         <AuthGuard>
