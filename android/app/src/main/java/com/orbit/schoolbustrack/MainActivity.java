@@ -1,4 +1,4 @@
-package com.orbitbustracking;
+package com.orbit.schoolbustrack;
 
 import com.getcapacitor.BridgeActivity;
 

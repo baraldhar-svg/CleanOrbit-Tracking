@@ -566,19 +566,28 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   }, [myDriver?.id]);
 
   // ── Auto GPS Station Detection ──
-  // As the bus travels, automatically detect when the bus is within 250m of a station
+  // As the bus travels, automatically detect when the bus is within 100m of a station
   useEffect(() => {
     if (!driverPos || !driverStations || driverStations.length === 0 || !journeyStarted || journeyCompleted) return;
+
+    let closestIdx = -1;
+    let minDistance = Infinity;
 
     for (let i = 0; i < driverStations.length; i++) {
       const st = driverStations[i];
       if (typeof st.lat === "number" && typeof st.lng === "number") {
         const distKm = haversineKm(driverPos.lat, driverPos.lng, st.lat, st.lng);
-        // If bus is within 250m of station i, and station i > current stationIdx
-        if (distKm <= 0.25 && i > stationIdx) {
-          setStationIdx(i);
-          break;
+        if (distKm < minDistance) {
+          minDistance = distKm;
+          closestIdx = i;
         }
+      }
+    }
+
+    // If bus is within 100m (0.1km) of the closest station, snap to it
+    if (closestIdx !== -1 && minDistance <= 0.1) {
+      if (stationIdx !== closestIdx) {
+        setStationIdx(closestIdx);
       }
     }
   }, [driverPos, driverStations, stationIdx, journeyStarted, journeyCompleted]);
@@ -589,7 +598,6 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   useEffect(() => {
     if (!myRoute?.id) {
       setDriverStations([]);
-      setStationIdx(0);
       setLoadingStations(false);
       fetchStations.current = () => {};
       return;

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Orbit Bus Tracking</string>
-    <string name="title_activity_main">Orbit Bus Tracking</string>
-    <string name="package_name">com.orbitbustracking</string>
-    <string name="custom_url_scheme">com.orbitbustracking</string>
+    <string name="app_name">Orbit School Bus Track</string>
+    <string name="title_activity_main">Orbit School Bus Track</string>
+    <string name="package_name">com.orbit.schoolbustrack</string>
+    <string name="custom_url_scheme">com.orbit.schoolbustrack</string>
 </resources>
