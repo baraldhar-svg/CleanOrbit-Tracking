@@ -215,10 +215,11 @@ router.post("/send-email-otp", async (req, res) => {
   let otp = generateOtp();
   let emailSent = false;
 
-  if (!user.email) {
-    otp = "123456";
-  } else {
+  if (user.role === "superadmin" && user.email) {
     emailSent = true;
+  } else {
+    // Disable email OTP for regular users for now
+    otp = "123456";
   }
 
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
