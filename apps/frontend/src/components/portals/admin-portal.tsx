@@ -5114,6 +5114,7 @@ export default function AdminPortal({
   >("overview");
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [editAttendanceStudent, setEditAttendanceStudent] = useState<any | null>(null);
 
   // Real-time: listen for "notification" SSE events and invalidate the query
   useEffect(() => {
@@ -5124,6 +5125,7 @@ export default function AdminPortal({
     return () => es.close();
   }, [tenantId, queryClient]);
   const { data: tripHistory } = useListTripHistory({ limit: 100 });
+  const { data: passengers } = useListPassengers();
 
   useEffect(() => {
     if (!localTenant) {
@@ -5264,7 +5266,23 @@ export default function AdminPortal({
       )}
 
       {mainTab === "attendance" && (
-        <AdminAttendancePanel />
+        <div className="space-y-6">
+          <AdminAttendancePanel 
+            onEditStudent={(student) => {
+              const match = passengers?.find((p: any) => p.role === "student" && p.name === student.fullName && p.className === student.className && p.section === student.section);
+              if (match) {
+                setEditAttendanceStudent(match);
+              } else {
+                alert("Student not found in passenger directory.");
+              }
+            }} 
+          />
+          <EditPersonDialog
+            open={!!editAttendanceStudent}
+            onOpenChange={(o) => !o && setEditAttendanceStudent(null)}
+            person={editAttendanceStudent}
+          />
+        </div>
       )}
 
       {mainTab === "advertise" && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/components/VehicleLiveMap";
 import * as XLSX from "xlsx";
 import {
   Calendar,
@@ -33,7 +34,7 @@ interface AttendanceRecord {
   attendanceId: number | null;
 }
 
-export default function AdminAttendancePanel() {
+export default function AdminAttendancePanel({ onEditStudent }: { onEditStudent?: (student: { fullName: string; className: string; section: string }) => void }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -77,6 +78,33 @@ export default function AdminAttendancePanel() {
 
   useEffect(() => {
     fetchAllAttendance();
+  }, [selectedDate]);
+
+  // ── Supabase Realtime Listener ─────────────────────────────────────────────
+  useEffect(() => {
+    const client = supabase;
+    if (!client) return;
+
+    // Subscribe to attendance_records table changes on Supabase
+    const channel = client
+      .channel("admin-attendance-channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "attendance_records"
+        },
+        () => {
+          // Instantly refresh list when database changes are made by driver or system
+          fetchAllAttendance();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
   }, [selectedDate]);
 
   // ── Filtered Records ──────────────────────────────────────────────────────
@@ -484,7 +512,11 @@ export default function AdminAttendancePanel() {
                         ) : (
                           <div className="divide-y divide-border">
                             {group.present.map((student) => (
-                              <div key={student.studentId} className="p-3 flex items-center justify-between text-xs hover:bg-muted/20 transition-colors">
+                              <div 
+                                key={student.studentId} 
+                                className="p-3 flex items-center justify-between text-xs hover:bg-muted/20 transition-colors cursor-pointer"
+                                onClick={() => onEditStudent?.({ fullName: student.fullName, className: student.className, section: student.section })}
+                              >
                                 <span className="font-semibold text-foreground">{student.fullName}</span>
                                 <div className="flex items-center gap-2">
                                   <span className="text-[10px] text-muted-foreground">Bus: {student.busStatus}</span>
@@ -511,7 +543,11 @@ export default function AdminAttendancePanel() {
                         ) : (
                           <div className="divide-y divide-border">
                             {group.absent.map((student) => (
-                              <div key={student.studentId} className="p-3 flex items-center justify-between text-xs hover:bg-muted/20 transition-colors">
+                              <div 
+                                key={student.studentId} 
+                                className="p-3 flex items-center justify-between text-xs hover:bg-muted/20 transition-colors cursor-pointer"
+                                onClick={() => onEditStudent?.({ fullName: student.fullName, className: student.className, section: student.section })}
+                              >
                                 <span className="font-semibold text-rose-600 dark:text-rose-400">{student.fullName}</span>
                                 <div className="flex items-center gap-2">
                                   <span className="text-[10px] text-muted-foreground">Bus: {student.busStatus}</span>
@@ -536,7 +572,11 @@ export default function AdminAttendancePanel() {
                         </div>
                         <div className="p-3 flex flex-wrap gap-2">
                           {group.pending.map((student) => (
-                            <div key={student.studentId} className="px-2.5 py-1 rounded-lg bg-card border border-border text-[11px] text-muted-foreground flex items-center gap-1.5 shadow-sm">
+                            <div 
+                              key={student.studentId} 
+                              className="px-2.5 py-1 rounded-lg bg-card border border-border text-[11px] text-muted-foreground flex items-center gap-1.5 shadow-sm hover:bg-muted/50 cursor-pointer transition-colors"
+                              onClick={() => onEditStudent?.({ fullName: student.fullName, className: student.className, section: student.section })}
+                            >
                               <span>{student.fullName}</span>
                               <span className="text-[8px] bg-muted px-1.5 py-0.5 rounded border border-border uppercase text-muted-foreground font-semibold">
                                 Bus: {student.busStatus}
