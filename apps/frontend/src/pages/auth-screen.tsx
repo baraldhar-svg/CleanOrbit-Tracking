@@ -64,6 +64,7 @@ export default function AuthScreen() {
   const [schoolCode, setSchoolCode] = useState("");
   const [password, setPassword] = useState("");
   const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [foundUser, setFoundUser] = useState<FoundUser | null>(null);
   const [loginMethod, setLoginMethod] = useState<"otp" | "password">("otp");

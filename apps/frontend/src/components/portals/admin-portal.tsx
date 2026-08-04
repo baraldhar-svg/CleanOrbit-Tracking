@@ -3011,7 +3011,6 @@ function EditPersonDialog({
 
   useEffect(() => {
     if (person && open) {
-    if (person && open) {
       setName(person.name ?? "");
       setEmail(person.email ?? "");
       setPhone(person.phone ?? "");
