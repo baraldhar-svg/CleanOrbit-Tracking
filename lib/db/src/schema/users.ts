@@ -21,6 +21,7 @@ export const usersTable = pgTable("users", {
   assignedClass: text("assigned_class"),
   assignedSection: text("assigned_section"),
   designation: text("designation"),
+  email: text("email"),
 });
 
 export type User = typeof usersTable.$inferSelect;

@@ -28,6 +28,7 @@ export const passengersTable = pgTable("passengers", {
   liveDate: text("live_date"),
   routeSubscribedAt: timestamp("route_subscribed_at"),
   proximityAlertSentAt: timestamp("proximity_alert_sent_at"),
+  email: text("email"),
 });
 
 export const insertPassengerSchema = createInsertSchema(passengersTable).omit({ id: true, boardedAt: true });

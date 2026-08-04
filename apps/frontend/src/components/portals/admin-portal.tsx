@@ -2971,6 +2971,7 @@ function EditPersonDialog({
   const isStudent = person?.role === "student";
 
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [parentName, setParentName] = useState("");
   const [gender, setGender] = useState("");
@@ -2985,6 +2986,7 @@ function EditPersonDialog({
   const [customFaculty, setCustomFaculty] = useState("");
   const [designation, setDesignation] = useState("");
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [err, setErr] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
 
@@ -3009,7 +3011,9 @@ function EditPersonDialog({
 
   useEffect(() => {
     if (person && open) {
+    if (person && open) {
       setName(person.name ?? "");
+      setEmail(person.email ?? "");
       setPhone(person.phone ?? "");
       setParentName(person.parentName ?? "");
       setGender(person.gender ?? "");
@@ -3042,6 +3046,7 @@ function EditPersonDialog({
         : undefined;
       await apiPatch(`/passengers/${person.id}`, {
         name: name.trim(),
+        email: email.trim() || undefined,
         phone: phone.trim() || undefined,
         parentName: parentName.trim() || undefined,
         gender: gender || undefined,
@@ -3064,6 +3069,21 @@ function EditPersonDialog({
     } finally { setSaving(false); }
   }
 
+  async function handleResetLogin() {
+    if (!person?.id) return;
+    if (!confirm("Are you sure you want to reset the login credentials for this user? They will need to log in again using OTP.")) return;
+    setResetting(true);
+    setErr("");
+    try {
+      await apiPost(`/passengers/${person.id}/reset-login`, {});
+      alert("Login credentials reset successfully.");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed to reset login");
+    } finally {
+      setResetting(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm max-h-[90dvh] overflow-y-auto">
@@ -3078,6 +3098,12 @@ function EditPersonDialog({
           <div>
             <label className="mb-1 block font-semibold text-muted-foreground">Full Name *</label>
             <input value={name} onChange={(e) => setName(e.target.value)}
+              className="w-full border rounded-lg p-2 bg-background outline-none focus:border-amber-500" />
+          </div>
+          {/* Email */}
+          <div>
+            <label className="mb-1 block font-semibold text-muted-foreground">Email Address</label>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="example@email.com"
               className="w-full border rounded-lg p-2 bg-background outline-none focus:border-amber-500" />
           </div>
           {/* Mobile */}
@@ -3220,10 +3246,16 @@ function EditPersonDialog({
           )}
 
           {err && <p className="text-red-500 font-semibold">{err}</p>}
-          <button onClick={handleSave} disabled={saving}
-            className="w-full bg-amber-500 text-slate-900 font-bold py-2 rounded-lg disabled:opacity-50 hover:bg-amber-400 transition-colors">
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
+          <div className="flex gap-2">
+            <button onClick={handleResetLogin} disabled={resetting || saving || !person?.phone}
+              className="w-full border border-red-500 text-red-500 font-bold py-2 rounded-lg disabled:opacity-50 hover:bg-red-500/10 transition-colors">
+              {resetting ? "Resetting..." : "Reset Login"}
+            </button>
+            <button onClick={handleSave} disabled={saving || resetting}
+              className="w-full bg-amber-500 text-slate-900 font-bold py-2 rounded-lg disabled:opacity-50 hover:bg-amber-400 transition-colors">
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

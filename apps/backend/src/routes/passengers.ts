@@ -111,6 +111,7 @@ const PASSENGER_SELECT = {
   designation: passengersTable.designation,
   parentName: passengersTable.parentName,
   gender: passengersTable.gender,
+  email: passengersTable.email,
   liveDate: passengersTable.liveDate,
 };
 
@@ -327,6 +328,7 @@ router.post("/", async (req, res) => {
         rollNumber: rollNumber ?? null,
         faculty: faculty ?? null,
         designation: designation ?? null,
+        email: req.body.email ?? null,
       })
       .returning();
 
@@ -370,6 +372,7 @@ router.patch("/:id", async (req, res) => {
   if (!bodyParsed.success) return res.status(400).json({ error: bodyParsed.error.message });
   const updates: Record<string, unknown> = {};
   if (bodyParsed.data.name) updates.name = bodyParsed.data.name;
+  if ("email" in req.body) updates.email = req.body.email ? req.body.email : null;
   if ("phone" in bodyParsed.data) updates.phone = bodyParsed.data.phone ? normalizePhone(bodyParsed.data.phone) : null;
   if (bodyParsed.data.photoUrl) updates.photoUrl = bodyParsed.data.photoUrl;
   if (bodyParsed.data.stationId) updates.stationId = bodyParsed.data.stationId;
@@ -402,24 +405,57 @@ router.patch("/:id", async (req, res) => {
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({ error: "No fields to update" });
   }
-  await db.update(passengersTable).set(updates).where(eq(passengersTable.id, paramsParsed.data.id));
-
-  // Get updated phone/original phone to sync
-  const [passengerRow] = await db
-    .select({ phone: passengersTable.phone })
-    .from(passengersTable)
+  const [row] = await db
+    .update(passengersTable)
+    .set(updates)
     .where(eq(passengersTable.id, paramsParsed.data.id))
-    .limit(1);
-  if (passengerRow && passengerRow.phone) {
-    await syncUserAndProfiles(passengerRow.phone);
+    .returning();
+  
+  if (row?.phone) {
+    await syncUserAndProfiles(row.phone);
   }
 
-  const [row] = await db
+  const [withStation] = await db
     .select(PASSENGER_SELECT)
     .from(passengersTable)
     .leftJoin(stationsTable, eq(passengersTable.stationId, stationsTable.id))
     .where(eq(passengersTable.id, paramsParsed.data.id));
-  return res.json({ ...row, ...computeSubStatus(row) });
+  return res.json({ ...withStation, ...computeSubStatus(withStation) });
+});
+
+router.post("/:id/reset-login", async (req, res) => {
+  const parsed = GetPassengerParams.safeParse({ id: Number(req.params.id) });
+  if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
+
+  const [passenger] = await db
+    .select({ phone: passengersTable.phone })
+    .from(passengersTable)
+    .where(eq(passengersTable.id, parsed.data.id));
+
+  if (!passenger || !passenger.phone) {
+    return res.status(404).json({ error: "Passenger or passenger phone not found" });
+  }
+
+  const [user] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.phone, passenger.phone));
+
+  if (user) {
+    await db
+      .update(usersTable)
+      .set({
+        biometricEnabled: false,
+        biometricCredentialId: null,
+        biometricPublicKey: null,
+        biometricCounter: 0,
+        activeSessionId: null,
+        passwordHash: null,
+      })
+      .where(eq(usersTable.id, user.id));
+  }
+
+  return res.json({ success: true, message: "Login credentials reset successfully." });
 });
 
 router.delete("/:id", async (req, res) => {

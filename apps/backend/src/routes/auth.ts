@@ -14,7 +14,7 @@ import {
 } from "@workspace/db";
 import { eq, and, gt, desc, isNotNull } from "drizzle-orm";
 import { signToken, checkSuperAdminBypass } from "../lib/auth";
-import { sendSuperAdminOtpEmail } from "../lib/email";
+import { sendSuperAdminOtpEmail, sendLoginOtpEmail } from "../lib/email";
 import { normalizePhone, syncUserAndProfiles } from "../lib/sync";
 import { sendOtpSms } from "../utils/sms";
 import { logger } from "../lib/logger";
@@ -131,10 +131,10 @@ router.post("/check-phone", async (req, res) => {
 
     return res.json({
       found: true,
-      verified: true,
+      verified: false,
       user: { ...user, tenant },
       requiresSchoolCode: user.role !== "superadmin" && !!user.tenantId,
-      token: signToken({ userId: user.id, role: user.role, tenantId: user.tenantId ?? null }),
+      hasEmail: !!user.email,
     });
   } catch (err: any) {
     logger.error({ err }, "check-phone error");
@@ -187,6 +187,52 @@ router.post("/send-otp", async (req, res) => {
   } catch (error) {
     return res.status(500).json({ error: "Failed to send OTP SMS" });
   }
+});
+
+router.post("/send-email-otp", async (req, res) => {
+  const { phone, schoolCode } = req.body as { phone?: string; schoolCode?: string };
+  if (!phone) {
+    return res.status(400).json({ error: "Phone is required" });
+  }
+  const normalized = normalizePhone(phone);
+  
+  const { user } = await syncUserAndProfiles(normalized);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  // If user has a tenant, verify school code
+  if (user.tenantId && user.role !== "superadmin") {
+    if (!schoolCode) {
+      return res.status(400).json({ error: "School code is required" });
+    }
+    const [t] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, user.tenantId)).limit(1);
+    if (!t || t.schoolCode !== schoolCode.trim().toUpperCase()) {
+      return res.status(403).json({ error: "Invalid school code" });
+    }
+  }
+
+  if (!user.email) {
+    return res.status(400).json({ 
+      error: "No email address found for this account. Please contact your admin to add your email address." 
+    });
+  }
+
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+  await db.insert(otpCodesTable).values({
+    phone: normalized, // using phone to track otp since table requires phone
+    code: otp,
+    expiresAt,
+    used: 0,
+  });
+
+  const sent = await sendLoginOtpEmail(user.email, otp, user.name);
+  if (!sent) {
+    return res.status(500).json({ error: "Failed to send OTP email" });
+  }
+
+  return res.json({ success: true, message: "OTP sent to your email" });
 });
 
 router.post("/verify-otp", async (req, res) => {
@@ -247,6 +293,40 @@ router.post("/verify-otp", async (req, res) => {
 
   const { user } = await syncUserAndProfiles(normalized);
   if (!user) return res.status(403).json({ error: "Access denied." });
+
+  // For existing users, verify the OTP!
+  if (!code) return res.status(400).json({ error: "OTP code is required" });
+  
+  const [validOtp] = await db
+    .select()
+    .from(otpCodesTable)
+    .where(
+      and(
+        eq(otpCodesTable.phone, normalized),
+        eq(otpCodesTable.used, 0),
+        gt(otpCodesTable.expiresAt, new Date())
+      )
+    )
+    .orderBy(desc(otpCodesTable.id))
+    .limit(1);
+
+  if (!validOtp || validOtp.code !== code.trim()) {
+    return res.status(401).json({ error: "Invalid or expired OTP" });
+  }
+
+  // Mark OTP as used
+  await db
+    .update(otpCodesTable)
+    .set({ used: 1 })
+    .where(eq(otpCodesTable.id, validOtp.id));
+
+  // Verify school code
+  if (user.tenantId && user.role !== "superadmin" && schoolCode) {
+    const [t] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, user.tenantId)).limit(1);
+    if (!t || t.schoolCode !== schoolCode.trim().toUpperCase()) {
+      return res.status(403).json({ error: "Invalid school code" });
+    }
+  }
 
   const sessionId = user.role === "driver" ? await registerDriverSession(normalized, user.tenantId) : undefined;
 

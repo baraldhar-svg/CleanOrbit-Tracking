@@ -64,6 +64,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
         tenantId: passenger.tenantId,
         schoolCode,
         photoUrl: passenger.photoUrl,
+        email: passenger.email,
       })
       .returning();
     user = created;
@@ -85,6 +86,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
         tenantId: driver.tenantId,
         schoolCode,
         photoUrl: driver.photoUrl,
+        email: driver.email,
       })
       .returning();
     user = created;
@@ -121,6 +123,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
             stationId: station.id,
             status: "pending",
             photoUrl: user.photoUrl,
+            email: user.email,
           })
           .returning();
         passenger = createdPassenger;
@@ -137,6 +140,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
             vehicleNumber: "TBD",
             isActive: false,
             photoUrl: user.photoUrl,
+            email: user.email,
           })
           .returning();
         driver = createdDriver;
@@ -180,6 +184,17 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
         }
       }
 
+      // Sync email
+      if (passenger.email !== user.email) {
+        if (passenger.email) {
+          user.email = passenger.email;
+          shouldUpdateUser = true;
+        } else if (user.email) {
+          passenger.email = user.email;
+          shouldUpdatePassenger = true;
+        }
+      }
+
       // Sync tenant
       if (passenger.tenantId !== user.tenantId) {
         user.tenantId = passenger.tenantId;
@@ -200,6 +215,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
             schoolCode: user.schoolCode,
             name: user.name,
             photoUrl: user.photoUrl,
+            email: user.email,
           })
           .where(eq(usersTable.id, user.id));
       }
@@ -210,6 +226,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
           .set({
             name: passenger.name,
             photoUrl: passenger.photoUrl,
+            email: passenger.email,
           })
           .where(eq(passengersTable.id, passenger.id));
       }
@@ -246,6 +263,17 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
         }
       }
 
+      // Sync email
+      if (driver.email !== user.email) {
+        if (driver.email) {
+          user.email = driver.email;
+          shouldUpdateUser = true;
+        } else if (user.email) {
+          driver.email = user.email;
+          shouldUpdateDriver = true;
+        }
+      }
+
       // Sync tenant
       if (driver.tenantId !== user.tenantId) {
         user.tenantId = driver.tenantId;
@@ -266,6 +294,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
             schoolCode: user.schoolCode,
             name: user.name,
             photoUrl: user.photoUrl,
+            email: user.email,
           })
           .where(eq(usersTable.id, user.id));
       }
@@ -276,6 +305,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
           .set({
             name: driver.name,
             photoUrl: driver.photoUrl,
+            email: driver.email,
           })
           .where(eq(driversTable.id, driver.id));
       }

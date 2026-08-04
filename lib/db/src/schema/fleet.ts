@@ -25,6 +25,7 @@ export const driversTable = pgTable("drivers", {
   delayAlertSentAt: timestamp("delay_alert_sent_at"),
   activeSessionId: text("active_session_id"),
   unfrozenAt: timestamp("unfrozen_at"),
+  email: text("email"),
 });
 
 export const insertDriverSchema = createInsertSchema(driversTable).omit({ id: true });

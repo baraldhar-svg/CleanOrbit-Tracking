@@ -62,11 +62,11 @@ export default function AuthScreen() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [schoolCode, setSchoolCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [password, setPassword] = useState("");
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [err, setErr] = useState("");
   const [foundUser, setFoundUser] = useState<FoundUser | null>(null);
   const [loginMethod, setLoginMethod] = useState<"otp" | "password">("otp");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -180,6 +180,26 @@ export default function AuthScreen() {
     }
   }
 
+  async function handleSendEmailOtp() {
+    if (foundUser?.requiresSchoolCode && !schoolCode.trim()) {
+      setErr("Please enter your school code");
+      return;
+    }
+    setErr("");
+    setLoading(true);
+    try {
+      const data = await apiPost("/auth/send-email-otp", {
+        phone,
+        schoolCode: schoolCode.trim(),
+      });
+      setEmailOtpSent(true);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleVerifyOtp() {
     setErr("");
     setLoading(true);
@@ -221,6 +241,7 @@ export default function AuthScreen() {
     setOtp(["", "", "", "", "", ""]);
     setSchoolCode("");
     setPassword("");
+    setEmailOtpSent(false);
     setErr("");
     setLoginMethod("otp");
   }
@@ -520,6 +541,17 @@ export default function AuthScreen() {
                 </div>
               )}
 
+              {/* Action to request Email OTP if needed */}
+              {foundUser.requiresSchoolCode && !emailOtpSent && loginMethod === "otp" && (
+                <button
+                  onClick={handleSendEmailOtp}
+                  disabled={loading || !schoolCode.trim()}
+                  className="mb-5 w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors shadow-lg"
+                >
+                  {loading ? "Sending..." : "Continue →"}
+                </button>
+              )}
+
               {/* Password field for Super Admin */}
               {loginMethod === "password" && (
                 <div className="mb-5">
@@ -548,35 +580,38 @@ export default function AuthScreen() {
               )}
 
               {/* OTP Input for regular login */}
-              {loginMethod === "otp" && (
-                <div className="mb-6 flex justify-center gap-2">
-                  {otp.map((digit, i) => (
-                    <input
-                      key={i}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      ref={(el) => {
-                        otpRefs.current[i] = el;
-                      }}
-                      value={digit}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, "");
-                        const newOtp = [...otp];
-                        newOtp[i] = val;
-                        setOtp(newOtp);
-                        if (val && i < 5) otpRefs.current[i + 1]?.focus();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Backspace" && !otp[i] && i > 0) {
-                          otpRefs.current[i - 1]?.focus();
-                        } else if (e.key === "Enter" && otp.join("").length === 6) {
-                          handleVerifyOtp();
-                        }
-                      }}
-                      className="h-12 w-10 md:h-14 md:w-12 rounded-xl border border-slate-600 bg-slate-900 text-center text-lg font-bold text-white focus:border-amber-500 focus:bg-slate-800 outline-none transition-all shadow-inner"
-                    />
-                  ))}
+              {loginMethod === "otp" && (!foundUser.requiresSchoolCode || emailOtpSent) && (
+                <div className="mb-6 flex flex-col items-center gap-2">
+                  <div className="flex justify-center gap-2">
+                    {otp.map((digit, i) => (
+                      <input
+                        key={i}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        ref={(el) => {
+                          otpRefs.current[i] = el;
+                        }}
+                        value={digit}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          const newOtp = [...otp];
+                          newOtp[i] = val;
+                          setOtp(newOtp);
+                          if (val && i < 5) otpRefs.current[i + 1]?.focus();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !otp[i] && i > 0) {
+                            otpRefs.current[i - 1]?.focus();
+                          } else if (e.key === "Enter" && otp.join("").length === 6) {
+                            handleVerifyOtp();
+                          }
+                        }}
+                        className="h-12 w-10 md:h-14 md:w-12 rounded-xl border border-slate-600 bg-slate-900 text-center text-lg font-bold text-white focus:border-amber-500 focus:bg-slate-800 outline-none transition-all shadow-inner"
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-amber-400 mt-2 font-medium">Please check your email for the OTP</p>
                 </div>
               )}
 
@@ -590,25 +625,27 @@ export default function AuthScreen() {
               )}
 
               {/* 🚀 Login Button */}
-              <button
-                onClick={loginMethod === "password" ? handleLoginPassword : handleVerifyOtp}
-                disabled={
-                  loading ||
-                  (foundUser.requiresSchoolCode && !schoolCode.trim()) ||
-                  (loginMethod === "password" && !password.trim()) ||
-                  (loginMethod === "otp" && !foundUser.demoCode && otp.join("").length < 6)
-                }
-                className="w-full rounded-xl bg-green-600 py-3.5 font-bold text-white hover:bg-green-500 disabled:opacity-40 transition-colors shadow-lg"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    Logging in…
-                  </span>
-                ) : (
-                  `Sign In to Existing Account →`
-                )}
-              </button>
+              {(!foundUser.requiresSchoolCode || emailOtpSent || loginMethod === "password") && (
+                <button
+                  onClick={loginMethod === "password" ? handleLoginPassword : handleVerifyOtp}
+                  disabled={
+                    loading ||
+                    (foundUser.requiresSchoolCode && !schoolCode.trim()) ||
+                    (loginMethod === "password" && !password.trim()) ||
+                    (loginMethod === "otp" && !foundUser.demoCode && otp.join("").length < 6)
+                  }
+                  className="w-full rounded-xl bg-green-600 py-3.5 font-bold text-white hover:bg-green-500 disabled:opacity-40 transition-colors shadow-lg"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      Logging in…
+                    </span>
+                  ) : (
+                    `Sign In to Existing Account →`
+                  )}
+                </button>
+              )}
 
               <button
                 onClick={resetToPhone}
