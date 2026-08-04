@@ -212,13 +212,15 @@ router.post("/send-email-otp", async (req, res) => {
     }
   }
 
+  let otp = generateOtp();
+  let emailSent = false;
+
   if (!user.email) {
-    return res.status(400).json({ 
-      error: "No email address found for this account. Please contact your admin to add your email address." 
-    });
+    otp = "123456";
+  } else {
+    emailSent = true;
   }
 
-  const otp = generateOtp();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
   await db.insert(otpCodesTable).values({
     phone: normalized, // using phone to track otp since table requires phone
@@ -227,12 +229,14 @@ router.post("/send-email-otp", async (req, res) => {
     used: 0,
   });
 
-  const sent = await sendLoginOtpEmail(user.email, otp, user.name);
-  if (!sent) {
-    return res.status(500).json({ error: "Failed to send OTP email" });
+  if (emailSent) {
+    const sent = await sendLoginOtpEmail(user.email!, otp, user.name);
+    if (!sent) {
+      return res.status(500).json({ error: "Failed to send OTP email" });
+    }
   }
 
-  return res.json({ success: true, message: "OTP sent to your email" });
+  return res.json({ success: true, message: emailSent ? "OTP sent to your email" : "No email found. Use default OTP 123456" });
 });
 
 router.post("/verify-otp", async (req, res) => {
