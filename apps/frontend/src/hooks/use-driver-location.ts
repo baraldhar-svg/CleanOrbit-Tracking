@@ -69,8 +69,7 @@ export function useDriverLocation(driverId?: number): DriverLocation {
     ) {
       if (destroyed) return;
       const now = Date.now();
-      const isRecent = updatedAt != null && (now - new Date(updatedAt).getTime()) < 300_000;
-      const effectiveLive = isLive || isRecent;
+      const effectiveLive = isLive;
 
       setLoc((prev) => {
         const next = {

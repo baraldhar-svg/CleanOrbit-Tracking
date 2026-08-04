@@ -259,8 +259,7 @@ router.get("/active", async (req, res) => {
   const currentLat = driver?.currentLat ?? 27.7172;
   const currentLng = driver?.currentLng ?? 85.3240;
   const locationUpdatedAt = driver?.locationUpdatedAt ?? null;
-  const isRecentlyUpdated = locationUpdatedAt != null && (Date.now() - new Date(locationUpdatedAt).getTime()) < 300_000;
-  const isLive = (driver?.isOnline === true || isRecentlyUpdated) && driver?.currentLat != null;
+  const isLive = driver?.isOnline === true && driver?.currentLat != null;
   const speedKmh = driver?.speedKmh ?? null;
 
   const stationState = driver?.id != null ? driverStationState.get(driver.id) : undefined;
@@ -758,6 +757,38 @@ router.post("/start", async (req, res) => {
     vehicleNumber: activeDriver?.vehicleNumber ?? null,
     time: timeStr,
   });
+
+  // ── Send Push Notifications for Journey Start ──
+  const { resolvedRouteId: startRouteId, targets: startTargets } = await resolveRoutePassengers(
+    req.tenantId,
+    activeDriver?.id ?? null
+  );
+
+  if (startTargets.length > 0) {
+    const tokens = await db
+      .select({ token: pushTokensTable.token })
+      .from(pushTokensTable)
+      .where(
+        and(
+          eq(pushTokensTable.tenantId, req.tenantId),
+          inArray(pushTokensTable.passengerId, startTargets.map(p => p.id))
+        )
+      );
+
+    if (tokens.length > 0) {
+      await sendExpoPushNotifications(
+        tokens.map((t) => ({
+          to: t.token,
+          title: "🚌 Journey Started",
+          body: `${busLabel} is on the way! Students will be picked up at their stops shortly.`,
+          data: { screen: "map", driverId: activeDriver?.id ?? null, routeId: startRouteId },
+          sound: "default" as const,
+          channelId: "bus-start",
+        }))
+      );
+    }
+  }
+
   return res.json({ acknowledged: true, message: `Journey started at ${timeStr}. All passengers and admins notified.` });
 });
 
@@ -1126,6 +1157,21 @@ export function startHeartbeatWatchdog(): void {
               isNull(tripLogsTable.completedAt)
             )
           );
+
+        // Reset passengers for this driver
+        const driverRoutes = await db.select({ id: routesTable.id }).from(routesTable).where(eq(routesTable.driverId, d.id));
+        const routeIds = driverRoutes.map(r => r.id);
+        if (routeIds.length > 0) {
+          await db
+            .update(passengersTable)
+            .set({ status: "pending", boardedAt: null })
+            .where(and(eq(passengersTable.tenantId, d.tenantId), inArray(passengersTable.routeId, routeIds)));
+        } else {
+          await db
+            .update(passengersTable)
+            .set({ status: "pending", boardedAt: null })
+            .where(eq(passengersTable.tenantId, d.tenantId));
+        }
 
         broadcast(d.tenantId, "trip_completed", {
           tenantId: d.tenantId,
