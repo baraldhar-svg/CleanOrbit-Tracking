@@ -2209,6 +2209,7 @@ function AddPersonDialog({
   const { data: stations } = useListStations();
   const { data: routes } = useListRoutes();
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [parentName, setParentName] = useState("");
   const [gender, setGender] = useState("");
@@ -2247,6 +2248,7 @@ function AddPersonDialog({
 
   function reset() {
     setName("");
+    setEmail("");
     setPhone("");
     setParentName("");
     setGender("");
@@ -2281,6 +2283,7 @@ function AddPersonDialog({
     try {
       await apiPost("/passengers", {
         name: name.trim(),
+        email: email.trim() || undefined,
         phone: phone.trim() || undefined,
         parentName: parentName.trim() || undefined,
         gender: gender || undefined,
@@ -2337,6 +2340,18 @@ function AddPersonDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Aayush Shrestha"
+              className="w-full border rounded-lg p-2 bg-background outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block font-semibold text-muted-foreground">
+              Email Address
+            </label>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              type="email"
               className="w-full border rounded-lg p-2 bg-background outline-none"
             />
           </div>
