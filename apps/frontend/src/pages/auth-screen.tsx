@@ -581,7 +581,7 @@ export default function AuthScreen() {
               )}
 
               {/* OTP Input for regular login */}
-              {loginMethod === "otp" && (!foundUser.requiresSchoolCode || emailOtpSent) && (
+              {loginMethod === "otp" && (foundUser.role === "superadmin" || !foundUser.requiresSchoolCode || emailOtpSent) && (
                 <div className="mb-6 flex flex-col items-center gap-2">
                   <div className="flex justify-center gap-2">
                     {otp.map((digit, i) => (
