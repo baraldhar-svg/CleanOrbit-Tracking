@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { db } from "@workspace/db";
-import { passengersTable, stationsTable, usersTable, tenantsTable, boardingLogsTable, driversTable, driverNotificationsTable, routesTable, announcementsTable } from "@workspace/db";
+import { passengersTable, stationsTable, usersTable, tenantsTable, boardingLogsTable, driversTable, driverNotificationsTable, routesTable, announcementsTable, studentsTable, attendanceRecordsTable } from "@workspace/db";
 import { eq, desc, and, or, ne, isNull, isNotNull } from "drizzle-orm";
 import { broadcast } from "../lib/sse";
 import { normalizePhone, syncUserAndProfiles } from "../lib/sync";
@@ -20,6 +20,36 @@ import {
 // the 12-hour session-scoped use case. In production, set QR_TOKEN_SECRET to a stable value.
 const QR_SECRET = process.env["QR_TOKEN_SECRET"] ?? randomBytes(32).toString("hex");
 const QR_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+async function syncAttendanceToClass(req: any, row: any, busStatus: 'PRESENT' | 'ABSENT' | 'PENDING', classStatus: 'PRESENT' | 'ABSENT' | 'PENDING') {
+  if (!row || !row.className || !row.section) return;
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [student] = await db.select().from(studentsTable).where(
+    and(
+      eq(studentsTable.tenantId, req.tenantId),
+      eq(studentsTable.fullName, row.name),
+      eq(studentsTable.className, row.className),
+      eq(studentsTable.section, row.section)
+    )
+  ).limit(1);
+
+  if (student) {
+    await db.insert(attendanceRecordsTable).values({
+      studentId: student.id,
+      date: todayStr,
+      busStatus,
+      classStatus,
+      markedByDriver: busStatus !== "PENDING",
+    }).onConflictDoUpdate({
+      target: [attendanceRecordsTable.studentId, attendanceRecordsTable.date],
+      set: {
+        busStatus,
+        classStatus,
+        markedByDriver: busStatus !== "PENDING"
+      }
+    });
+  }
+}
 
 function signQrPayload(passengerId: number, tenantId: number, ts: number): string {
   const payload = `${passengerId}:${tenantId}:${ts}`;
@@ -480,6 +510,8 @@ router.post("/:id/board", async (req, res) => {
       driverName: activeDriver?.name ?? null,
       action: "boarded",
     });
+    
+    await syncAttendanceToClass(req, row, "PRESENT", "PRESENT");
   }
   broadcast(req.tenantId, "passengers_updated", { tenantId: req.tenantId, passengerId: parsed.data.id, action: "boarded" });
   return res.json({ ...row, ...computeSubStatus(row ?? { routeId: null, routeSubscribedAt: null }) });
@@ -520,6 +552,8 @@ router.post("/:id/absent", async (req, res) => {
       title: `${row.name} marked absent`,
       body: `${row.name} was marked absent at ${row.stationName ?? "their stop"} by the driver. Please arrange alternative transport if needed.`,
     });
+    
+    await syncAttendanceToClass(req, row, "ABSENT", "ABSENT");
   }
   broadcast(req.tenantId, "passengers_updated", { tenantId: req.tenantId, passengerId: parsed.data.id, action: "absent" });
   return res.json({ ...row, ...computeSubStatus(row ?? { routeId: null, routeSubscribedAt: null }) });
@@ -537,6 +571,11 @@ router.post("/:id/unboard", async (req, res) => {
     .from(passengersTable)
     .leftJoin(stationsTable, eq(passengersTable.stationId, stationsTable.id))
     .where(eq(passengersTable.id, parsed.data.id));
+    
+  if (row) {
+    await syncAttendanceToClass(req, row, "PENDING", "PENDING");
+  }
+    
   broadcast(req.tenantId, "passengers_updated", { tenantId: req.tenantId, passengerId: parsed.data.id, action: "unboarded" });
   return res.json({ ...row, ...computeSubStatus(row ?? { routeId: null, routeSubscribedAt: null }) });
 });
@@ -553,6 +592,11 @@ router.post("/:id/leave", async (req, res) => {
     .from(passengersTable)
     .leftJoin(stationsTable, eq(passengersTable.stationId, stationsTable.id))
     .where(eq(passengersTable.id, parsed.data.id));
+    
+  if (row) {
+    await syncAttendanceToClass(req, row, "ABSENT", "ABSENT");
+  }
+    
   broadcast(req.tenantId, "passengers_updated", { tenantId: req.tenantId, passengerId: parsed.data.id, action: "leave" });
   return res.json({ ...row, ...computeSubStatus(row ?? { routeId: null, routeSubscribedAt: null }) });
 });
