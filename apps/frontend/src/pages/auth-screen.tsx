@@ -196,15 +196,18 @@ export default function AuthScreen() {
     }
     setErr("");
     setLoading(true);
+
+    const shouldForceEmail = forceEmailSend || !!foundUser?.hasEmail;
+
     try {
       await apiPost("/auth/send-email-otp", {
         phone,
         schoolCode: schoolCode.trim(),
-        forceEmailSend,
+        forceEmailSend: shouldForceEmail,
       });
       setEmailOtpSent(true);
       setStep("otp");
-      if (forceEmailSend) setSuccessMsg("Please check your email, an OTP has been sent.");
+      if (shouldForceEmail) setSuccessMsg("Please check your email, an OTP has been sent.");
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Failed to send OTP");
     } finally {
