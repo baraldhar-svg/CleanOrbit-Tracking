@@ -15,7 +15,7 @@ export async function sendOtpSms(phone: string, otpCode: string) {
 
   try {
     const response = await fetch(`${apiUrl}?${params.toString()}`);
-    const data = await response.json();
+    const data = await response.json() as any;
     
     // Check if the API returned an error logically
     // SMS Pasal usually returns 200 HTTP status even for logical errors,

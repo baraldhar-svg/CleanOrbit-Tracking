@@ -159,15 +159,7 @@ export default function RegisterScreen() {
               setErr(e instanceof Error ? e.message : "Failed to send OTP");
             }
           } else if (data.user) {
-            const fu: FoundUser = {
-              name: data.user?.name ?? data.name ?? "User",
-              role: data.user?.role ?? data.role ?? "student",
-              requiresSchoolCode: data.requiresSchoolCode ?? false,
-              demoCode: data.demoCode ?? "123456",
-              requiresPassword: data.requiresPassword ?? false,
-            };
-            setFoundUser(fu);
-            setStep("login");
+            navigate(`/auth?phone=${encodeURIComponent(paramPhone)}`);
           }
         })
         .catch(() => { setStep("phone"); });
@@ -187,18 +179,8 @@ export default function RegisterScreen() {
         return;
       }
 
-      const fu: FoundUser = {
-        name: data.user?.name ?? data.name ?? "User",
-        role: data.user?.role ?? data.role ?? "student",
-        requiresSchoolCode: data.requiresSchoolCode ?? false,
-        demoCode: data.demoCode ?? "123456",
-        requiresPassword: data.requiresPassword ?? false,
-      };
-
-      setFoundUser(fu);
-      const digits = String(fu.demoCode).split("").slice(0, 6);
-      setOtp(digits.concat(Array(6 - digits.length).fill("")));
-      setStep("login");
+      // User is found, redirect them to login!
+      navigate(`/auth?phone=${encodeURIComponent(phone)}`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error";
       if (msg.toLowerCase().includes("not registered") || msg.toLowerCase().includes("not found")) {
