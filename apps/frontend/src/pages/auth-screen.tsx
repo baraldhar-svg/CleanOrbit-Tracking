@@ -508,9 +508,9 @@ export default function AuthScreen() {
           )}
 
           {/* ── STEP: Credentials (School Code Field + Instant Green Button) ── */}
+          
           {step === "schoolCode" && foundUser && (
             <>
-              {/* Personalized welcome */}
               <div className="mb-5 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3 flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-black text-sm">
                   {foundUser.name.charAt(0).toUpperCase()}
@@ -525,41 +525,66 @@ export default function AuthScreen() {
                 </div>
               </div>
 
-              {/* 🏫 स्कुल कोड हाल्ने बाकस (यहाँ पूरै सुरक्षित राखिएको छ) */}
-              {foundUser.requiresSchoolCode && (
-                <div className="mb-5">
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
-                    School Code
-                  </label>
-                  <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
-                    <span className="text-slate-400 text-sm">🏫</span>
-                    <input
-                      type="text"
-                      placeholder="e.g. APEX-ALPHA-1234"
-                      value={schoolCode}
-                      onChange={(e) => {
-                        setSchoolCode(e.target.value.toUpperCase());
-                        setErr("");
-                      }}
-                      className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none font-mono tracking-wider"
-                      autoCapitalize="characters"
-                    />
-                  </div>
+              <div className="mb-5">
+                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                  School Code
+                </label>
+                <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
+                  <span className="text-slate-400 text-sm">🏫</span>
+                  <input
+                    type="text"
+                    placeholder="e.g. APEX-ALPHA-1234"
+                    value={schoolCode}
+                    onChange={(e) => {
+                      setSchoolCode(e.target.value.toUpperCase());
+                      setErr("");
+                    }}
+                    className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none font-mono tracking-wider"
+                    autoCapitalize="characters"
+                  />
+                </div>
+              </div>
+
+              {err && (
+                <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
+                  <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
+                  <p className="text-xs text-red-300 leading-relaxed">{err}</p>
                 </div>
               )}
 
-              {/* Action to request Email OTP if needed */}
-              {foundUser.requiresSchoolCode && !emailOtpSent && loginMethod === "otp" && (
-                <button
-                  onClick={handleSendEmailOtp}
-                  disabled={loading || !schoolCode.trim()}
-                  className="mb-5 w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors shadow-lg"
-                >
-                  {loading ? "Sending..." : "Continue →"}
-                </button>
-              )}
+              <button
+                onClick={() => handleSendEmailOtp(false)}
+                disabled={loading || !schoolCode.trim()}
+                className="mb-5 w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors shadow-lg"
+              >
+                {loading ? "Loading..." : "Continue →"}
+              </button>
+              
+              <button
+                onClick={resetToPhone}
+                className="w-full text-center text-xs text-slate-500 hover:text-slate-300 py-1.5"
+              >
+                ← Change number
+              </button>
+            </>
+          )}
 
-              {/* Password field for Super Admin */}
+          {step === "otp" && foundUser && (
+            <>
+              <div className="mb-5 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3 flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-black text-sm">
+                  {foundUser.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">
+                    Welcome back, {foundUser.name.split(" ")[0]}! 👋
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {ROLE_LABELS[foundUser.role] ?? foundUser.role}
+                  </p>
+                </div>
+              </div>
+
               {loginMethod === "password" && (
                 <div className="mb-5">
                   <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
@@ -586,7 +611,6 @@ export default function AuthScreen() {
                 </div>
               )}
 
-              {/* OTP Input for regular login */}
               {loginMethod === "otp" && (
                 <div className="mb-6 flex flex-col items-center gap-2">
                   <div className="flex justify-center gap-2">
@@ -618,41 +642,58 @@ export default function AuthScreen() {
                       />
                     ))}
                   </div>
-                  <p className="text-xs text-amber-400 mt-2 font-medium">Please check your email for the OTP</p>
+                  <p className="text-xs text-amber-400 mt-2 font-medium">
+                    {emailOtpSent ? "Please check your email for the OTP" : "Enter the OTP code"}
+                  </p>
+
+                  {foundUser.hasEmail ? (
+                    <button
+                      onClick={() => handleSendEmailOtp(true)}
+                      disabled={loading}
+                      className="mt-3 w-full text-center text-xs text-amber-500 hover:text-amber-400 font-bold disabled:opacity-50"
+                    >
+                      Forgot Password? Send OTP to my email
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setStep("updateEmail");
+                        setSuccessMsg("");
+                        setErr("");
+                      }}
+                      className="mt-3 w-full text-center text-xs text-amber-500 hover:text-amber-400 font-bold"
+                    >
+                      Forgot Password? Add your email
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {successMsg && (
+                <div className="mb-3 flex items-start gap-2 rounded-xl border border-green-800/50 bg-green-900/20 px-3.5 py-3">
+                  <span className="text-green-400 mt-0.5 text-sm shrink-0">✅</span>
+                  <p className="text-xs text-green-300 leading-relaxed">{successMsg}</p>
                 </div>
               )}
 
               {err && (
                 <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
-                  <span className="text-red-400 mt-0.5 text-sm shrink-0">
-                    ⚠️
-                  </span>
+                  <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
                   <p className="text-xs text-red-300 leading-relaxed">{err}</p>
                 </div>
               )}
 
-              {/* 🚀 Login Button */}
-              {(!foundUser.requiresSchoolCode || emailOtpSent || loginMethod === "password") && (
-                <button
-                  onClick={loginMethod === "password" ? handleLoginPassword : handleVerifyOtp}
-                  disabled={
-                    loading ||
-                    (foundUser.requiresSchoolCode && !schoolCode.trim()) ||
-                    (loginMethod === "password" && !password.trim()) ||
-                    (loginMethod === "otp" && !foundUser.demoCode && otp.join("").length < 6)
-                  }
-                  className="w-full rounded-xl bg-green-600 py-3.5 font-bold text-white hover:bg-green-500 disabled:opacity-40 transition-colors shadow-lg"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                      Logging in…
-                    </span>
-                  ) : (
-                    `Sign In to Existing Account →`
-                  )}
-                </button>
-              )}
+              <button
+                onClick={loginMethod === "password" ? handleLoginPassword : handleVerifyOtp}
+                disabled={
+                  loading ||
+                  (loginMethod === "password" && !password.trim()) ||
+                  (loginMethod === "otp" && !foundUser.demoCode && otp.join("").length < 6)
+                }
+                className="w-full rounded-xl bg-green-600 py-3.5 font-bold text-white hover:bg-green-500 disabled:opacity-40 transition-colors shadow-lg"
+              >
+                {loading ? "Logging in..." : "Sign In to Existing Account →"}
+              </button>
 
               <button
                 onClick={resetToPhone}
@@ -662,6 +703,61 @@ export default function AuthScreen() {
               </button>
             </>
           )}
+
+          {step === "updateEmail" && foundUser && (
+            <>
+              <div className="mb-5 text-center">
+                <h2 className="text-lg font-bold text-slate-100">Update Email</h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Add your email to receive your OTP securely.
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                  Email Address
+                </label>
+                <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
+                  <span className="text-slate-400 text-sm">📧</span>
+                  <input
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={newEmail}
+                    onChange={(e) => {
+                      setNewEmail(e.target.value.toLowerCase());
+                      setErr("");
+                    }}
+                    className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none"
+                  />
+                </div>
+              </div>
+
+              {err && (
+                <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
+                  <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
+                  <p className="text-xs text-red-300 leading-relaxed">{err}</p>
+                </div>
+              )}
+
+              <button
+                onClick={handleUpdateEmail}
+                disabled={loading || !newEmail.trim()}
+                className="w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors shadow-lg"
+              >
+                {loading ? "Saving..." : "Save & Send OTP"}
+              </button>
+
+              <button
+                onClick={() => {
+                   setStep("otp");
+                   setErr("");
+                }}
+                className="mt-4 w-full text-center text-xs text-slate-500 hover:text-slate-300 py-1.5"
+              >
+                ← Back to Login
+              </button>
+            </>
+          )
         </div>
 
         {/* Security notice */}
