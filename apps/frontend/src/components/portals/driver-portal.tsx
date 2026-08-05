@@ -1102,10 +1102,10 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
           </button>
           <div className="flex items-center gap-2">
             <button
-              onClick={journeyStarted && !journeyCompleted ? undefined : handleToggleOffline}
-              disabled={journeyStarted && !journeyCompleted}
+              onClick={journeyStarted && !journeyCompleted || isFreezeActive ? undefined : handleToggleOffline}
+              disabled={journeyStarted && !journeyCompleted || isFreezeActive}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all border flex items-center gap-1.5 ${
-                journeyStarted && !journeyCompleted
+                journeyStarted && !journeyCompleted || isFreezeActive
                   ? "pointer-events-none cursor-not-allowed bg-red-50 border-red-200 text-red-600 opacity-80"
                   : isOffline
                     ? "bg-card border-border text-muted-foreground hover:bg-muted"
@@ -1554,12 +1554,12 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
               {/* Prev / Next buttons */}
               <div className="flex items-center gap-2">
-                <button onClick={() => setStationIdx((i) => Math.max(0, i - 1))} disabled={stationIdx === 0}
+                <button onClick={() => setStationIdx((i) => Math.max(0, i - 1))} disabled={stationIdx === 0 || isFreezeActive}
                   className="rounded-xl bg-muted px-4 py-2 text-sm font-medium hover:bg-muted-foreground/20 disabled:opacity-30 transition-colors flex-1">
                   ← Prev
                 </button>
                 <button onClick={() => setStationIdx((i) => Math.min(driverStations.length, i + 1))}
-                  disabled={stationIdx >= driverStations.length}
+                  disabled={stationIdx >= driverStations.length || isFreezeActive}
                   className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-amber-400 disabled:opacity-30 transition-colors flex-1">
                   Next →
                 </button>
@@ -1760,13 +1760,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
               <div className="py-8 text-center text-xs text-muted-foreground">
                 No trips logged yet. Your trips will appear here after starting a journey.
               </div>
-            ) : (
-              <div className="divide-y divide-slate-700/60">
-                {myTripHistory.map((t) => (
-                  <TripAccordionItem key={t.id} t={t} />
-                ))}
-              </div>
-            )}
+            ) : (myTripsOpen && <div className="divide-y divide-border">{myTripHistory.map((t) => (<TripAccordionItem key={t.id} t={t} />))}</div>)}
           </div>
         )}
       </div>
