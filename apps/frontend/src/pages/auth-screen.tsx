@@ -39,6 +39,7 @@ interface FoundUser {
   requiresSchoolCode: boolean;
   demoCode: string;
   requiresPassword?: boolean;
+  hasEmail?: boolean;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -159,6 +160,7 @@ export default function AuthScreen() {
         requiresSchoolCode: data.requiresSchoolCode ?? false,
         demoCode: data.demoCode ?? "",
         requiresPassword: data.requiresPassword ?? false,
+        hasEmail: data.hasEmail ?? false,
       };
       setFoundUser(fu);
       setSchoolCode("");
@@ -187,7 +189,7 @@ export default function AuthScreen() {
     }
   }
 
-  async function handleSendEmailOtp() {
+  async function handleSendEmailOtp(forceEmailSend = false) {
     if (foundUser?.requiresSchoolCode && !schoolCode.trim()) {
       setErr("Please enter your school code");
       return;
@@ -195,13 +197,40 @@ export default function AuthScreen() {
     setErr("");
     setLoading(true);
     try {
-      const data = await apiPost("/auth/send-email-otp", {
+      await apiPost("/auth/send-email-otp", {
         phone,
         schoolCode: schoolCode.trim(),
+        forceEmailSend,
       });
       setEmailOtpSent(true);
+      setStep("otp");
+      if (forceEmailSend) setSuccessMsg("Please check your email, an OTP has been sent.");
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleUpdateEmail() {
+    if (!newEmail.trim() || !newEmail.includes("@")) {
+      setErr("Please enter a valid email address");
+      return;
+    }
+    setErr("");
+    setLoading(true);
+    try {
+      await apiPost("/auth/update-email", {
+        phone,
+        schoolCode: schoolCode.trim(),
+        email: newEmail.trim(),
+      });
+      setEmailOtpSent(true);
+      setSuccessMsg("Email saved successfully! An OTP has been sent to your email.");
+      setFoundUser({ ...foundUser!, hasEmail: true });
+      setStep("otp");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed to update email");
     } finally {
       setLoading(false);
     }
@@ -757,7 +786,7 @@ export default function AuthScreen() {
                 ← Back to Login
               </button>
             </>
-          )
+          )}
         </div>
 
         {/* Security notice */}
