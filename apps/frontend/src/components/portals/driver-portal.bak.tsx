@@ -42,7 +42,7 @@ const SPEED_ALERT_THRESHOLD_KMH = 60;
 function Avatar({ name, photoUrl, size = "md" }: { name: string; photoUrl?: string | null; size?: "sm" | "md" }) {
   const src = photoUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=1e293b&textColor=f59e0b&fontSize=36`;
   const cls = size === "sm" ? "h-9 w-9" : "h-12 w-12";
-  return <img src={src} alt={name} className={`${cls} rounded-full border-2 border-border object-cover shrink-0`} />;
+  return <img src={src} alt={name} className={`${cls} rounded-full border-2 border-slate-600 object-cover shrink-0`} />;
 }
 
 function ScoreRing({ score }: { score: number }) {
@@ -105,39 +105,39 @@ function TripAccordionItem({ t }: { t: any }) {
   const logs = Array.isArray(t.stationLogs) ? t.stationLogs : [];
 
   return (
-    <div className="border-b border-border/60 last:border-0">
+    <div className="border-b border-slate-700/60 last:border-0">
       <button 
         onClick={() => setExpanded(!expanded)} 
-        className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+        className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-slate-700/30 transition-colors text-left"
       >
         <div className={`h-2 w-2 rounded-full shrink-0 ${t.completedAt ? "bg-green-500" : "bg-amber-400 animate-pulse"}`} />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-foreground truncate">{startLabel}{t.routeName ? ` · ${t.routeName}` : ""}</p>
-          <p className="text-[11px] text-muted-foreground">{durationLabel}</p>
+          <p className="text-xs font-medium text-slate-200 truncate">{startLabel}{t.routeName ? ` · ${t.routeName}` : ""}</p>
+          <p className="text-[11px] text-slate-500">{durationLabel}</p>
         </div>
         <div className="text-right shrink-0 flex items-center gap-3">
           <div className="text-right">
-            <p className="text-xs font-bold text-foreground">{t.passengersBoarded}/{t.passengersTotal}</p>
-            <p className="text-[10px] text-muted-foreground">boarded</p>
+            <p className="text-xs font-bold text-slate-200">{t.passengersBoarded}/{t.passengersTotal}</p>
+            <p className="text-[10px] text-slate-500">boarded</p>
           </div>
-          {expanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+          {expanded ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
         </div>
       </button>
       
       {expanded && (
-        <div className="bg-card/50 px-4 py-3 border-t border-border/60">
+        <div className="bg-slate-900/50 px-4 py-3 border-t border-slate-800/60">
           <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-3">Journey History</p>
           {logs.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic text-center py-2">No station history recorded for this trip.</p>
+            <p className="text-xs text-slate-500 italic text-center py-2">No station history recorded for this trip.</p>
           ) : (
-            <div className="relative pl-3 border-l-2 border-border/50 space-y-4 ml-2 mb-2">
+            <div className="relative pl-3 border-l-2 border-slate-700/50 space-y-4 ml-2 mb-2">
               {logs.map((log: any, idx: number) => {
                 const logTime = new Date(log.time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
                 return (
                   <div key={idx} className="relative">
                     <span className="absolute -left-[17px] top-1.5 h-2 w-2 rounded-full bg-amber-400 ring-4 ring-slate-900/50" />
-                    <p className="text-xs font-medium text-muted-foreground leading-tight">{log.stationName}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{logTime}</p>
+                    <p className="text-xs font-medium text-slate-300 leading-tight">{log.stationName}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{logTime}</p>
                   </div>
                 );
               })}
@@ -153,7 +153,6 @@ function TripAccordionItem({ t }: { t: any }) {
 export default function DriverPortal({ tenant }: { tenant?: any }) {
   const { user, login, logout } = useAuth();
   const [driverProfileOpen, setDriverProfileOpen] = useState(false);
-  const [myTripsOpen, setMyTripsOpen] = useState(false);
   // Attendance popup modal for geofenced stations
   const [activeStationModal, setActiveStationModal] = useState<string | null>(null);
   const [modalStudents, setModalStudents] = useState<any[]>([]);
@@ -1027,7 +1026,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   // rather than silently displaying another driver's data.
   if (driverNotLinked) {
     return (
-      <div className="min-h-full w-full bg-background text-foreground flex flex-col items-center justify-center gap-4 p-8">
+      <div className="min-h-full w-full bg-[#0F172A] text-white flex flex-col items-center justify-center gap-4 p-8">
         <div className="rounded-2xl bg-red-900/20 border border-red-700/40 p-6 w-full max-w-sm text-center space-y-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-700 mx-auto">
             <AlertTriangle size={24} className="text-white" />
@@ -1036,46 +1035,46 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
           <p className="text-xs text-red-400/80">
             Your account (<span className="font-mono text-red-300">{user?.phone}</span>) is not linked to any driver record in this school.
           </p>
-          <p className="text-[11px] text-muted-foreground">Ask your admin to create a driver entry with this phone number.</p>
+          <p className="text-[11px] text-slate-500">Ask your admin to create a driver entry with this phone number.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full w-full bg-background text-foreground flex flex-col">
+    <div className="min-h-full w-full bg-[#0F172A] text-white flex flex-col">
 
       {/* Driver Profile Modal */}
       {driverProfileOpen && myDriver && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-background">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <p className="text-sm font-bold text-foreground">My Profile</p>
-            <button onClick={() => setDriverProfileOpen(false)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
-              <X size={18} className="text-muted-foreground" />
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#0F172A]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
+            <p className="text-sm font-bold text-slate-100">My Profile</p>
+            <button onClick={() => setDriverProfileOpen(false)} className="rounded-full p-1.5 hover:bg-slate-700 transition-colors">
+              <X size={18} className="text-slate-400" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
-            <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Profile Photo</p>
+            <div className="rounded-2xl bg-slate-800 border border-slate-700 p-4 space-y-3">
+              <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Profile Photo</p>
               <PhotoPicker value={localDriverPhoto} onChange={setLocalDriverPhoto} name={myDriver.name} dark />
             </div>
-            <div className="rounded-2xl bg-card border border-border p-4 space-y-3 text-xs">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Gender</p>
+            <div className="rounded-2xl bg-slate-800 border border-slate-700 p-4 space-y-3 text-xs">
+              <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Gender</p>
               <div className="flex gap-2">
                 {["Male", "Female", "Other"].map((g) => (
                   <button key={g} type="button" onClick={() => setLocalDriverGender(localDriverGender === g ? "" : g)}
-                    className={`flex-1 rounded-lg border py-2 text-xs font-semibold transition-colors ${localDriverGender === g ? "bg-amber-500 border-amber-500 text-primary-foreground" : "border-border bg-muted text-muted-foreground hover:bg-muted-foreground/20"}`}>
+                    className={`flex-1 rounded-lg border py-2 text-xs font-semibold transition-colors ${localDriverGender === g ? "bg-amber-500 border-amber-500 text-slate-900" : "border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600"}`}>
                     {g}
                   </button>
                 ))}
               </div>
             </div>
           </div>
-          <div className="px-4 py-4 border-t border-border">
+          <div className="px-4 py-4 border-t border-slate-700">
             <button
               onClick={handleSaveDriverPhoto}
               disabled={driverPhotoSaving || (localDriverPhoto === (myDriver.photoUrl ?? "") && localDriverGender === (myDriver.gender ?? ""))}
-              className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-primary-foreground hover:bg-amber-400 disabled:opacity-40 transition-colors"
+              className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors"
             >
               {driverPhotoSaving ? "Saving…" : driverPhotoSaved ? "✓ Saved!" : "Save Profile"}
             </button>
@@ -1084,18 +1083,18 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       )}
 
       {/* Header */}
-      <header className="px-4 py-4 border-b border-border">
+      <header className="px-4 py-4 border-b border-slate-700">
         <div className="flex items-center justify-between">
           {/* Profile chip — tappable */}
           <button onClick={() => setDriverProfileOpen(true)} className="flex items-center gap-2.5 text-left hover:opacity-80 transition-opacity">
-            <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-amber-500 bg-muted shrink-0 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-amber-500 bg-slate-700 shrink-0 flex items-center justify-center">
               {localDriverPhoto || myDriver?.photoUrl
                 ? <img src={localDriverPhoto || myDriver?.photoUrl!} alt={myDriver?.name ?? "Driver"} className="h-full w-full object-cover" />
-                : <User size={16} className="text-muted-foreground" />}
+                : <User size={16} className="text-slate-400" />}
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground leading-tight">{myDriver?.name ?? user?.name ?? "Driver"}</p>
-              <p className="text-[10px] text-muted-foreground leading-tight">
+              <p className="text-sm font-bold text-slate-100 leading-tight">{myDriver?.name ?? user?.name ?? "Driver"}</p>
+              <p className="text-[10px] text-slate-400 leading-tight">
                 {[myDriver?.gender, myDriver?.vehicleNumber].filter(Boolean).join(" · ") || "Driver Portal"}
               </p>
             </div>
@@ -1108,7 +1107,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 journeyStarted && !journeyCompleted
                   ? "pointer-events-none cursor-not-allowed bg-red-50 border-red-200 text-red-600 opacity-80"
                   : isOffline
-                    ? "bg-card border-border text-muted-foreground hover:bg-muted"
+                    ? "bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700"
                     : "bg-red-50 border-red-200 text-red-600 hover:bg-red-100/80"
               }`}
             >
@@ -1124,7 +1123,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 </>
               )}
             </button>
-            <div className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-foreground">
+            <div className="rounded-full bg-slate-700 px-2.5 py-1 text-xs font-semibold text-slate-200">
               {boardedCount}/{totalCount}
             </div>
           </div>
@@ -1187,9 +1186,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
       {/* Offline banner */}
       {isOffline && !isHolidayToday && myDriver?.isActive !== false && !isFreezeActive && (
-        <div className="flex items-center gap-2 bg-card border-b border-border px-4 py-2.5">
-          <WifiOff size={16} className="shrink-0 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground font-medium flex-1">Location sharing paused — you are offline. Admin has been notified.</p>
+        <div className="flex items-center gap-2 bg-slate-800 border-b border-slate-700 px-4 py-2.5">
+          <WifiOff size={16} className="shrink-0 text-slate-300" />
+          <p className="text-xs text-slate-300 font-medium flex-1">Location sharing paused — you are offline. Admin has been notified.</p>
           <button onClick={handleToggleOffline} className="text-[10px] font-semibold text-amber-400 hover:text-amber-300 underline">Go Online</button>
         </div>
       )}
@@ -1211,7 +1210,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                   <p className="text-[10px] text-amber-600 mt-0.5">{currentStation.stopLabel || currentStation.stationName || "—"} · {waiting.length} waiting</p>
                 </div>
                 {waiting.length === 0 && (
-                  <span className="text-[10px] text-muted-foreground italic">All accounted for</span>
+                  <span className="text-[10px] text-slate-500 italic">All accounted for</span>
                 )}
               </div>
               {waiting.length > 0 ? (
@@ -1220,8 +1219,8 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                     <div key={p.id} className="flex items-center gap-3 px-4 py-3">
                       <Avatar name={p.name} photoUrl={p.photoUrl} />
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-foreground text-sm">{p.name}</p>
-                        <p className="text-[10px] text-muted-foreground capitalize">{p.role} · {p.stationName}</p>
+                        <p className="font-semibold text-slate-100 text-sm">{p.name}</p>
+                        <p className="text-[10px] text-slate-400 capitalize">{p.role} · {p.stationName}</p>
                         {p.quickMessage && <p className="text-[10px] text-blue-400 italic truncate">"{p.quickMessage}"</p>}
                       </div>
                       <div className="shrink-0 flex gap-1.5">
@@ -1235,7 +1234,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                         <button
                           onClick={() => handleAbsent(p.id)}
                           disabled={boardingId === p.id || absentId === p.id || isOffline}
-                          className="rounded-xl bg-muted px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-muted-foreground/20 disabled:opacity-50 transition-colors border border-red-700/30"
+                          className="rounded-xl bg-slate-700 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-slate-600 disabled:opacity-50 transition-colors border border-red-700/30"
                         >
                           {absentId === p.id ? "…" : "Absent"}
                         </button>
@@ -1256,9 +1255,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
             <button
               onClick={isOffline || myDriver?.isActive === false || isHolidayToday || isFreezeActive ? undefined : handleStartJourney}
               disabled={isOffline || myDriver?.isActive === false || isHolidayToday || isFreezeActive}
-              className={`w-full rounded-2xl py-4 text-center font-bold text-primary-foreground shadow-lg transition-all active:scale-[0.98] ${
+              className={`w-full rounded-2xl py-4 text-center font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
                 isOffline || myDriver?.isActive === false || isHolidayToday || isFreezeActive
-                  ? "bg-muted shadow-none opacity-50 cursor-not-allowed"
+                  ? "bg-slate-700 shadow-none opacity-50 cursor-not-allowed"
                   : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 shadow-green-900/40"
               }`}
             >
@@ -1283,9 +1282,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 setDriverPos(null);
               }}
               disabled={isOffline}
-              className={`w-full rounded-2xl py-4 text-center font-bold text-primary-foreground shadow-lg transition-all active:scale-[0.98] ${
+              className={`w-full rounded-2xl py-4 text-center font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
                 isOffline
-                  ? "bg-muted shadow-none opacity-50 cursor-not-allowed"
+                  ? "bg-slate-700 shadow-none opacity-50 cursor-not-allowed"
                   : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 shadow-green-900/40"
               }`}
             >
@@ -1303,7 +1302,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                   <p className="text-sm font-bold text-red-300">Journey Completed · {completedTime}</p>
                   <p className="text-xs text-red-500/80">All passengers & admin notified</p>
                 </div>
-                <span className="text-xs font-mono text-muted-foreground">{countdown}s</span>
+                <span className="text-xs font-mono text-slate-400">{countdown}s</span>
               </div>
               <div className="mt-3 pt-3 border-t border-red-800/40">
                 <p className="text-[10px] text-red-500 uppercase tracking-wider font-semibold mb-2">Arrival notification sent to</p>
@@ -1356,10 +1355,10 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
               <button
                 onClick={canCompleteJourney ? handleJourneyComplete : undefined}
                 disabled={!canCompleteJourney}
-                className={`w-full rounded-2xl py-4 text-center font-bold text-primary-foreground shadow-lg transition-all active:scale-[0.98] ${
+                className={`w-full rounded-2xl py-4 text-center font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
                   canCompleteJourney
                     ? "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 shadow-green-900/40 cursor-pointer"
-                    : "bg-muted shadow-none opacity-50 cursor-not-allowed"
+                    : "bg-slate-700 shadow-none opacity-50 cursor-not-allowed"
                 }`}
               >
                 <Flag size={20} className="inline mr-2" />
@@ -1375,17 +1374,17 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
         {/* Upcoming Station — students at current stop */}
         {currentStation && (
-          <div className="rounded-2xl bg-card/80 border border-amber-500/20 p-3">
+          <div className="rounded-2xl bg-slate-800/80 border border-amber-500/20 p-3">
             <div className="flex items-center gap-2 mb-2.5">
               <MapPin size={13} className="shrink-0 text-amber-400" />
               <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Upcoming Station</p>
-              <span className="ml-auto text-[10px] text-muted-foreground">Stop {stationIdx + 1}/{driverStations.length}</span>
+              <span className="ml-auto text-[10px] text-slate-500">Stop {stationIdx + 1}/{driverStations.length}</span>
             </div>
-            <p className="font-bold text-foreground text-sm mb-2.5">{currentStation.stopLabel || currentStation.stationName || "—"}</p>
+            <p className="font-bold text-slate-100 text-sm mb-2.5">{currentStation.stopLabel || currentStation.stationName || "—"}</p>
             {(() => {
               const stationPassengers = riderPassengers.filter((p) => p.stationId === currentStation.stationId);
               if (stationPassengers.length === 0) return (
-                <p className="text-xs text-muted-foreground italic">No students assigned to this station</p>
+                <p className="text-xs text-slate-500 italic">No students assigned to this station</p>
               );
               return (
                 <div className="space-y-1.5">
@@ -1401,11 +1400,11 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                       <div key={p.id} className={`flex items-center gap-2 rounded-xl border px-3 py-2 ${
                         isBoarded ? "border-green-700/40 bg-green-900/20" :
                         isAbsent || isOnLeave ? "border-red-800/30 bg-red-900/10" :
-                        "border-border bg-card/60"
+                        "border-slate-700 bg-slate-800/60"
                       }`}>
                         <Avatar name={p.name} photoUrl={p.photoUrl} size="sm" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground truncate">{p.name}</p>
+                          <p className="text-xs font-semibold text-slate-200 truncate">{p.name}</p>
                           {hasCustomMsg && (
                             <p className="text-[10px] text-amber-400/80 truncate">"{p.quickMessage}"</p>
                           )}
@@ -1416,11 +1415,11 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                           ) : isAbsent ? (
                             <span className="text-[10px] font-bold text-red-400">Absent</span>
                           ) : isOnLeave ? (
-                            <span className="text-[10px] font-bold text-muted-foreground">On leave</span>
+                            <span className="text-[10px] font-bold text-slate-400">On leave</span>
                           ) : isLive ? (
                             <span className="text-[10px] font-bold text-amber-400">Coming</span>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground">?</span>
+                            <span className="text-[10px] text-slate-500">?</span>
                           )}
                           {canNotify && (
                             <button
@@ -1447,39 +1446,39 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
 
         {/* Safety Scorecard */}
-        <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-border p-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Driver Safety Score</p>
+        <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 p-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Driver Safety Score</p>
           <div className="flex items-center gap-4">
             <ScoreRing score={SAFETY_SCORE} />
             <div className="flex-1 grid grid-cols-3 gap-3">
-              <div className="rounded-xl bg-card p-2.5 text-center">
-                <p className="text-xs text-muted-foreground">Speed</p>
-                <p className={`text-base font-bold ${overspeedAlert ? "text-red-400" : "text-foreground"}`}>
+              <div className="rounded-xl bg-slate-800 p-2.5 text-center">
+                <p className="text-xs text-slate-400">Speed</p>
+                <p className={`text-base font-bold ${overspeedAlert ? "text-red-400" : "text-slate-100"}`}>
                   {speedKmh != null ? Math.round(speedKmh) : "—"}
                 </p>
-                <p className="text-[9px] text-muted-foreground">km/h</p>
+                <p className="text-[9px] text-slate-500">km/h</p>
               </div>
-              <div className="rounded-xl bg-card p-2.5 text-center">
-                <p className="text-xs text-muted-foreground">Distance</p>
-                <p className="text-base font-bold text-foreground">{DISTANCE_KM}</p>
-                <p className="text-[9px] text-muted-foreground">km today</p>
+              <div className="rounded-xl bg-slate-800 p-2.5 text-center">
+                <p className="text-xs text-slate-400">Distance</p>
+                <p className="text-base font-bold text-slate-100">{DISTANCE_KM}</p>
+                <p className="text-[9px] text-slate-500">km today</p>
               </div>
-              <div className="rounded-xl bg-card p-2.5 text-center">
-                <p className="text-xs text-muted-foreground">Trips</p>
-                <p className="text-base font-bold text-foreground">{TRIPS_TODAY}</p>
-                <p className="text-[9px] text-muted-foreground">done</p>
+              <div className="rounded-xl bg-slate-800 p-2.5 text-center">
+                <p className="text-xs text-slate-400">Trips</p>
+                <p className="text-base font-bold text-slate-100">{TRIPS_TODAY}</p>
+                <p className="text-[9px] text-slate-500">done</p>
               </div>
             </div>
           </div>
           <div className="mt-3 flex gap-2">
-            <div className="flex-1 rounded-lg bg-card px-3 py-1.5 text-xs flex items-center gap-1.5">
-              <span className="text-green-400">✓</span><span className="text-muted-foreground">No harsh braking</span>
+            <div className="flex-1 rounded-lg bg-slate-800 px-3 py-1.5 text-xs flex items-center gap-1.5">
+              <span className="text-green-400">✓</span><span className="text-slate-300">No harsh braking</span>
             </div>
-            <div className="flex-1 rounded-lg bg-card px-3 py-1.5 text-xs flex items-center gap-1.5">
+            <div className="flex-1 rounded-lg bg-slate-800 px-3 py-1.5 text-xs flex items-center gap-1.5">
               {overspeedAlert ? (
                 <><span className="text-red-400">✕</span><span className="text-red-300">Over speed limit</span></>
               ) : (
-                <><span className="text-green-400">✓</span><span className="text-muted-foreground">Speed within limit</span></>
+                <><span className="text-green-400">✓</span><span className="text-slate-300">Speed within limit</span></>
               )}
             </div>
           </div>
@@ -1496,9 +1495,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         )}
 
         {/* Route Navigator */}
-        <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+        <div className="rounded-2xl bg-slate-800 border border-slate-700 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Route Navigator</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Route Navigator</p>
             <span className="text-xs text-amber-400 font-medium">
               {driverStations.length > 0 ? `Stop ${stationIdx + 1} / ${driverStations.length}` : "— / —"}
             </span>
@@ -1507,7 +1506,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
           {driverStations.length === 0 ? (
             <div className="flex items-center gap-2 py-2">
               {loadingStations && <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />}
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-slate-500">
                 {loadingStations ? "Loading stops…" : myRoute ? "No stops configured for this route" : "No route assigned yet"}
               </p>
             </div>
@@ -1535,9 +1534,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                   const next = driverStations[stationIdx + 1] ?? null;
                   const nextCount = next ? riderPassengers.filter((p) => p.stationId === next.stationId).length : 0;
                   return (
-                    <div className="rounded-xl bg-muted/60 border border-border/60 px-3 py-2.5">
-                      <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-1">➡ Next Stop</p>
-                      <p className="font-bold text-foreground text-sm leading-tight truncate">
+                    <div className="rounded-xl bg-slate-700/60 border border-slate-600/60 px-3 py-2.5">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">➡ Next Stop</p>
+                      <p className="font-bold text-slate-200 text-sm leading-tight truncate">
                         {stationIdx >= driverStations.length
                           ? "🏁 Complete Journey"
                           : next
@@ -1545,7 +1544,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                           : "🏫 School"}
                       </p>
                       {nextCount > 0
-                        ? <p className="text-[9px] text-muted-foreground mt-0.5">{nextCount} boarding</p>
+                        ? <p className="text-[9px] text-slate-500 mt-0.5">{nextCount} boarding</p>
                         : next ? <p className="text-[9px] text-slate-600 mt-0.5">No boarders</p> : <p className="text-[9px] text-emerald-400 mt-0.5 font-semibold">Final destination</p>}
                     </div>
                   );
@@ -1555,12 +1554,12 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
               {/* Prev / Next buttons */}
               <div className="flex items-center gap-2">
                 <button onClick={() => setStationIdx((i) => Math.max(0, i - 1))} disabled={stationIdx === 0}
-                  className="rounded-xl bg-muted px-4 py-2 text-sm font-medium hover:bg-muted-foreground/20 disabled:opacity-30 transition-colors flex-1">
+                  className="rounded-xl bg-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-600 disabled:opacity-30 transition-colors flex-1">
                   ← Prev
                 </button>
                 <button onClick={() => setStationIdx((i) => Math.min(driverStations.length, i + 1))}
                   disabled={stationIdx >= driverStations.length}
-                  className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-amber-400 disabled:opacity-30 transition-colors flex-1">
+                  className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-30 transition-colors flex-1">
                   Next →
                 </button>
               </div>
@@ -1569,11 +1568,11 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
               <div className="flex items-center justify-center gap-1.5">
                 {driverStations.map((_, i) => (
                   <div key={i} className={`h-1.5 rounded-full transition-all ${
-                    i < stationIdx ? "w-4 bg-green-500" : i === stationIdx ? "w-6 bg-amber-500" : "w-1.5 bg-muted-foreground/30"
+                    i < stationIdx ? "w-4 bg-green-500" : i === stationIdx ? "w-6 bg-amber-500" : "w-1.5 bg-slate-600"
                   }`} />
                 ))}
                 <div className={`h-1.5 rounded-full transition-all ${
-                  stationIdx >= driverStations.length ? "w-6 bg-emerald-500" : "w-1.5 bg-muted-foreground/30"
+                  stationIdx >= driverStations.length ? "w-6 bg-emerald-500" : "w-1.5 bg-slate-600"
                 }`} title="School / Final Destination" />
               </div>
             </>
@@ -1605,11 +1604,11 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
         {/* On Leave */}
         {onLeavePassengers.length > 0 && (
-          <div className="rounded-2xl bg-card/60 border border-border p-3">
-            <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider flex items-center gap-1.5"><Home size={12} /> Not Riding Today</p>
+          <div className="rounded-2xl bg-slate-800/60 border border-slate-700 p-3">
+            <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider flex items-center gap-1.5"><Home size={12} /> Not Riding Today</p>
             <div className="flex flex-wrap gap-2">
               {onLeavePassengers.map((p) => (
-                <span key={p.id} className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">{p.name.split(" ")[0]}</span>
+                <span key={p.id} className="rounded-full bg-slate-700 px-3 py-1 text-xs text-slate-400">{p.name.split(" ")[0]}</span>
               ))}
             </div>
           </div>
@@ -1624,7 +1623,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 <div key={p.id} className="flex items-center gap-2">
                   <Avatar name={p.name} photoUrl={p.photoUrl} size="sm" />
                   <div>
-                    <p className="text-xs font-semibold text-foreground">{p.name}</p>
+                    <p className="text-xs font-semibold text-slate-200">{p.name}</p>
                     <p className="text-xs text-blue-300">"{p.quickMessage}"</p>
                   </div>
                 </div>
@@ -1637,10 +1636,10 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
         {/* Passenger Checklist */}
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Passenger Checklist</p>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Passenger Checklist</p>
           <div className="space-y-2">
             {riderPassengers.filter((p) => p.status !== "leave" && p.quickMessage !== "Staying home today").length === 0 ? (
-              <div className="rounded-2xl border border-border bg-card/60 p-6 text-center text-muted-foreground text-xs">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-center text-slate-400 text-xs">
                 {myRoute ? `No active passengers assigned to ${myRoute.name ?? "your route"}` : "No route assigned to your driver account. Contact Admin to assign your route."}
               </div>
             ) : (
@@ -1648,18 +1647,18 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 <div key={p.id} className={`flex items-center gap-3 rounded-2xl p-3 border transition-all ${
                   p.status === "boarded" ? "bg-emerald-900/20 border-emerald-700/30"
                     : (p.status as string) === "absent" ? "bg-red-900/20 border-red-700/30"
-                    : "bg-card border-border"
+                    : "bg-slate-800 border-slate-700"
                 }`}>
                   <Avatar name={p.name} photoUrl={p.photoUrl} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-foreground text-sm">{p.name}</p>
+                      <p className="font-semibold text-slate-100 text-sm">{p.name}</p>
                       {p.liveToday === 1 && (
                         <span className="rounded-full bg-green-800/50 border border-green-700/40 px-1.5 py-0.5 text-[9px] text-green-300 font-bold">LIVE</span>
                       )}
-                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground capitalize">{p.role}</span>
+                      <span className="rounded-full bg-slate-700 px-1.5 py-0.5 text-[9px] text-slate-400 capitalize">{p.role}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">{p.stationName}</p>
+                    <p className="text-xs text-slate-400">{p.stationName}</p>
                     {p.quickMessage && <p className="text-[10px] text-blue-400 italic mt-0.5 truncate">"{p.quickMessage}"</p>}
                   </div>
                   {p.status === "boarded" ? (
@@ -1672,7 +1671,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                         onClick={() => handleUnboard(p.id)}
                         disabled={unboardingId === p.id || isOffline}
                         title="Tap to unboard passenger"
-                        className="text-[10px] text-muted-foreground hover:text-red-400 underline transition-colors px-1 py-0.5"
+                        className="text-[10px] text-slate-400 hover:text-red-400 underline transition-colors px-1 py-0.5"
                       >
                         {unboardingId === p.id ? "…" : "Undo"}
                       </button>
@@ -1680,7 +1679,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                   ) : (p.status as string) === "absent" ? (
                     <span className="shrink-0 rounded-xl bg-red-900/40 border border-red-700/40 px-3 py-1.5 text-xs text-red-400 font-semibold">Absent</span>
                   ) : p.quickMessage === "Staying home today" ? (
-                    <span className="shrink-0 rounded-xl bg-muted px-3 py-1.5 text-xs text-muted-foreground">On Leave</span>
+                    <span className="shrink-0 rounded-xl bg-slate-700 px-3 py-1.5 text-xs text-slate-400">On Leave</span>
                   ) : (
                     <button onClick={() => handleBoard(p.id)} disabled={boardingId === p.id || isOffline}
                       className="shrink-0 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 active:bg-amber-700 disabled:opacity-50 transition-colors">
@@ -1695,14 +1694,14 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       </div>
 
       {/* Quick Message + SOS footer */}
-      <div className="p-4 border-t border-border bg-card/50 space-y-2">
+      <div className="p-4 border-t border-slate-700 bg-slate-900/50 space-y-2">
 
         {/* Delay alert toast */}
         {delayToast && (
           <div className="flex items-center gap-2 rounded-xl bg-amber-900/40 border border-amber-700/50 px-3 py-2">
             <Clock size={15} className="shrink-0 text-amber-300" />
             <p className="text-xs text-amber-200 flex-1">{delayToast}</p>
-            <button onClick={() => setDelayToast(null)} className="text-muted-foreground text-xs hover:text-muted-foreground">✕</button>
+            <button onClick={() => setDelayToast(null)} className="text-slate-500 text-xs hover:text-slate-400">✕</button>
           </div>
         )}
 
@@ -1711,13 +1710,13 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
           <div className="flex items-center gap-2 rounded-xl bg-blue-900/30 border border-blue-700/30 px-3 py-2">
             <Send size={16} className="shrink-0 text-blue-300" />
             <p className="text-xs text-blue-300 flex-1 truncate">Sent: "{lastSent}"</p>
-            <button onClick={() => setLastSent(null)} className="text-muted-foreground text-xs hover:text-muted-foreground">✕</button>
+            <button onClick={() => setLastSent(null)} className="text-slate-500 text-xs hover:text-slate-400">✕</button>
           </div>
         )}
 
         {/* Report to Admin button */}
         <button onClick={() => setQuickMsgOpen(true)}
-          className="w-full rounded-2xl bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 py-3.5 text-center font-bold text-primary-foreground shadow-lg transition-all active:scale-[0.98]">
+          className="w-full rounded-2xl bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 py-3.5 text-center font-bold text-white shadow-lg transition-all active:scale-[0.98]">
           <Megaphone size={18} className="inline mr-2" />
           Report to Admin
         </button>
@@ -1725,7 +1724,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         {/* Delay Alert button */}
         <button
           onClick={() => setDelayAlertOpen(true)}
-          className="w-full rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 py-3.5 text-center font-bold text-primary-foreground shadow-lg shadow-amber-900/30 transition-all active:scale-[0.98]"
+          className="w-full rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 py-3.5 text-center font-bold text-white shadow-lg shadow-amber-900/30 transition-all active:scale-[0.98]"
         >
           <Clock size={18} className="inline mr-2" />
           Delay Alert
@@ -1742,22 +1741,16 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
         {/* My Trips — always shown once driver is identified */}
         {myDriver != null && (
-          <div className="rounded-2xl bg-card/80 border border-border overflow-hidden">
-            <div 
-                className="flex items-center gap-2 px-4 py-3 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors"
-                onClick={() => setMyTripsOpen(!myTripsOpen)}
-              >
+          <div className="rounded-2xl bg-slate-800/80 border border-slate-700 overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700">
               <HistoryIcon size={14} className="text-amber-400 shrink-0" />
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">My Trips</p>
+              <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">My Trips</p>
               {myTripHistory && myTripHistory.length > 0 && (
-                <span className="ml-auto flex items-center gap-2 text-[11px] text-muted-foreground">
-                  {myTripHistory.length} recorded
-                  {myTripsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </span>
+                <span className="ml-auto text-[11px] text-slate-500">{myTripHistory.length} recorded</span>
               )}
             </div>
             {!myTripHistory || myTripHistory.length === 0 ? (
-              <div className="py-8 text-center text-xs text-muted-foreground">
+              <div className="py-8 text-center text-xs text-slate-500">
                 No trips logged yet. Your trips will appear here after starting a journey.
               </div>
             ) : (
@@ -1775,23 +1768,23 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       {delayAlertOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setDelayAlertOpen(false); }}>
-          <div className="w-full max-w-md rounded-2xl bg-[#1e293b] border border-border shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+          <div className="w-full max-w-md rounded-2xl bg-[#1e293b] border border-slate-700 shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700">
               <div>
-                <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   <Clock size={16} className="text-amber-400" /> Delay Alert
                 </h2>
-                <p className="text-xs text-muted-foreground">Notify all parents that the bus is running late</p>
+                <p className="text-xs text-slate-400">Notify all parents that the bus is running late</p>
               </div>
               <button onClick={() => setDelayAlertOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted-foreground/20 text-sm">
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-slate-400 hover:bg-slate-600 text-sm">
                 ✕
               </button>
             </div>
 
             <div className="px-5 py-5 space-y-5">
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">How many minutes late?</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">How many minutes late?</p>
                 <div className="grid grid-cols-5 gap-2">
                   {[5, 10, 15, 20, 30].map((min) => (
                     <button
@@ -1799,8 +1792,8 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                       onClick={() => setSelectedDelay(min)}
                       className={`rounded-xl py-3 text-sm font-bold transition-all border ${
                         selectedDelay === min
-                          ? "bg-amber-500 border-amber-400 text-primary-foreground shadow-lg shadow-amber-900/40"
-                          : "bg-muted border-border text-muted-foreground hover:bg-muted-foreground/20"
+                          ? "bg-amber-500 border-amber-400 text-white shadow-lg shadow-amber-900/40"
+                          : "bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
                       }`}
                     >
                       {min}
@@ -1819,7 +1812,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
               <button
                 onClick={handleSendDelayAlert}
                 disabled={delayPending}
-                className="w-full rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 py-4 text-center font-bold text-primary-foreground shadow-lg shadow-amber-900/30 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 py-4 text-center font-bold text-white shadow-lg shadow-amber-900/30 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {delayPending ? "Sending…" : `Send ${selectedDelay}-min Delay Alert`}
               </button>
@@ -1833,14 +1826,14 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       {quickMsgOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setQuickMsgOpen(false); }}>
-          <div className="w-full max-w-md rounded-2xl bg-[#1e293b] border border-border shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+          <div className="w-full max-w-md rounded-2xl bg-[#1e293b] border border-slate-700 shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700">
               <div>
-                <h2 className="text-base font-bold text-foreground flex items-center gap-2"><Megaphone size={16} /> Report to Admin</h2>
-                <p className="text-xs text-muted-foreground">Tap a message or write your own</p>
+                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2"><Megaphone size={16} /> Report to Admin</h2>
+                <p className="text-xs text-slate-400">Tap a message or write your own</p>
               </div>
               <button onClick={() => setQuickMsgOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted-foreground/20 text-sm">
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-slate-400 hover:bg-slate-600 text-sm">
                 ✕
               </button>
             </div>
@@ -1855,8 +1848,8 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                       setLastSent(m.text);
                       setQuickMsgOpen(false);
                     }}
-                    className="flex items-center gap-2 rounded-xl bg-muted hover:bg-muted-foreground/20 border border-border px-3 py-2.5 text-left text-xs font-medium text-foreground transition-colors active:bg-muted-foreground">
-                    <m.Icon size={16} className="shrink-0 text-muted-foreground" />
+                    className="flex items-center gap-2 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 px-3 py-2.5 text-left text-xs font-medium text-slate-200 transition-colors active:bg-slate-500">
+                    <m.Icon size={16} className="shrink-0 text-slate-400" />
                     <span className="leading-snug">{m.text}</span>
                   </button>
                 ))}
@@ -1864,13 +1857,13 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
               {/* Custom message */}
               <div>
-                <p className="text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">Custom Message</p>
+                <p className="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">Custom Message</p>
                 <div className="flex gap-2">
                   <input
                     value={customMsg}
                     onChange={(e) => setCustomMsg(e.target.value)}
                     placeholder="Describe the issue…"
-                    className="flex-1 rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-blue-500"
+                    className="flex-1 rounded-xl border border-slate-600 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-blue-500"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && customMsg.trim()) {
                         sendDriverMessage({ driverName: myDriver?.name ?? user?.name ?? "Driver", vehiclePlate: myDriver?.vehicleNumber ?? "", text: customMsg.trim(), isCustom: true });
@@ -1903,9 +1896,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       {/* Geofenced Station Attendance Modal */}
       {activeStationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4 py-8">
-          <div className="w-full max-w-md rounded-2xl bg-[#0f172a] border border-border shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+          <div className="w-full max-w-md rounded-2xl bg-[#0f172a] border border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-card/50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/50">
               <div>
                 <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded text-[9px] font-black uppercase tracking-wider">
                   Station Geofence Reached
@@ -1916,7 +1909,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
               </div>
               <button
                 onClick={() => setActiveStationModal(null)}
-                className="flex h-7 w-7 items-center justify-center rounded-xl bg-card text-muted-foreground hover:bg-muted hover:text-white transition-colors cursor-pointer text-xs"
+                className="flex h-7 w-7 items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors cursor-pointer text-xs"
               >
                 ✕
               </button>
@@ -1924,7 +1917,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
             {/* Student List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              <p className="text-[11px] text-muted-foreground mb-1">
+              <p className="text-[11px] text-slate-400 mb-1">
                 Mark bus attendance for students registered at this station:
               </p>
               
@@ -1935,19 +1928,19 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 return (
                   <div
                     key={student.studentId}
-                    className="p-3 bg-card/50 border border-border/80 rounded-xl flex items-center justify-between gap-3"
+                    className="p-3 bg-slate-900/50 border border-slate-800/80 rounded-xl flex items-center justify-between gap-3"
                   >
                     <div className="flex items-center gap-3">
                       <img
                         src={avatar}
                         alt={student.fullName}
-                        className="h-9 w-9 rounded-lg bg-background object-cover border border-border shrink-0"
+                        className="h-9 w-9 rounded-lg bg-slate-950 object-cover border border-slate-800 shrink-0"
                       />
                       <div>
                         <h4 className="text-xs font-bold text-white leading-tight">
                           {student.fullName}
                         </h4>
-                        <p className="text-[9px] text-muted-foreground mt-0.5 font-semibold">
+                        <p className="text-[9px] text-slate-500 mt-0.5 font-semibold">
                           Class {student.className} - {student.section}
                         </p>
                       </div>
@@ -1959,7 +1952,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                         className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border cursor-pointer ${
                           student.busStatus === 'PRESENT'
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.1)]'
-                            : 'bg-background text-muted-foreground border-border hover:border-border hover:text-white'
+                            : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-white'
                         }`}
                       >
                         Present
@@ -1969,7 +1962,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                         className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border cursor-pointer ${
                           student.busStatus === 'ABSENT'
                             ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.1)]'
-                            : 'bg-background text-muted-foreground border-border hover:border-border hover:text-white'
+                            : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-white'
                         }`}
                       >
                         Absent
@@ -1981,10 +1974,10 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
             </div>
 
             {/* Footer actions */}
-            <div className="p-3 border-t border-border bg-card/30 flex gap-2">
+            <div className="p-3 border-t border-slate-800 bg-slate-900/30 flex gap-2">
               <button
                 onClick={() => setActiveStationModal(null)}
-                className="flex-1 py-2 rounded-xl border border-border bg-background hover:bg-card text-xs font-bold text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                className="flex-1 py-2 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-900 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 Skip
               </button>
