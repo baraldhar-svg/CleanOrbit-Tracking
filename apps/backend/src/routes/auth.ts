@@ -135,6 +135,7 @@ router.post("/check-phone", async (req, res) => {
       user: { ...user, tenant },
       requiresSchoolCode: user.role !== "superadmin" && !!user.tenantId,
       hasEmail: !!user.email,
+      maskedEmail: user.email ? (user.email.split('@')[0].length > 2 ? user.email.split('@')[0].substring(0, 2) + '***@' + user.email.split('@')[1] : user.email.split('@')[0] + '***@' + user.email.split('@')[1]) : undefined,
     });
   } catch (err: any) {
     logger.error({ err }, "check-phone error");
