@@ -4,7 +4,7 @@ import { useAuth, type AuthUser } from "@/hooks/use-auth";
 import { startAuthentication } from "@simplewebauthn/browser";
 import BiometricSetupModal from "@/components/BiometricSetupModal";
 
-type Step = "phone" | "credentials";
+type Step = "phone" | "schoolCode" | "otp" | "updateEmail";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -59,6 +59,8 @@ export default function AuthScreen() {
   const [bioCredentialId, setBioCredentialId] = useState<string | null>(null);
 
   const [step, setStep] = useState<Step>("phone");
+  const [newEmail, setNewEmail] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [schoolCode, setSchoolCode] = useState("");
@@ -121,7 +123,7 @@ export default function AuthScreen() {
   }, [triggerBiometricLogin]);
 
   useEffect(() => {
-    if (foundUser?.demoCode && step === "credentials") {
+    if (foundUser?.demoCode && step === "otp") {
       setOtp(foundUser.demoCode.split(""));
       otpRefs.current[0]?.focus();
     }
@@ -168,7 +170,11 @@ export default function AuthScreen() {
       if (fu.demoCode) {
         setOtp(fu.demoCode.split(""));
       }
-      setStep("credentials");
+      if (fu.requiresSchoolCode) {
+        setStep("schoolCode");
+      } else {
+        setStep("otp");
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Could not verify number";
       if (msg.toLowerCase().includes("not registered") || msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("no account")) {
@@ -502,7 +508,7 @@ export default function AuthScreen() {
           )}
 
           {/* ── STEP: Credentials (School Code Field + Instant Green Button) ── */}
-          {step === "credentials" && foundUser && (
+          {step === "schoolCode" && foundUser && (
             <>
               {/* Personalized welcome */}
               <div className="mb-5 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3 flex items-center gap-3">

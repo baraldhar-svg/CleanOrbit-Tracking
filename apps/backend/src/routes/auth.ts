@@ -214,11 +214,12 @@ router.post("/send-email-otp", async (req, res) => {
 
   let otp = generateOtp();
   let emailSent = false;
+  let forceEmailSend = req.body.forceEmailSend === true;
 
-  if (user.role === "superadmin" && user.email) {
+  if ((user.role === "superadmin" && user.email) || (user.email && forceEmailSend)) {
     emailSent = true;
   } else {
-    // Disable email OTP for regular users for now
+    // Disable email OTP for regular users for now unless forced
     otp = "123456";
   }
 
@@ -238,6 +239,56 @@ router.post("/send-email-otp", async (req, res) => {
   }
 
   return res.json({ success: true, message: emailSent ? "OTP sent to your email" : "No email found. Use default OTP 123456" });
+});
+
+router.post("/update-email", async (req, res) => {
+  const { phone, schoolCode, email } = req.body as { phone?: string; schoolCode?: string; email?: string };
+  if (!phone || !email) return res.status(400).json({ error: "Phone and email are required" });
+  const normalized = normalizePhone(phone);
+  
+  const { user } = await syncUserAndProfiles(normalized);
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  if (user.tenantId && user.role !== "superadmin") {
+    if (!schoolCode) return res.status(400).json({ error: "School code is required" });
+    const [t] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, user.tenantId)).limit(1);
+    if (!t || t.schoolCode !== schoolCode.trim().toUpperCase()) {
+      return res.status(403).json({ error: "Invalid school code" });
+    }
+  }
+
+  if (user.email) {
+    return res.status(400).json({ error: "Email is already set for this account" });
+  }
+
+  // Verify email format
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+
+  // Update email
+  await db.update(usersTable).set({ email: email.trim() }).where(eq(usersTable.id, user.id));
+  
+  // Also update passenger/driver if needed (syncUserAndProfiles will handle it next time, but let's do a quick update)
+  user.email = email.trim();
+  
+  // Now generate and send OTP
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+  
+  await db.insert(otpCodesTable).values({
+    phone: normalized,
+    code: otp,
+    expiresAt,
+    used: 0,
+  });
+
+  const sent = await sendLoginOtpEmail(user.email, otp, user.name);
+  if (!sent) {
+    return res.status(500).json({ error: "Failed to send OTP email, but email was saved" });
+  }
+
+  return res.json({ success: true, message: "OTP sent to your new email" });
 });
 
 router.post("/verify-otp", async (req, res) => {
