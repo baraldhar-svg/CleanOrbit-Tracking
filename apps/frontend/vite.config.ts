@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { VitePWA } from "vite-plugin-pwa";
 
 const rawPort = process.env.PORT ?? "5173";
 const port = Number(rawPort);
@@ -16,6 +17,26 @@ export default defineConfig(async ({ mode }) => {
   return {
     base: basePath,
   plugins: [
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'robots.txt'],
+      manifest: {
+        name: 'CleanOrbit Tracking',
+        short_name: 'CleanOrbit',
+        description: 'School Bus Tracking System',
+        theme_color: '#f59e0b',
+        background_color: '#0f172a',
+        display: 'standalone',
+        icons: [
+          {
+            src: 'favicon.svg',
+            sizes: '192x192 512x512',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          }
+        ]
+      }
+    }),
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
