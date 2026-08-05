@@ -185,8 +185,8 @@ router.post("/send-otp", async (req, res) => {
   try {
     await sendOtpSms(normalized, otp);
     return res.json({ success: true, message: "OTP sent successfully" });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to send OTP SMS" });
+  } catch (error: any) {
+    return res.status(500).json({ error: error?.message || "Failed to send OTP SMS" });
   }
 });
 
@@ -233,13 +233,23 @@ router.post("/send-email-otp", async (req, res) => {
   });
 
   if (emailSent) {
-    const sent = await sendLoginOtpEmail(user.email!, otp, user.name);
-    if (!sent) {
-      return res.status(500).json({ error: "Failed to send OTP email" });
+    try {
+      const emailSuccess = await sendLoginOtpEmail(user.email!, otp, user.name || "User");
+      if (!emailSuccess) {
+        logger.error(`Failed to send login OTP email to ${user.email}`);
+        return res.status(500).json({ error: "Failed to deliver email. Please check if the email address is correct." });
+      }
+    } catch (e: any) {
+      logger.error({ err: e }, "Email sending exception");
+      return res.status(500).json({ error: "Email provider error: " + (e?.message || "Unknown error") });
     }
   }
 
-  return res.json({ success: true, message: emailSent ? "OTP sent to your email" : "No email found. Use default OTP 123456" });
+  return res.json({ 
+    success: true, 
+    message: emailSent ? `OTP sent to your email` : "No email found. Use default OTP 123456",
+    maskedEmail: user.email ? (user.email.split('@')[0].length > 2 ? user.email.split('@')[0].substring(0, 2) + '***@' + user.email.split('@')[1] : user.email.split('@')[0] + '***@' + user.email.split('@')[1]) : undefined
+  });
 });
 
 router.post("/update-email", async (req, res) => {
