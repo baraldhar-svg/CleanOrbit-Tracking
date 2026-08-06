@@ -332,6 +332,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   const [speedKmh, setSpeedKmh] = useState<number | null>(null);
   const [overspeedAlert, setOverspeedAlert] = useState(false);
   const lastPosRef = useRef<{ lat: number; lng: number; t: number } | null>(null);
+  const lastFetchTimeRef = useRef<number>(0);
 
   const BASE_GPS = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -372,8 +373,13 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         const { latitude: lat, longitude: lng, accuracy, speed } = position.coords;
         setDriverPos({ lat, lng });
 
-        // Prefer device-reported speed (m/s → km/h); fall back to distance/time between fixes.
         const now = Date.now();
+        if (now - lastFetchTimeRef.current < 3000) {
+          return; // Throttle: Only send ping at most once every 3 seconds to save data
+        }
+        lastFetchTimeRef.current = now;
+
+        // Prefer device-reported speed (m/s → km/h); fall back to distance/time between fixes.
         let computedSpeedKmh: number | null = typeof speed === "number" && speed >= 0 ? speed * 3.6 : null;
         if (computedSpeedKmh == null && lastPosRef.current) {
           const dtHours = (now - lastPosRef.current.t) / 3_600_000;
