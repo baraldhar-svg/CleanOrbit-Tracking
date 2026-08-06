@@ -33,11 +33,6 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "orbit-bus-tracker-project-id"
-      }
     }
   }
 }
