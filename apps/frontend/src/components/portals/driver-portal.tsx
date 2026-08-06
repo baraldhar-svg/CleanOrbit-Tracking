@@ -1139,7 +1139,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
       {/* GPS Status bar — shown while journey is active; scrolling ticker when GPS on */}
       {journeyStarted && !journeyCompleted && (
-        <div className={`border-b overflow-hidden ${gpsActive ? "bg-green-900/20 border-green-800/40" : "bg-amber-900/20 border-amber-800/40"}`}>
+        <div className={`border-b overflow-hidden ${gpsActive ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/40" : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/40"}`}>
           {gpsActive ? (() => {
             // Build ticker items: current station → next station → each upcoming-station user
             const nextStation = driverStations[stationIdx + 1] ?? null;
@@ -1156,8 +1156,8 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
             const item = tickerItems[tickerIdx % tickerItems.length];
             return (
               <div className="flex items-center gap-2 px-4 py-1.5">
-                <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse shrink-0" />
-                <p key={tickerIdx} className="text-xs text-green-300 font-medium flex-1 truncate animate-pulse">
+                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+                <p key={tickerIdx} className="text-xs text-green-700 dark:text-green-300 font-medium flex-1 truncate animate-pulse">
                   {item}
                 </p>
                 <span className="text-[9px] text-green-600 shrink-0">{(tickerIdx % tickerItems.length) + 1}/{tickerItems.length}</span>
@@ -1165,8 +1165,8 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
             );
           })() : (
             <div className="flex items-center gap-2 px-4 py-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
-              <p className="text-xs text-amber-300 font-medium flex-1">
+              <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+              <p className="text-xs text-amber-700 dark:text-amber-300 font-medium flex-1">
                 {gpsError ? `⚠ ${gpsError}` : "Acquiring GPS signal…"}
               </p>
             </div>
@@ -1176,14 +1176,14 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
       {/* Off-Duty / Freezed Banner */}
       {(myDriver?.isActive === false || isHolidayToday || isFreezeActive) && (
-        <div className="mx-4 mt-3 rounded-2xl border border-amber-500/40 bg-amber-950/40 p-4 space-y-1.5 text-amber-200 shadow-md">
+        <div className="mx-4 mt-3 rounded-2xl border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 p-4 space-y-1.5 text-amber-800 dark:text-amber-200 shadow-md">
           <div className="flex items-center gap-2">
-            <Lock size={18} className="text-amber-400 shrink-0" />
-            <p className="font-bold text-sm text-amber-300">
+            <Lock size={18} className="text-amber-600 dark:text-amber-400 shrink-0" />
+            <p className="font-bold text-sm text-amber-700 dark:text-amber-300">
               {isHolidayToday ? "🎉 Holiday Today — Off Duty" : "🔒 Driver Profile Freezed / Off Duty"}
             </p>
           </div>
-          <p className="text-xs text-amber-200/80 leading-relaxed">
+          <p className="text-xs text-amber-700/80 dark:text-amber-200/80 leading-relaxed">
             {isHolidayToday
               ? "आज सार्वजनिक/साप्ताहिक बिदा छ। आजको लागि ट्रिप र लोकेसन सेयरिङ बन्द गरिएको छ।"
               : "तपाईंको प्रोफाइल आजको लागि निष्कृय (Freeze/Off Duty) छ। Admin ले Active गरेपछि मात्र ट्रिप र लोकेसन सुरु गर्न मिल्नेछ।"}
@@ -1208,27 +1208,27 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
             (p) => (p.stationId === currentStation.stationId || p.stationId === currentStation.id) && p.status === "pending" && p.quickMessage !== "Staying home today"
           );
           return (
-            <div className="rounded-2xl border border-amber-600/40 bg-amber-950/20 overflow-hidden shadow-md">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-amber-700/30">
+            <div className="rounded-2xl border border-amber-200 dark:border-amber-600/40 bg-amber-50 dark:bg-amber-950/20 overflow-hidden shadow-md">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-amber-200 dark:border-amber-700/30">
                 <div>
-                  <p className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                     <MapPin size={12} /> At This Stop
                   </p>
-                  <p className="text-[10px] text-amber-600 mt-0.5">{currentStation.stopLabel || currentStation.stationName || "—"} · {waiting.length} waiting</p>
+                  <p className="text-[10px] text-amber-800 dark:text-amber-600 mt-0.5">{currentStation.stopLabel || currentStation.stationName || "—"} · {waiting.length} waiting</p>
                 </div>
                 {waiting.length === 0 && (
                   <span className="text-[10px] text-muted-foreground italic">All accounted for</span>
                 )}
               </div>
               {waiting.length > 0 ? (
-                <div className="divide-y divide-amber-900/30">
+                <div className="divide-y divide-amber-100 dark:divide-amber-900/30">
                   {waiting.map((p) => (
                     <div key={p.id} className="flex items-center gap-3 px-4 py-3">
                       <Avatar name={p.name} photoUrl={p.photoUrl} />
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-foreground text-sm">{p.name}</p>
                         <p className="text-[10px] text-muted-foreground capitalize">{p.role} · {p.stationName}</p>
-                        {p.quickMessage && <p className="text-[10px] text-blue-400 italic truncate">"{p.quickMessage}"</p>}
+                        {p.quickMessage && <p className="text-[10px] text-blue-600 dark:text-blue-400 italic truncate">"{p.quickMessage}"</p>}
                       </div>
                       <div className="shrink-0 flex gap-1.5">
                         <button
@@ -1241,7 +1241,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                         <button
                           onClick={() => handleAbsent(p.id)}
                           disabled={boardingId === p.id || absentId === p.id || isOffline}
-                          className="rounded-xl bg-muted px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-muted-foreground/20 disabled:opacity-50 transition-colors border border-red-700/30"
+                          className="rounded-xl bg-muted px-3 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-muted-foreground/20 disabled:opacity-50 transition-colors border border-red-200 dark:border-red-700/30"
                         >
                           {absentId === p.id ? "…" : "Absent"}
                         </button>
@@ -1250,7 +1250,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                   ))}
                 </div>
               ) : (
-                <div className="px-4 py-3 text-center text-xs text-amber-500/60 font-medium italic">No pending passengers at this stop</div>
+                <div className="px-4 py-3 text-center text-xs text-amber-700/70 dark:text-amber-500/60 font-medium italic">No pending passengers at this stop</div>
               )}
             </div>
           );
@@ -1300,32 +1300,32 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
             </button>
           ) : journeyCompleted ? (
             /* Countdown in progress — completion card only */
-            <div className="rounded-2xl bg-red-900/20 border border-red-700/40 p-4">
+            <div className="rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-600">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 dark:bg-red-600">
                   <Flag size={18} className="text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-red-300">Journey Completed · {completedTime}</p>
-                  <p className="text-xs text-red-500/80">All passengers & admin notified</p>
+                  <p className="text-sm font-bold text-red-800 dark:text-red-300">Journey Completed · {completedTime}</p>
+                  <p className="text-xs text-red-600 dark:text-red-500/80">All passengers & admin notified</p>
                 </div>
                 <span className="text-xs font-mono text-muted-foreground">{countdown}s</span>
               </div>
-              <div className="mt-3 pt-3 border-t border-red-800/40">
-                <p className="text-[10px] text-red-500 uppercase tracking-wider font-semibold mb-2">Arrival notification sent to</p>
+              <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800/40">
+                <p className="text-[10px] text-red-700 dark:text-red-500 uppercase tracking-wider font-semibold mb-2">Arrival notification sent to</p>
                 <div className="flex flex-wrap gap-1.5">
                   {riderPassengers.filter((p) => p.status === "boarded").slice(0, 6).map((p) => (
-                    <div key={p.id} className="flex items-center gap-1 rounded-full bg-red-900/30 border border-red-700/30 px-2 py-0.5">
+                    <div key={p.id} className="flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700/30 px-2 py-0.5">
                       <Avatar name={p.name} photoUrl={p.photoUrl} size="sm" />
-                      <span className="text-[10px] text-red-200">{p.name.split(" ")[0]}</span>
-                      <span className="text-[9px] text-red-400">✓</span>
+                      <span className="text-[10px] text-red-800 dark:text-red-200">{p.name.split(" ")[0]}</span>
+                      <span className="text-[9px] text-red-600 dark:text-red-400">✓</span>
                     </div>
                   ))}
-                  <div className="flex items-center gap-1 rounded-full bg-blue-900/40 border border-blue-700/30 px-2.5 py-0.5">
-                    <span className="text-[10px] text-blue-300 flex items-center gap-0.5"><Building2 size={10} /> Admin ✓</span>
+                  <div className="flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700/30 px-2.5 py-0.5">
+                    <span className="text-[10px] text-blue-800 dark:text-blue-300 flex items-center gap-0.5"><Building2 size={10} /> Admin ✓</span>
                   </div>
-                  <div className="flex items-center gap-1 rounded-full bg-purple-900/40 border border-purple-700/30 px-2.5 py-0.5">
-                    <span className="text-[10px] text-purple-300 flex items-center gap-0.5"><Users size={10} /> Parents ✓</span>
+                  <div className="flex items-center gap-1 rounded-full bg-purple-100 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-700/30 px-2.5 py-0.5">
+                    <span className="text-[10px] text-purple-800 dark:text-purple-300 flex items-center gap-0.5"><Users size={10} /> Parents ✓</span>
                   </div>
                 </div>
               </div>
@@ -1333,28 +1333,28 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
           ) : (
             /* In-journey: Started card + Complete button */
             <div className="space-y-3">
-              <div className="rounded-2xl bg-green-900/30 border border-green-700/50 p-4">
+              <div className="rounded-2xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700/50 p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-600">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500 dark:bg-green-600">
                     <CheckCircle size={18} className="text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-green-300">Journey Started · {journeyTime}</p>
-                    <p className="text-xs text-green-500/80">Students, staff & admin have been notified</p>
+                    <p className="text-sm font-bold text-green-800 dark:text-green-300">Journey Started · {journeyTime}</p>
+                    <p className="text-xs text-green-700 dark:text-green-500/80">Students, staff & admin have been notified</p>
                   </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-green-800/40">
-                  <p className="text-[10px] text-green-600 uppercase tracking-wider font-semibold mb-2">Notifications sent to</p>
+                <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-800/40">
+                  <p className="text-[10px] text-green-700 dark:text-green-600 uppercase tracking-wider font-semibold mb-2">Notifications sent to</p>
                   <div className="flex flex-wrap gap-1.5">
                     {riderPassengers.slice(0, 6).map((p) => (
-                      <div key={p.id} className="flex items-center gap-1 rounded-full bg-green-900/40 border border-green-700/30 px-2 py-0.5">
+                      <div key={p.id} className="flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/40 border border-green-200 dark:border-green-700/30 px-2 py-0.5">
                         <Avatar name={p.name} photoUrl={p.photoUrl} size="sm" />
-                        <span className="text-[10px] text-green-200">{p.name.split(" ")[0]}</span>
-                        <span className="text-[9px] text-green-500">✓</span>
+                        <span className="text-[10px] text-green-800 dark:text-green-200">{p.name.split(" ")[0]}</span>
+                        <span className="text-[9px] text-green-600 dark:text-green-500">✓</span>
                       </div>
                     ))}
-                    <div className="flex items-center gap-1 rounded-full bg-blue-900/40 border border-blue-700/30 px-2.5 py-0.5">
-                      <span className="text-[10px] text-blue-300 flex items-center gap-0.5"><Building2 size={10} /> Admin ✓</span>
+                    <div className="flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700/30 px-2.5 py-0.5">
+                      <span className="text-[10px] text-blue-800 dark:text-blue-300 flex items-center gap-0.5"><Building2 size={10} /> Admin ✓</span>
                     </div>
                   </div>
                 </div>
@@ -1362,10 +1362,10 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
               <button
                 onClick={canCompleteJourney ? handleJourneyComplete : undefined}
                 disabled={!canCompleteJourney}
-                className={`w-full rounded-2xl py-4 text-center font-bold text-primary-foreground shadow-lg transition-all active:scale-[0.98] ${
+                className={`w-full rounded-2xl py-4 text-center font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
                   canCompleteJourney
                     ? "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 shadow-green-900/40 cursor-pointer"
-                    : "bg-muted shadow-none opacity-50 cursor-not-allowed"
+                    : "bg-muted shadow-none opacity-50 cursor-not-allowed text-muted-foreground"
                 }`}
               >
                 <Flag size={20} className="inline mr-2" />
@@ -1383,8 +1383,8 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         {currentStation && (
           <div className="rounded-2xl bg-card/80 border border-amber-500/20 p-3">
             <div className="flex items-center gap-2 mb-2.5">
-              <MapPin size={13} className="shrink-0 text-amber-400" />
-              <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Upcoming Station</p>
+              <MapPin size={13} className="shrink-0 text-amber-600 dark:text-amber-400" />
+              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Upcoming Station</p>
               <span className="ml-auto text-[10px] text-muted-foreground">Stop {stationIdx + 1}/{driverStations.length}</span>
             </div>
             <p className="font-bold text-foreground text-sm mb-2.5">{currentStation.stopLabel || currentStation.stationName || "—"}</p>
