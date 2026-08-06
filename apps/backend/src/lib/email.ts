@@ -3,13 +3,16 @@ import { logger } from "./logger";
 
 // 1. Transporter configuration (uses environment variables with fallback defaults)
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
+  host: process.env.SMTP_HOST || "s1.sagarmathaserver.top",
+  port: Number(process.env.SMTP_PORT) || 465,
   secure: true,
   auth: {
-    user: process.env.SMTP_USER || process.env.EMAIL_USER || "orbitbustracker@gmail.com",
-    pass: process.env.SMTP_PASS || process.env.EMAIL_PASS || "puumjkcrmanaewnu", // App Password
+    user: process.env.SMTP_USER || process.env.EMAIL_USER || "info@orbitbustrack.com",
+    pass: process.env.SMTP_PASS || process.env.EMAIL_PASS || "&7y8q_a7Ij+SwMz%",
   },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 export interface SendSchoolApprovalEmailResult {
@@ -29,7 +32,7 @@ export const sendSchoolApprovalEmail = async (
   verifyLink: string
 ): Promise<SendSchoolApprovalEmailResult> => {
   try {
-    const fromUser = process.env.SMTP_USER || process.env.EMAIL_USER || "orbitbustracker@gmail.com";
+    const fromUser = process.env.SMTP_USER || process.env.EMAIL_USER || "info@orbitbustrack.com";
 
     const mailOptions = {
       from: `"OrbitTrack Platform" <${fromUser}>`,
@@ -65,6 +68,7 @@ export const sendSchoolApprovalEmail = async (
           <div style="padding-top: 20px; border-top: 1px solid #1e293b; text-align: center;">
             <p style="font-size: 12px; color: #64748b; margin: 0;">If you did not request this registration, please ignore this email.</p>
             <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">&copy; ${new Date().getFullYear()} Orbit Bus Tracker. All rights reserved.</p>
+            <p style="font-size: 12px; margin: 8px 0 0 0;"><a href="https://orbitbustrack.com" style="color: #fbbf24; text-decoration: none;">www.orbitbustrack.com</a></p>
           </div>
         </div>
       `,
@@ -85,7 +89,7 @@ export const sendSchoolApprovalEmail = async (
  */
 export const sendLoginOtpEmail = async (email: string, otp: string, name: string): Promise<boolean> => {
   try {
-    const fromUser = process.env.SMTP_USER || process.env.EMAIL_USER || "orbitbustracker@gmail.com";
+    const fromUser = process.env.SMTP_USER || process.env.EMAIL_USER || "info@orbitbustrack.com";
 
     const mailOptions = {
       from: `"OrbitTrack Platform" <${fromUser}>`,
@@ -116,6 +120,7 @@ export const sendLoginOtpEmail = async (email: string, otp: string, name: string
           
           <div style="padding-top: 20px; border-top: 1px solid #1e293b; text-align: center;">
             <p style="font-size: 12px; color: #64748b; margin: 0;">If you didn't request this code, please secure your account.</p>
+            <p style="font-size: 12px; margin: 8px 0 0 0;"><a href="https://orbitbustrack.com" style="color: #fbbf24; text-decoration: none;">www.orbitbustrack.com</a></p>
           </div>
         </div>
       `,
@@ -136,7 +141,7 @@ export const sendLoginOtpEmail = async (email: string, otp: string, name: string
  */
 export const sendSuperAdminOtpEmail = async (otp: string): Promise<SendSchoolApprovalEmailResult> => {
   try {
-    const fromUser = process.env.SMTP_USER || process.env.EMAIL_USER || "orbitbustracker@gmail.com";
+    const fromUser = process.env.SMTP_USER || process.env.EMAIL_USER || "info@orbitbustrack.com";
 
     const mailOptions = {
       from: `"OrbitTrack Platform" <${fromUser}>`,
@@ -169,6 +174,7 @@ export const sendSuperAdminOtpEmail = async (otp: string): Promise<SendSchoolApp
           
           <div style="margin-top: 30px; font-size: 12px; color: #64748b; border-top: 1px solid #1e293b; padding-top: 20px; text-align: center;">
             <p style="margin: 0;">Thank you,<br><b>OrbitTrack Support Team</b></p>
+            <p style="font-size: 12px; margin: 12px 0 0 0;"><a href="https://orbitbustrack.com" style="color: #fbbf24; text-decoration: none;">www.orbitbustrack.com</a></p>
           </div>
         </div>
       `,
