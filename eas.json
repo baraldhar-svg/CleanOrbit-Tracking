@@ -5,21 +5,21 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "projectRoot": "apps/webview-app"
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
       },
-      "env": {
-        "EAS_PACKAGE_MANAGER": "npm"
-      }
+      "projectRoot": "apps/webview-app"
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "projectRoot": "apps/webview-app"
     }
   },
   "submit": {
