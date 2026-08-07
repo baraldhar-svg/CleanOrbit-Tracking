@@ -117,7 +117,7 @@ export default function Landing() {
       <header className="relative z-20 flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="relative flex h-11 w-11 items-center justify-center">
-            <div className="bus-logo-bounce text-3xl">🚌</div>
+            <img src="/logo.png" alt="OrbitTrack Logo" className="bus-logo-bounce w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(255,208,0,0.5)]" />
           </div>
           <div>
             <h1 className="text-xl font-black tracking-tight text-white">
@@ -136,6 +136,13 @@ export default function Landing() {
 
       {/* ── Hero ────────────────────────────────────────────────────── */}
       <main className="relative z-10 flex flex-col items-center justify-center px-4 pb-8 pt-6 text-center">
+
+        {/* Moving bus above headline */}
+        <div className="relative w-full max-w-xl mx-auto h-10 mb-2 overflow-hidden rounded-full border border-slate-800/50 bg-slate-900/30 shadow-inner">
+          <div className="absolute top-1 text-2xl" style={{ animation: "bus-drive 6s linear infinite" }}>
+            🚌💨
+          </div>
+        </div>
 
         {/* Headline text (adjusted to smaller size as requested) */}
         <h1 className="mb-3 text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl max-w-xl leading-tight">
