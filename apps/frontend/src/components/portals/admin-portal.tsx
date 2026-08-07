@@ -20,6 +20,7 @@ import {
   getListCalendarEventsQueryKey,
   getTenantId,
   useListTripHistory,
+  customFetch,
 } from "@workspace/api-client-react";
 import {
   CheckCircle,
@@ -3600,7 +3601,6 @@ function AdminsPanel() {
   const { data: admins = [], refetch } = useQuery({
     queryKey: ["users", "admin"],
     queryFn: async () => {
-      const { customFetch } = await import("@workspace/api-client-react/src/custom-fetch");
       return customFetch("/api/users?role=admin") as Promise<any[]>;
     },
   });
@@ -3611,7 +3611,6 @@ function AdminsPanel() {
 
   const deleteAdminMutation = useMutation({
     mutationFn: async (id: number) => {
-      const { customFetch } = await import("@workspace/api-client-react/src/custom-fetch");
       return customFetch(`/api/users/${id}`, { method: "DELETE" });
     },
     onSuccess: () => {
@@ -5288,7 +5287,6 @@ function AddAdminDialog({
     if (!phone || !name) return toast.error("Phone and Name are required");
     try {
       setLoading(true);
-      const { customFetch } = await import("@workspace/api-client-react/src/custom-fetch");
       const res = await customFetch("/api/users/add-admin-request", {
         method: "POST",
         body: JSON.stringify({ phone, name, designation, email, title }),
@@ -5308,7 +5306,6 @@ function AddAdminDialog({
     if (!otpCode) return toast.error("Enter OTP");
     try {
       setLoading(true);
-      const { customFetch } = await import("@workspace/api-client-react/src/custom-fetch");
       await customFetch("/api/users/add-admin-verify", {
         method: "POST",
         body: JSON.stringify({ otpCode, phone, name, designation, email, title }),
