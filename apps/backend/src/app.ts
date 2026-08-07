@@ -48,6 +48,9 @@ export async function ensureDbColumns() {
       sql`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS unfrozen_at timestamp with time zone;`,
       sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending';`,
       sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS approved_at timestamp with time zone;`,
+      sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS sender_role text;`,
+      sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS sender_name text;`,
+      sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS metadata json;`,
       // New columns for class teacher configuration
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_class_teacher boolean DEFAULT false NOT NULL;`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_class text;`,

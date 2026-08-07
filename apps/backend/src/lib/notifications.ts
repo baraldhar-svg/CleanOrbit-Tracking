@@ -9,6 +9,9 @@ export interface NotificationPayload {
   type: "absent" | "delay" | "boarding" | "announcement";
   title: string;
   body: string;
+  senderRole?: string;
+  senderName?: string;
+  metadata?: any;
 }
 
 export async function createNotification(payload: NotificationPayload): Promise<void> {
@@ -19,6 +22,9 @@ export async function createNotification(payload: NotificationPayload): Promise<
       type: payload.type,
       title: payload.title,
       body: payload.body,
+      senderRole: payload.senderRole,
+      senderName: payload.senderName,
+      metadata: payload.metadata,
     }).returning();
 
     broadcast(payload.tenantId, "notification", {
@@ -27,6 +33,9 @@ export async function createNotification(payload: NotificationPayload): Promise<
       title: row.title,
       body: row.body,
       passengerId: row.passengerId,
+      senderRole: row.senderRole,
+      senderName: row.senderName,
+      metadata: row.metadata,
       createdAt: row.createdAt,
     });
   } catch (err) {

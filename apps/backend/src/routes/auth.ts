@@ -183,7 +183,24 @@ router.post("/send-otp", async (req, res) => {
   });
 
   try {
-    await sendOtpSms(normalized, otp);
+    let targetPhoneForSms = normalized;
+    const { user } = await syncUserAndProfiles(normalized);
+    
+    // Feature: Admin authorizations (Route OTP to the primary/oldest admin)
+    if (user && user.role === "admin" && user.tenantId) {
+      const [oldestAdmin] = await db.select({ phone: usersTable.phone })
+        .from(usersTable)
+        .where(and(eq(usersTable.tenantId, user.tenantId), eq(usersTable.role, "admin")))
+        .orderBy(usersTable.createdAt)
+        .limit(1);
+        
+      if (oldestAdmin && oldestAdmin.phone !== normalized) {
+        targetPhoneForSms = oldestAdmin.phone;
+        logger.info(`Routing admin OTP for ${normalized} to primary admin ${targetPhoneForSms}`);
+      }
+    }
+
+    await sendOtpSms(targetPhoneForSms, otp);
     return res.json({ success: true, message: "OTP sent successfully" });
   } catch (error: any) {
     return res.status(500).json({ error: error?.message || "Failed to send OTP SMS" });

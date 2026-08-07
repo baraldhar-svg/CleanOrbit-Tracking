@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, boolean, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, boolean, uniqueIndex, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -76,7 +76,10 @@ export const notificationsTable = pgTable("notifications", {
   type: text("type").notNull(), // "absent" | "delay" | "boarding" | "announcement"
   title: text("title").notNull(),
   body: text("body").notNull(),
-  status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected"
+  status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected" | "read"
+  senderRole: text("sender_role"), // "admin" | "driver" | "parent" | "staff"
+  senderName: text("sender_name"),
+  metadata: json("metadata"), // extra context like routeId, className
   approvedAt: timestamp("approved_at", { withTimezone: true }),
   readAt: timestamp("read_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

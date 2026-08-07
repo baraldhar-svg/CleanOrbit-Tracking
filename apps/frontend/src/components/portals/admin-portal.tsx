@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { PhotoPicker } from "@/components/photo-picker";
 import {
   useListStations,
@@ -67,6 +68,7 @@ import {
   MessageCircle,
   Download,
   History as HistoryIcon,
+  Shield,
 } from "lucide-react";
 import StationMapPicker from "@/components/station-map-picker";
 import AdminAttendancePanel from "@/components/AdminAttendancePanel";
@@ -2203,7 +2205,7 @@ function AddPersonDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  role: "student" | "staff";
+  role: "student" | "staff" | "admin";
 }) {
   const queryClient = useQueryClient();
   const { data: stations } = useListStations();
@@ -3593,6 +3595,100 @@ function DriverPanel() {
 }
 
 // ── 👔 Staff Panel: list passengers with role=staff ──
+function AdminsPanel() {
+  const { data: passengers } = useListPassengers();
+  const [search, setSearch] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [editAdmin, setEditAdmin] = useState<any | null>(null);
+
+  const admins = useMemo(
+    () => (passengers ?? []).filter((p: any) => p.role === "admin"),
+    [passengers],
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return admins;
+    return admins.filter(
+      (s: any) =>
+        (s.name ?? "").toLowerCase().includes(q) ||
+        (s.phone ?? "").toLowerCase().includes(q) ||
+        (s.designation ?? "").toLowerCase().includes(q),
+    );
+  }, [admins, search]);
+
+  return (
+    <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-border font-bold text-sm text-primary flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2">
+          <Shield size={15} className="text-amber-500" /> Admins Directory
+        </span>
+        <button
+          onClick={() => setAddOpen(true)}
+          className="flex items-center gap-1 bg-amber-500 text-slate-900 text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-amber-400"
+        >
+          <Plus size={12} /> Add New Admin
+        </button>
+      </div>
+      <AddPersonDialog open={addOpen} onOpenChange={setAddOpen} role="admin" />
+      <EditPersonDialog
+        open={!!editAdmin}
+        onOpenChange={(o) => !o && setEditAdmin(null)}
+        person={editAdmin}
+      />
+      <div className="p-4 space-y-3">
+        <div className="relative">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name / mobile / designation"
+            className="w-full border rounded-xl pl-8 pr-2 py-2 text-xs bg-background outline-none"
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          {filtered.length} admin{filtered.length !== 1 ? "s" : ""} · tap a name to edit or delete
+        </p>
+        {filtered.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground text-xs">
+            No admins found.
+          </div>
+        ) : (
+          <div className="grid gap-2 grid-cols-1 md:grid-cols-2">
+            {filtered.map((s: any) => (
+              <div
+                key={s.id}
+                onClick={() => setEditAdmin(s)}
+                className="flex items-center gap-3 p-3 border border-border rounded-xl hover:bg-muted/30 cursor-pointer transition-colors"
+              >
+                <img
+                  src={s.photoUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(s.name || "A")}&backgroundColor=f59e0b`}
+                  alt=""
+                  className="w-10 h-10 rounded-full object-cover bg-muted shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-xs truncate">
+                    {s.name || "Unknown"}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
+                    <Phone size={10} /> {s.phone}
+                    {s.designation && (
+                      <>
+                        <span className="opacity-50">•</span>
+                        {s.designation}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function StaffPanel() {
   const { data: passengers } = useListPassengers();
   const [search, setSearch] = useState("");
@@ -5156,7 +5252,7 @@ export default function AdminPortal({
 
   const tenantId = user?.tenantId ?? 1;
   const [mainTab, setMainTab] = useState<
-    "overview" | "students" | "drivers" | "staff" | "route" | "vehicleService" | "tripHistory" | "contact" | "advertise" | "attendance"
+    "overview" | "students" | "drivers" | "staff" | "admins" | "route" | "vehicleService" | "tripHistory" | "contact" | "advertise" | "attendance"
   >("overview");
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -5199,33 +5295,7 @@ export default function AdminPortal({
           <p className="text-xs text-muted-foreground">{localTenant?.name}</p>
         </div>
         {/* Notification Bell */}
-        <div className="relative">
-          <button
-            onClick={() => setNotifOpen((o) => !o)}
-            className="relative flex items-center justify-center h-10 w-10 rounded-xl border border-border bg-card hover:bg-muted transition-colors shadow-sm"
-            title="Notifications"
-          >
-            <Bell size={18} className="text-amber-500" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </button>
-          {notifOpen && (
-            <div className="absolute right-0 top-12 w-80 z-50 shadow-xl rounded-2xl border border-border bg-background overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                <span className="font-semibold text-sm text-primary">Notifications</span>
-                <button onClick={() => setNotifOpen(false)} className="text-muted-foreground hover:text-foreground">
-                  <X size={14} />
-                </button>
-              </div>
-              <div className="max-h-[70vh] overflow-y-auto p-3">
-                <NotificationLogPanel onNewUnread={setUnreadCount} />
-              </div>
-            </div>
-          )}
-        </div>
+        <NotificationBell />
       </header>
 
       <nav className="rounded-xl border border-border bg-card shadow-sm flex p-1 gap-1.5 text-xs font-semibold bg-muted/20 overflow-x-auto [&::-webkit-scrollbar]:hidden">
@@ -5236,6 +5306,7 @@ export default function AdminPortal({
             { key: "students",       label: "Students",  icon: <User size={13} /> },
             { key: "drivers",        label: "Driver",    icon: <Bus size={13} /> },
             { key: "staff",          label: "Staff",     icon: <User size={13} /> },
+            { key: "admins",         label: "Admins",    icon: <Shield size={13} /> },
             { key: "route",          label: "Route",     icon: <Route size={13} /> },
             { key: "vehicleService", label: "Vehicle",   icon: <Wrench size={13} /> },
             { key: "tripHistory",    label: "History",   icon: <HistoryIcon size={13} /> },
@@ -5297,9 +5368,15 @@ export default function AdminPortal({
         <div className="space-y-6">
           <StaffPanel />
         </div>
-      )}
+        )}
 
-      {mainTab === "route" && (
+        {mainTab === "admins" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <AdminsPanel />
+          </div>
+        )}
+
+        {mainTab === "route" && (
         <div className="space-y-6">
           <RoutePanel />
         </div>

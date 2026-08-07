@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useDriverLocation } from "@/hooks/use-driver-location";
 import {
   useListAnnouncements,
@@ -923,38 +924,41 @@ Roll No.: ${roll}`;
       })()}
       {/* Profile chip — tappable, opens profile modal; photo shown left of name */}
       {user && (
-        <button
-          onClick={() => setEditProfileOpen(true)}
-          className="w-full border border-border rounded-xl bg-gradient-to-r from-amber-500/10 to-transparent px-3 py-2.5 flex items-center gap-3 hover:bg-amber-500/10 transition-colors text-left"
-        >
-          {/* Avatar */}
-          <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-amber-400 bg-muted shrink-0 flex items-center justify-center">
-            {localPhotoUrl || me?.photoUrl
-              ? <img src={localPhotoUrl || me?.photoUrl!} alt={user.name} className="h-full w-full object-cover" />
-              : <User size={18} className="text-muted-foreground" />}
-          </div>
-          {/* Name + meta */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-foreground">
-                {user.title ? `${user.title} ` : ""}{user.name}
-              </span>
-              <span className="rounded-full bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase">
-                {user.role}
-              </span>
+        <div className="flex items-center gap-2 w-full">
+          <button
+            onClick={() => setEditProfileOpen(true)}
+            className="flex-1 border border-border rounded-xl bg-gradient-to-r from-amber-500/10 to-transparent px-3 py-2.5 flex items-center gap-3 hover:bg-amber-500/10 transition-colors text-left min-w-0"
+          >
+            {/* Avatar */}
+            <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-amber-400 bg-muted shrink-0 flex items-center justify-center">
+              {localPhotoUrl || me?.photoUrl
+                ? <img src={localPhotoUrl || me?.photoUrl!} alt={user.name} className="h-full w-full object-cover" />
+                : <User size={18} className="text-muted-foreground" />}
             </div>
+            {/* Name + meta */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-semibold text-foreground">
+                  {user.title ? `${user.title} ` : ""}{user.name}
+                </span>
+                <span className="rounded-full bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase">
+                  {user.role}
+                </span>
+              </div>
 
-            {(() => {
-              const station = routeStations.find(rs => String(rs.stationId) === selectedStationId);
-              return station?.stationName ? (
-                <p className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
-                  <MapPin size={9} className="shrink-0 text-amber-500" />
-                  {station.stationName}
-                </p>
-              ) : null;
-            })()}
-          </div>
-        </button>
+              {(() => {
+                const station = routeStations.find(rs => String(rs.stationId) === selectedStationId);
+                return station?.stationName ? (
+                  <p className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
+                    <MapPin size={9} className="shrink-0 text-amber-500" />
+                    {station.stationName}
+                  </p>
+                ) : null;
+              })()}
+            </div>
+          </button>
+          <NotificationBell />
+        </div>
       )}
 
       {/* Live Distance Card — updates every GPS ping from the driver (Hidden during 4h freeze) */}

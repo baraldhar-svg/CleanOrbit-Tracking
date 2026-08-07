@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { usersTable, tenantsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const router: Router = Router();
 
@@ -22,6 +22,7 @@ router.get("/", async (req, res) => {
     })
     .from(usersTable)
     .leftJoin(tenantsTable, eq(usersTable.tenantId, tenantsTable.id))
+    .where(eq(usersTable.tenantId, req.tenantId)) // FIX: Filter by tenant
     .orderBy(usersTable.tenantId, usersTable.name);
 
   if (q) {
@@ -58,7 +59,9 @@ router.patch("/:id", async (req, res) => {
   if (Object.keys(updates).length === 0)
     return res.status(400).json({ error: "Nothing to update" });
 
-  await db.update(usersTable).set(updates).where(eq(usersTable.id, id));
+  await db.update(usersTable)
+    .set(updates)
+    .where(and(eq(usersTable.id, id), eq(usersTable.tenantId, req.tenantId)));
 
   const [row] = await db
     .select({
@@ -81,7 +84,7 @@ router.patch("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const id = Number(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
-  await db.delete(usersTable).where(eq(usersTable.id, id));
+  await db.delete(usersTable).where(and(eq(usersTable.id, id), eq(usersTable.tenantId, req.tenantId)));
   return res.json({ ok: true });
 });
 

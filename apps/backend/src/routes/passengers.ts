@@ -461,6 +461,14 @@ router.post("/:id/reset-login", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const id = Number(req.params.id);
   if (!id || isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+  
+  // Find passenger first to get phone number
+  const [passenger] = await db.select().from(passengersTable).where(eq(passengersTable.id, id));
+  if (passenger && passenger.phone) {
+    // Delete associated user record so they lose access
+    await db.delete(usersTable).where(and(eq(usersTable.phone, passenger.phone), eq(usersTable.tenantId, passenger.tenantId ?? req.tenantId)));
+  }
+  
   await db.delete(passengersTable).where(eq(passengersTable.id, id));
   return res.status(204).end();
 });

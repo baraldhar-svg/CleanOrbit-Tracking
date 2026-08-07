@@ -50,7 +50,10 @@ export const ListAnnouncementsResponse = zod.array(ListAnnouncementsResponseItem
 export const CreateAnnouncementBody = zod.object({
   "message": zod.string(),
   "messageNe": zod.string().optional(),
-  "severity": zod.enum(['info', 'warning', 'emergency'])
+  "severity": zod.enum(['info', 'warning', 'emergency']),
+  "targetRouteId": zod.number().optional(),
+  "targetClass": zod.string().nullable().optional(),
+  "targetGroup": zod.string().optional()
 })
 
 
