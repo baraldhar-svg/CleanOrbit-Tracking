@@ -144,7 +144,7 @@ export default function Landing() {
               <img src="/bus.png" alt="Bus" className="h-full w-full object-contain drop-shadow-md" />
               <div className="absolute top-[52%] left-[48%] -translate-x-1/2 -translate-y-1/2 bg-[#FFCD00] px-1 py-[2px] rounded-sm z-10 flex items-center justify-center">
                 <span className="text-[0.4rem] font-black text-slate-900 tracking-tighter whitespace-nowrap">
-                  ORBIT TRACK
+                  ORBIT BUS
                 </span>
               </div>
             </div>
@@ -319,7 +319,7 @@ export default function Landing() {
             <img src="/bus.png" alt="Bus" className="h-full w-full object-contain drop-shadow-md" />
             <div className="absolute top-[52%] left-[48%] -translate-x-1/2 -translate-y-1/2 bg-[#FFCD00] px-1 py-[2px] rounded-sm z-10 flex items-center justify-center">
               <span className="text-[0.4rem] font-black text-slate-900 tracking-tighter whitespace-nowrap">
-                ORBIT TRACK
+                ORBIT BUS
               </span>
             </div>
           </div>
@@ -329,7 +329,7 @@ export default function Landing() {
             <img src="/bus.png" alt="Bus" className="h-full w-full object-contain drop-shadow-sm" />
             <div className="absolute top-[52%] left-[48%] -translate-x-1/2 -translate-y-1/2 bg-[#FFCD00] px-[2px] py-[1px] rounded-sm z-10 flex items-center justify-center">
               <span className="text-[0.3rem] font-black text-slate-900 tracking-tighter whitespace-nowrap">
-                ORBIT TRACK
+                ORBIT BUS
               </span>
             </div>
           </div>
