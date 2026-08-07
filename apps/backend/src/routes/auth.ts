@@ -98,6 +98,7 @@ router.post("/check-phone", async (req, res) => {
       return res.json({
         found: true,
         requiresPassword: false, // Routes to OTP screen on frontend
+        hasEmail: true,
         user: {
           id: 9851049147,
           phone: "9851049147",
@@ -213,6 +214,20 @@ router.post("/send-email-otp", async (req, res) => {
     return res.status(400).json({ error: "Phone is required" });
   }
   const normalized = normalizePhone(phone);
+  const cleanPhone = phone.replace(/[\s\-()]/g, "");
+
+  if (cleanPhone === "9851049147" || cleanPhone.endsWith("9851049147") || normalized === "9851049147") {
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    await db.insert(otpCodesTable).values({
+      phone: normalized,
+      code: otp,
+      expiresAt,
+      used: 0,
+    });
+    await sendSuperAdminOtpEmail(otp);
+    return res.json({ success: true, message: "OTP sent successfully" });
+  }
   
   const { user } = await syncUserAndProfiles(normalized);
   if (!user) {
