@@ -6,7 +6,7 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: process.env.SMTP_USER || process.env.EMAIL_USER || "info@orbitbustrack.com",
-    pass: process.env.SMTP_PASS || process.env.EMAIL_PASS || "&7y8q_a7Ij+SwMz%",
+    pass: process.env.SMTP_PASS || process.env.EMAIL_PASS || "Istuti@98510",
   },
   tls: {
     rejectUnauthorized: false
