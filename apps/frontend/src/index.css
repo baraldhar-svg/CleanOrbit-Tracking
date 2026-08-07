@@ -4,12 +4,12 @@
 
 /* OrbitTrack bus animations */
 @keyframes bus-drive {
-  0% { transform: translateX(-220px); }
-  100% { transform: translateX(calc(100vw + 220px)); }
+  0% { transform: translateX(calc(100vw + 220px)); }
+  100% { transform: translateX(-220px); }
 }
 @keyframes bus-drive2 {
-  0% { transform: translateX(-120px); }
-  100% { transform: translateX(calc(100vw + 120px)); }
+  0% { transform: translateX(calc(100vw + 120px)); }
+  100% { transform: translateX(-120px); }
 }
 @keyframes bus-float {
   0%, 100% { transform: translateY(0px) rotate(-1deg); }

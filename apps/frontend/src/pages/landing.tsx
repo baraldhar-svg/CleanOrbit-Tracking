@@ -141,10 +141,12 @@ export default function Landing() {
         <div className="relative w-full max-w-xl mx-auto h-20 mb-2 overflow-hidden rounded-full border border-slate-800/50 bg-slate-900/30 shadow-inner">
           <div className="absolute top-1" style={{ animation: "bus-drive 12s linear infinite" }}>
             <div className="relative inline-block h-16 w-32">
-              <img src="/bus.png" alt="Bus" className="h-full w-full object-contain scale-x-[-1] drop-shadow-md" />
-              <span className="absolute top-[45%] left-[30%] -translate-y-1/2 text-[0.45rem] font-black text-slate-800 tracking-wider z-10">
-                OrbitTrack
-              </span>
+              <img src="/bus.png" alt="Bus" className="h-full w-full object-contain drop-shadow-md" />
+              <div className="absolute top-[52%] left-[48%] -translate-x-1/2 -translate-y-1/2 bg-[#FFCD00] px-1 py-[2px] rounded-sm z-10 flex items-center justify-center">
+                <span className="text-[0.4rem] font-black text-slate-900 tracking-tighter whitespace-nowrap">
+                  ORBIT TRACK
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -314,18 +316,22 @@ export default function Landing() {
         <div className="absolute inset-x-0 bottom-4 h-0.5 border-t border-dashed border-slate-700"></div>
         <div className="absolute top-1 bus-drive">
           <div className="relative inline-block h-16 w-32">
-            <img src="/bus.png" alt="Bus" className="h-full w-full object-contain scale-x-[-1] drop-shadow-md" />
-            <span className="absolute top-[45%] left-[30%] -translate-y-1/2 text-[0.45rem] font-black text-slate-800 tracking-wider z-10">
-              OrbitTrack
-            </span>
+            <img src="/bus.png" alt="Bus" className="h-full w-full object-contain drop-shadow-md" />
+            <div className="absolute top-[52%] left-[48%] -translate-x-1/2 -translate-y-1/2 bg-[#FFCD00] px-1 py-[2px] rounded-sm z-10 flex items-center justify-center">
+              <span className="text-[0.4rem] font-black text-slate-900 tracking-tighter whitespace-nowrap">
+                ORBIT TRACK
+              </span>
+            </div>
           </div>
         </div>
         <div className="absolute top-4 bus-drive2 opacity-40">
           <div className="relative inline-block h-12 w-24">
-            <img src="/bus.png" alt="Bus" className="h-full w-full object-contain scale-x-[-1] drop-shadow-sm" />
-            <span className="absolute top-[45%] left-[30%] -translate-y-1/2 text-[0.35rem] font-black text-slate-800 tracking-wider z-10">
-              OrbitTrack
-            </span>
+            <img src="/bus.png" alt="Bus" className="h-full w-full object-contain drop-shadow-sm" />
+            <div className="absolute top-[52%] left-[48%] -translate-x-1/2 -translate-y-1/2 bg-[#FFCD00] px-[2px] py-[1px] rounded-sm z-10 flex items-center justify-center">
+              <span className="text-[0.3rem] font-black text-slate-900 tracking-tighter whitespace-nowrap">
+                ORBIT TRACK
+              </span>
+            </div>
           </div>
         </div>
       </div>
