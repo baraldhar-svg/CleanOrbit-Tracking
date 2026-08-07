@@ -138,9 +138,9 @@ export default function Landing() {
       <main className="relative z-10 flex flex-col items-center justify-center px-4 pb-8 pt-6 text-center">
 
         {/* Moving bus above headline */}
-        <div className="relative w-full max-w-xl mx-auto h-10 mb-2 overflow-hidden rounded-full border border-slate-800/50 bg-slate-900/30 shadow-inner">
-          <div className="absolute top-1 text-2xl" style={{ animation: "bus-drive 6s linear infinite" }}>
-            🚌💨
+        <div className="relative w-full max-w-xl mx-auto h-16 mb-2 overflow-hidden rounded-full border border-slate-800/50 bg-slate-900/30 shadow-inner">
+          <div className="absolute top-1 text-5xl" style={{ animation: "bus-drive 12s linear infinite" }}>
+            🚌
           </div>
         </div>
 
