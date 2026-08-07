@@ -22,5 +22,13 @@
         "@capacitor/android": "^8.5.0",
         "@capacitor/core": "^8.5.0"
     },
-    "packageManager": "pnpm@10.11.1"
+    "packageManager": "pnpm@10.11.1",
+    "pnpm": {
+        "overrides": {
+            "metro": "~0.80.8",
+            "metro-resolver": "~0.80.8",
+            "metro-config": "~0.80.8",
+            "metro-core": "~0.80.8"
+        }
+    }
 }
