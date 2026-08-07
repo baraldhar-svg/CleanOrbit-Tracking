@@ -3596,15 +3596,35 @@ function DriverPanel() {
 
 // ── 👔 Staff Panel: list passengers with role=staff ──
 function AdminsPanel() {
-  const { data: passengers } = useListPassengers();
+  const queryClient = useQueryClient();
+  const { data: admins = [], refetch } = useQuery({
+    queryKey: ["users", "admin"],
+    queryFn: async () => {
+      const { customFetch } = await import("@workspace/api-client-react/src/custom-fetch");
+      return customFetch("/api/users?role=admin") as Promise<any[]>;
+    },
+  });
+
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [editAdmin, setEditAdmin] = useState<any | null>(null);
 
-  const admins = useMemo(
-    () => (passengers ?? []).filter((p: any) => p.role === "admin"),
-    [passengers],
-  );
+  const deleteAdminMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const { customFetch } = await import("@workspace/api-client-react/src/custom-fetch");
+      return customFetch(`/api/users/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users", "admin"] });
+    },
+  });
+
+  const handleDelete = (s: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Are you sure you want to remove ${s.name} from admins?`)) {
+      deleteAdminMutation.mutate(s.id);
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -3630,7 +3650,7 @@ function AdminsPanel() {
           <Plus size={12} /> Add New Admin
         </button>
       </div>
-      <AddPersonDialog open={addOpen} onOpenChange={setAddOpen} role="admin" />
+      <AddAdminDialog open={addOpen} onOpenChange={setAddOpen} onSuccess={refetch} />
       <EditPersonDialog
         open={!!editAdmin}
         onOpenChange={(o) => !o && setEditAdmin(null)}
@@ -3680,6 +3700,13 @@ function AdminsPanel() {
                     )}
                   </div>
                 </div>
+                <button 
+                  onClick={(e) => handleDelete(s, e)}
+                  disabled={deleteAdminMutation.isPending}
+                  className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             ))}
           </div>
@@ -5220,6 +5247,173 @@ function AdminTripAccordionItem({ t }: { t: any }) {
         </div>
       )}
     </div>
+  );
+}
+
+function AddAdminDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+}) {
+  const [step, setStep] = useState<1 | 2>(1);
+  const [loading, setLoading] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [email, setEmail] = useState("");
+  const [title, setTitle] = useState("Mr.");
+  const [otpCode, setOtpCode] = useState("");
+  const [targetPhone, setTargetPhone] = useState("");
+
+  const reset = () => {
+    setStep(1);
+    setPhone("");
+    setName("");
+    setDesignation("");
+    setEmail("");
+    setTitle("Mr.");
+    setOtpCode("");
+    setTargetPhone("");
+  };
+
+  useEffect(() => {
+    if (open) reset();
+  }, [open]);
+
+  const handleRequest = async () => {
+    if (!phone || !name) return toast.error("Phone and Name are required");
+    try {
+      setLoading(true);
+      const { customFetch } = await import("@workspace/api-client-react/src/custom-fetch");
+      const res = await customFetch("/api/users/add-admin-request", {
+        method: "POST",
+        body: JSON.stringify({ phone, name, designation, email, title }),
+      }) as { ok: boolean; targetPhone: string };
+      
+      setTargetPhone(res.targetPhone);
+      setStep(2);
+      toast.success("OTP sent to primary admin");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to request admin addition");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!otpCode) return toast.error("Enter OTP");
+    try {
+      setLoading(true);
+      const { customFetch } = await import("@workspace/api-client-react/src/custom-fetch");
+      await customFetch("/api/users/add-admin-verify", {
+        method: "POST",
+        body: JSON.stringify({ otpCode, phone, name, designation, email, title }),
+      });
+      toast.success("Admin added successfully!");
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (err: any) {
+      toast.error(err.message || "Invalid OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add New Admin</DialogTitle>
+          <DialogDescription>
+            {step === 1 ? "Enter details for the new admin." : `OTP sent to primary admin (${targetPhone})`}
+          </DialogDescription>
+        </DialogHeader>
+        
+        {step === 1 ? (
+          <div className="grid gap-4 py-4">
+            <div className="flex gap-2">
+              <div className="w-1/3">
+                <label className="text-xs font-bold text-muted-foreground mb-1 block">Title</label>
+                <select
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="Mr.">Mr.</option>
+                  <option value="Ms.">Ms.</option>
+                  <option value="Mrs.">Mrs.</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="text-xs font-bold text-muted-foreground mb-1 block">Full Name</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  placeholder="e.g. John Doe"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-muted-foreground mb-1 block">Mobile Number</label>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="e.g. 9840000000"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-muted-foreground mb-1 block">Designation (Optional)</label>
+              <input
+                value={designation}
+                onChange={(e) => setDesignation(e.target.value)}
+                className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="e.g. Principal"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-muted-foreground mb-1 block">Email (Optional)</label>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="e.g. john@school.com"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-4 py-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              Please enter the 6-digit OTP sent to the primary admin's mobile number: <br/><strong className="text-lg">{targetPhone}</strong>
+            </p>
+            <input
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value)}
+              className="w-full h-12 text-center text-xl tracking-[0.5em] rounded-md border border-input bg-transparent px-3 py-1 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              placeholder="------"
+              maxLength={6}
+            />
+          </div>
+        )}
+
+        <DialogFooter>
+          {step === 1 ? (
+            <Button disabled={loading || !phone || !name} onClick={handleRequest} className="bg-amber-500 hover:bg-amber-600 text-slate-900 w-full sm:w-auto">
+              {loading ? "Requesting..." : "Send OTP"}
+            </Button>
+          ) : (
+            <Button disabled={loading || otpCode.length < 6} onClick={handleVerify} className="bg-emerald-500 hover:bg-emerald-600 text-white w-full sm:w-auto">
+              {loading ? "Verifying..." : "Verify & Add Admin"}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
