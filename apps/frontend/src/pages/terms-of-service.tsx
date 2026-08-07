@@ -18,7 +18,7 @@ export default function TermsOfService() {
       <p>Orbit Bus Tracker provides real-time tracking and transit information on an "as is" and "as available" basis. We do not guarantee uninterrupted service or absolute accuracy of bus schedules and arrival times.</p>
 
       <h2>4. Contact Information</h2>
-      <p>If you have any questions about these Terms, please contact us at: <strong>orbitbustracker@gmail.com</strong></p>
+      <p>If you have any questions about these Terms, please contact us at: <strong>info@orbitbustrack.com</strong></p>
     </div>
   );
 }

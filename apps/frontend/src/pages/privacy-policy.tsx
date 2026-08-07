@@ -25,7 +25,7 @@ export default function PrivacyPolicy() {
       </ul>
 
       <h2>3. Contact Us</h2>
-      <p>If you have questions or comments about this Privacy Policy, please contact us at: <strong>orbitbustracker@gmail.com</strong></p>
+      <p>If you have questions or comments about this Privacy Policy, please contact us at: <strong>info@orbitbustrack.com</strong></p>
     </div>
   );
 }
