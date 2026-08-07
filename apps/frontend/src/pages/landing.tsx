@@ -138,9 +138,14 @@ export default function Landing() {
       <main className="relative z-10 flex flex-col items-center justify-center px-4 pb-8 pt-6 text-center">
 
         {/* Moving bus above headline */}
-        <div className="relative w-full max-w-xl mx-auto h-16 mb-2 overflow-hidden rounded-full border border-slate-800/50 bg-slate-900/30 shadow-inner">
-          <div className="absolute top-1 text-5xl" style={{ animation: "bus-drive 12s linear infinite" }}>
-            <div className="scale-x-[-1] inline-block">🚌</div>
+        <div className="relative w-full max-w-xl mx-auto h-20 mb-2 overflow-hidden rounded-full border border-slate-800/50 bg-slate-900/30 shadow-inner">
+          <div className="absolute top-1" style={{ animation: "bus-drive 12s linear infinite" }}>
+            <div className="relative inline-block h-16 w-32">
+              <img src="/bus.png" alt="Bus" className="h-full w-full object-contain scale-x-[-1] drop-shadow-md" />
+              <span className="absolute top-[45%] left-[30%] -translate-y-1/2 text-[0.45rem] font-black text-slate-800 tracking-wider z-10">
+                OrbitTrack
+              </span>
+            </div>
           </div>
         </div>
 
@@ -305,13 +310,23 @@ export default function Landing() {
       </div>
 
       {/* ── Animated road decoration */}
-      <div className="relative h-12 w-full overflow-hidden bg-slate-900 border-t border-slate-800">
-        <div className="absolute inset-x-0 bottom-3 h-0.5 border-t border-dashed border-slate-700"></div>
-        <div className="absolute top-1 bus-drive text-2xl">
-          <div className="scale-x-[-1] inline-block">🚌</div>
+      <div className="relative h-20 w-full overflow-hidden bg-slate-900 border-t border-slate-800">
+        <div className="absolute inset-x-0 bottom-4 h-0.5 border-t border-dashed border-slate-700"></div>
+        <div className="absolute top-1 bus-drive">
+          <div className="relative inline-block h-16 w-32">
+            <img src="/bus.png" alt="Bus" className="h-full w-full object-contain scale-x-[-1] drop-shadow-md" />
+            <span className="absolute top-[45%] left-[30%] -translate-y-1/2 text-[0.45rem] font-black text-slate-800 tracking-wider z-10">
+              OrbitTrack
+            </span>
+          </div>
         </div>
-        <div className="absolute top-3 bus-drive2 text-base opacity-30">
-          <div className="scale-x-[-1] inline-block">🚌</div>
+        <div className="absolute top-4 bus-drive2 opacity-40">
+          <div className="relative inline-block h-12 w-24">
+            <img src="/bus.png" alt="Bus" className="h-full w-full object-contain scale-x-[-1] drop-shadow-sm" />
+            <span className="absolute top-[45%] left-[30%] -translate-y-1/2 text-[0.35rem] font-black text-slate-800 tracking-wider z-10">
+              OrbitTrack
+            </span>
+          </div>
         </div>
       </div>
 
