@@ -140,7 +140,7 @@ export default function Landing() {
         {/* Moving bus above headline */}
         <div className="relative w-full max-w-xl mx-auto h-16 mb-2 overflow-hidden rounded-full border border-slate-800/50 bg-slate-900/30 shadow-inner">
           <div className="absolute top-1 text-5xl" style={{ animation: "bus-drive 12s linear infinite" }}>
-            🚌
+            <div className="scale-x-[-1] inline-block">🚌</div>
           </div>
         </div>
 
@@ -304,11 +304,15 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── Animated road decoration ────────────────────────────────── */}
-      <div className="relative overflow-hidden pointer-events-none h-8 bg-[#0F172A]">
-        <div className="road-line absolute inset-x-0 top-1/2 h-0.5 bg-slate-700/60" />
-        <div className="absolute top-1 bus-drive text-2xl">🚌</div>
-        <div className="absolute top-3 bus-drive2 text-base opacity-30">🚗</div>
+      {/* ── Animated road decoration */}
+      <div className="relative h-12 w-full overflow-hidden bg-slate-900 border-t border-slate-800">
+        <div className="absolute inset-x-0 bottom-3 h-0.5 border-t border-dashed border-slate-700"></div>
+        <div className="absolute top-1 bus-drive text-2xl">
+          <div className="scale-x-[-1] inline-block">🚌</div>
+        </div>
+        <div className="absolute top-3 bus-drive2 text-base opacity-30">
+          <div className="scale-x-[-1] inline-block">🚌</div>
+        </div>
       </div>
 
       {/* ── Advertise with Us (bottom) ───────────────────────────────── */}
