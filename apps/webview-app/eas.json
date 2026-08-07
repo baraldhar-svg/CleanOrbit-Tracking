@@ -11,6 +11,9 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EAS_PACKAGE_MANAGER": "npm"
       }
     },
     "production": {
