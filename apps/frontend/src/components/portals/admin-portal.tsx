@@ -85,7 +85,7 @@ import {
   BS_MONTH_NAMES_NE,
   AD_MONTH_NAMES,
 } from "@/lib/bs-calendar";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useDriverMessages } from "@/lib/driver-messages";
 import {
@@ -93,7 +93,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const WEEKDAYS_NE = ["आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि"];
 
@@ -5258,6 +5262,7 @@ function AddAdminDialog({
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }) {
+  const { toast } = useToast();
   const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState("");
@@ -5284,7 +5289,10 @@ function AddAdminDialog({
   }, [open]);
 
   const handleRequest = async () => {
-    if (!phone || !name) return toast.error("Phone and Name are required");
+    if (!phone || !name) {
+      toast({ variant: "destructive", title: "Phone and Name are required" });
+      return;
+    }
     try {
       setLoading(true);
       const res = await customFetch("/api/users/add-admin-request", {
@@ -5294,27 +5302,30 @@ function AddAdminDialog({
       
       setTargetPhone(res.targetPhone);
       setStep(2);
-      toast.success("OTP sent to primary admin");
+      toast({ title: "OTP sent to primary admin" });
     } catch (err: any) {
-      toast.error(err.message || "Failed to request admin addition");
+      toast({ variant: "destructive", title: err.message || "Failed to request admin addition" });
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerify = async () => {
-    if (!otpCode) return toast.error("Enter OTP");
+    if (!otpCode) {
+      toast({ variant: "destructive", title: "Enter OTP" });
+      return;
+    }
     try {
       setLoading(true);
       await customFetch("/api/users/add-admin-verify", {
         method: "POST",
         body: JSON.stringify({ otpCode, phone, name, designation, email, title }),
       });
-      toast.success("Admin added successfully!");
+      toast({ title: "Admin added successfully!" });
       onOpenChange(false);
       onSuccess?.();
     } catch (err: any) {
-      toast.error(err.message || "Invalid OTP");
+      toast({ variant: "destructive", title: err.message || "Invalid OTP" });
     } finally {
       setLoading(false);
     }

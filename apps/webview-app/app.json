@@ -3,6 +3,7 @@
     "name": "Orbit Bus Tracker",
     "slug": "orbit-bus-tracker",
     "version": "1.0.0",
+    "sdkVersion": "51.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
