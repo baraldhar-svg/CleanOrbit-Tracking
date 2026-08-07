@@ -31,8 +31,19 @@ router.get("/", async (req, res) => {
         approvedAt: notificationsTable.approvedAt,
         readAt: notificationsTable.readAt,
         createdAt: notificationsTable.createdAt,
+        passengerName: passengersTable.name,
+        passengerPhone: passengersTable.phone,
+        className: passengersTable.className,
+        section: passengersTable.section,
+        rollNumber: passengersTable.rollNumber,
+        parentName: passengersTable.parentName,
+        routeName: routesTable.name,
+        stationName: stationsTable.name,
       })
       .from(notificationsTable)
+      .leftJoin(passengersTable, eq(notificationsTable.passengerId, passengersTable.id))
+      .leftJoin(routesTable, eq(passengersTable.routeId, routesTable.id))
+      .leftJoin(stationsTable, eq(passengersTable.stationId, stationsTable.id))
       .where(and(eq(notificationsTable.tenantId, req.tenantId), eq(notificationsTable.passengerId, passengerId)))
       .orderBy(desc(notificationsTable.createdAt))
       .limit(limit);

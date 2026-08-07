@@ -957,7 +957,7 @@ Roll No.: ${roll}`;
               })()}
             </div>
           </button>
-          <NotificationBell />
+          <NotificationBell passengerId={me?.id} userRole="student" />
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Bell } from "lucide-react";
+import { Bell, Clock, User, MapPin } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/button";
 import {
@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Badge } from "../ui/badge";
 import { format } from "date-fns";
 
-const fetchNotifications = async () => {
-  const res = await fetch("/api/notifications");
+const fetchNotifications = async (passengerId?: number) => {
+  const url = passengerId ? `/api/notifications?passengerId=${passengerId}` : "/api/notifications";
+  const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch notifications");
   return res.json();
 };
@@ -30,11 +31,11 @@ const approveApplication = async (id: number) => {
   return res.json();
 };
 
-export function NotificationBell() {
+export function NotificationBell({ passengerId, userRole }: { passengerId?: number, userRole?: string }) {
   const queryClient = useQueryClient();
   const { data: notifications = [] } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: fetchNotifications,
+    queryKey: ["notifications", passengerId],
+    queryFn: () => fetchNotifications(passengerId),
     refetchInterval: 30000,
   });
 
@@ -45,7 +46,7 @@ export function NotificationBell() {
   const readMutation = useMutation({
     mutationFn: markAsRead,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", passengerId] });
       setSelectedNotif((prev: any) => prev ? { ...prev, readAt: new Date().toISOString(), status: 'approved' } : null);
     },
   });
@@ -53,15 +54,17 @@ export function NotificationBell() {
   const approveMutation = useMutation({
     mutationFn: approveApplication,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      setSelectedNotif((prev: any) => prev ? { ...prev, status: 'approved' } : null);
+      queryClient.invalidateQueries({ queryKey: ["notifications", passengerId] });
+      setSelectedNotif((prev: any) => prev ? { ...prev, status: 'approved', readAt: new Date().toISOString() } : null);
     },
   });
 
   const handleAction = () => {
     if (!selectedNotif) return;
     const isLeave = selectedNotif.type === "absent" || selectedNotif.title.toLowerCase().includes("leave");
-    if (isLeave) {
+    
+    // Only Admin can approve leaves. If it's a student viewing it, they can only Mark as Read.
+    if (isLeave && userRole === "admin") {
       approveMutation.mutate(selectedNotif.id);
     } else {
       readMutation.mutate(selectedNotif.id);
@@ -115,77 +118,135 @@ export function NotificationBell() {
 
       <Dialog open={!!selectedNotif} onOpenChange={(open) => !open && setSelectedNotif(null)}>
         {selectedNotif && (
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle className="text-xl text-center mb-2">
-                {selectedNotif.title}
-              </DialogTitle>
-              <DialogDescription className="text-center font-semibold text-lg text-foreground">
-                Sender Details
-              </DialogDescription>
-            </DialogHeader>
+          <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden border-none bg-transparent shadow-none">
             
-            <div className="bg-slate-50 p-4 rounded-lg border text-sm space-y-2">
-              {(selectedNotif.passengerName || selectedNotif.metadata?.passengerName) && (
-                <div className="grid grid-cols-3 gap-2">
-                  <span className="text-muted-foreground font-medium">Student Name:</span>
-                  <span className="col-span-2 font-medium">{selectedNotif.passengerName || selectedNotif.metadata?.passengerName}</span>
-                </div>
-              )}
-              {(selectedNotif.parentName || selectedNotif.metadata?.parentName) && (
-                <div className="grid grid-cols-3 gap-2">
-                  <span className="text-muted-foreground font-medium">Parent Name:</span>
-                  <span className="col-span-2">{selectedNotif.parentName || selectedNotif.metadata?.parentName}</span>
-                </div>
-              )}
-              {(selectedNotif.className || selectedNotif.metadata?.className) && (
-                <div className="grid grid-cols-3 gap-2">
-                  <span className="text-muted-foreground font-medium">Class:</span>
-                  <span className="col-span-2">{selectedNotif.className || selectedNotif.metadata?.className}</span>
-                </div>
-              )}
-              {(selectedNotif.senderName) && (
-                <div className="grid grid-cols-3 gap-2">
-                  <span className="text-muted-foreground font-medium">Sender:</span>
-                  <span className="col-span-2">{selectedNotif.senderName} ({selectedNotif.senderRole})</span>
-                </div>
-              )}
-              <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t">
-                <span className="text-muted-foreground font-medium">Status:</span>
-                <span className={`col-span-2 uppercase font-semibold ${selectedNotif.status === "approved" || selectedNotif.readAt ? "text-green-600" : "text-orange-500"}`}>
-                  {selectedNotif.status === "approved" || selectedNotif.readAt ? "SEEN / APPROVED" : "PENDING REVIEW"}
-                </span>
+            {/* New UI Design matching third image */}
+            <div className="bg-white rounded-xl shadow-lg relative flex flex-col w-full max-h-[90vh]">
+              {/* Header */}
+              <div className="px-5 py-4 border-b flex items-center justify-between">
+                <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
+                  <Clock className="w-5 h-5 text-red-500" />
+                  {selectedNotif.title}
+                </DialogTitle>
+                <DialogDescription className="sr-only">Notification Details</DialogDescription>
               </div>
-            </div>
 
-            <div className="mt-4 p-4 border rounded-lg bg-white shadow-sm">
-              <p className="text-sm whitespace-pre-wrap">{selectedNotif.body}</p>
-            </div>
+              {/* Scrollable Content */}
+              <div className="p-4 overflow-y-auto">
+                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-4">
+                  <div className="flex items-center text-blue-800 font-semibold mb-4 text-sm pb-2 border-b border-blue-100">
+                    <User className="w-4 h-4 mr-2 opacity-70" />
+                    Sender Student & Parent Details / पठाइएको विद्यार्थीको विवरण
+                  </div>
 
-            <DialogFooter className="mt-6 flex-col sm:flex-col gap-2">
-              {(!selectedNotif.readAt && selectedNotif.status !== 'approved') ? (
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-[13px]">
+                    <div>
+                      <div className="text-slate-500 mb-0.5">Student Name (विद्यार्थी)</div>
+                      <div className="font-bold text-slate-800">
+                        {selectedNotif.passengerName || selectedNotif.metadata?.passengerName || "N/A"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-500 mb-0.5">Class & Roll Number</div>
+                      <div className="font-bold text-slate-800">
+                        {selectedNotif.className ? `Class ${selectedNotif.className}` : 'N/A'}
+                        {selectedNotif.section ? ` (${selectedNotif.section})` : ''}
+                        {selectedNotif.rollNumber ? ` • Roll No: ${selectedNotif.rollNumber}` : ''}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-500 mb-0.5">Parent Name & Phone</div>
+                      <div className="font-bold text-slate-800 leading-tight">
+                        {selectedNotif.parentName || selectedNotif.metadata?.parentName || "N/A"}
+                        {selectedNotif.passengerPhone && (
+                          <div className="font-normal mt-0.5">({selectedNotif.passengerPhone})</div>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-500 mb-0.5">Bus Route & Station</div>
+                      <div className="font-bold text-slate-800 flex items-start gap-1">
+                        <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
+                        <span className="leading-tight">
+                           {selectedNotif.routeName || "N/A"} • {selectedNotif.stationName || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50/70 rounded-xl p-3 flex items-center justify-between border border-amber-200/60 mb-5">
+                  <div className="text-slate-600 font-medium text-sm leading-tight">
+                    Application<br/>Status:
+                  </div>
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs uppercase ${
+                    selectedNotif.status === "approved" || selectedNotif.readAt 
+                      ? "bg-green-100 text-green-700" 
+                      : "bg-amber-100 text-amber-700"
+                  }`}>
+                    <Clock className="w-3.5 h-3.5" />
+                    <div className="flex flex-col items-center">
+                      <span>{selectedNotif.status === "approved" || selectedNotif.readAt ? "APPROVED" : "PENDING REVIEW"}</span>
+                      <span className="text-[9px] font-normal lowercase leading-none opacity-80 mt-0.5">
+                        {selectedNotif.status === "approved" || selectedNotif.readAt ? "(स्वीकृत)" : "(प्रतीक्षारत)"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-slate-500 font-semibold mb-2 text-sm px-1">
+                  Application Letter / Message Content:
+                </div>
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200 text-sm text-slate-700 leading-relaxed min-h-[80px]">
+                  {selectedNotif.body}
+                </div>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="p-4 pt-2 flex items-stretch gap-2 mt-auto">
+                {(!selectedNotif.readAt && selectedNotif.status !== 'approved') ? (
+                  <>
+                    {(userRole === "admin" && (selectedNotif.type === "absent" || selectedNotif.title.toLowerCase().includes("leave"))) && (
+                      <Button 
+                        onClick={handleAction} 
+                        disabled={approveMutation.isPending}
+                        className="flex-1 bg-[#059669] hover:bg-[#047857] h-auto py-2.5 flex-col gap-0.5"
+                      >
+                        <span className="font-bold text-[13px]">Approve Application ✓</span>
+                        <span className="text-[10px] font-normal opacity-90">(स्वीकृत गर्नुहोस्)</span>
+                      </Button>
+                    )}
+                    
+                    {/* Mark as Read Button */}
+                    <Button 
+                      onClick={() => readMutation.mutate(selectedNotif.id)} 
+                      disabled={readMutation.isPending}
+                      variant="default"
+                      className={`h-auto py-2.5 flex-col gap-0.5 bg-orange-500 hover:bg-orange-600 ${
+                         (userRole === "admin" && (selectedNotif.type === "absent" || selectedNotif.title.toLowerCase().includes("leave"))) 
+                           ? "w-24 px-2" 
+                           : "flex-1"
+                      }`}
+                    >
+                      <span className="font-bold text-[13px] leading-tight text-center">Mark as<br/>Read ✓</span>
+                    </Button>
+                  </>
+                ) : (
+                   <Button disabled variant="outline" className="flex-1 bg-green-50 border-green-200 text-green-700 h-auto py-3 font-semibold">
+                     Already Seen / Approved ✓
+                   </Button>
+                )}
+                
                 <Button 
-                  onClick={handleAction} 
-                  disabled={readMutation.isPending || approveMutation.isPending}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
+                  variant="outline" 
+                  onClick={() => setSelectedNotif(null)}
+                  className="h-auto py-3 w-20 font-semibold text-slate-600"
                 >
-                  {(selectedNotif.type === "absent" || selectedNotif.title.toLowerCase().includes("leave")) 
-                    ? "Approve Application ✓" 
-                    : "Mark as Read ✓"}
+                  Close
                 </Button>
-              ) : (
-                <Button disabled variant="outline" className="w-full text-green-600 border-green-200 bg-green-50">
-                  Already Seen / Approved ✓
-                </Button>
-              )}
-              <Button 
-                variant="ghost" 
-                onClick={() => setSelectedNotif(null)}
-                className="w-full"
-              >
-                Close
-              </Button>
-            </DialogFooter>
+              </div>
+
+            </div>
           </DialogContent>
         )}
       </Dialog>
