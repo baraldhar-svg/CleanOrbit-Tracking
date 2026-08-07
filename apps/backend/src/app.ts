@@ -145,11 +145,22 @@ for (const p of staticPaths) {
 }
 if (staticPath) {
   logger.info({ staticPath }, "Serving static frontend files");
-  app.use(express.static(staticPath));
+  app.use(express.static(staticPath, {
+    setHeaders: (res, path) => {
+      if (path.endsWith("index.html")) {
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      }
+    }
+  }));
   app.get(/.*/, (req, res, next) => {
     if (req.path.startsWith("/api") || req.path.startsWith("/webhook")) {
       return next();
     }
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     res.sendFile(path.resolve(staticPath, "index.html"));
   });
 } else {

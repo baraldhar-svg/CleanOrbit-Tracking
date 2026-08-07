@@ -21,10 +21,11 @@ export default function App() {
       <StatusBar style="auto" />
       <View style={styles.webviewContainer}>
         <WebView 
-          source={{ uri: 'https://orbitbustrack.com' }} 
+          source={{ uri: `https://orbitbustrack.com?t=${Date.now()}` }} 
           style={styles.webview}
           javaScriptEnabled={true}
           domStorageEnabled={true}
+          cacheEnabled={true}
           allowsFullscreenVideo={true}
           startInLoadingState={true}
           geolocationEnabled={true}
