@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { SpeedIndicator } from "@/components/ui/SpeedIndicator";
 import { useListRoutes, useListPassengers, useBoardPassenger, useUnboardPassenger, usePatchDriver, useListDrivers, useSendBoardingOtp, getListPassengersQueryKey, getListAnnouncementsQueryKey, getListDriversQueryKey, getTenantId, useListTripHistory, useListCalendarEvents } from "@workspace/api-client-react";
 import { PhotoPicker } from "@/components/photo-picker";
 import { useQueryClient } from "@tanstack/react-query";
@@ -1114,6 +1115,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
             </div>
           </button>
           <div className="flex items-center gap-2">
+            <SpeedIndicator speed={speedKmh} isLive={true} />
             <NotificationBell userRole="driver" />
             <button
               onClick={journeyStarted && !journeyCompleted || isFreezeActive ? undefined : handleToggleOffline}

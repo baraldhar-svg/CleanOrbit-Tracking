@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { SpeedIndicator } from "@/components/ui/SpeedIndicator";
 import { useDriverLocation } from "@/hooks/use-driver-location";
 import {
   useListAnnouncements,
@@ -957,6 +958,7 @@ Roll No.: ${roll}`;
               })()}
             </div>
           </button>
+          <SpeedIndicator speed={driverLoc?.speedKmh} isLive={driverLoc?.isLive} />
           <NotificationBell passengerId={me?.id} userRole="student" />
         </div>
       )}
