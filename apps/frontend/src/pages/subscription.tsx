@@ -1,6 +1,24 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+async function apiRequest(method: string, url: string, body?: any) {
+  const token = localStorage.getItem("orbittrack_token");
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (body) headers["Content-Type"] = "application/json";
+  
+  const res = await fetch(`${BASE}${url}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || data.message || "Request failed");
+  }
+  return res;
+}
 import { useState } from "react";
 import { Check, ShieldCheck, Zap, ArrowLeft, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
