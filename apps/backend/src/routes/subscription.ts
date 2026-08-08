@@ -10,7 +10,7 @@ const router = Router();
 router.post("/checkout", requireAuth, async (req, res) => {
   try {
     const { planMonths } = req.body;
-    const userId = req.user!.userId;
+    const userId = (req as any).user.userId;
     
     if (![1, 3, 6, 12].includes(planMonths)) {
       return res.status(400).json({ error: "Invalid plan selected" });
@@ -47,7 +47,7 @@ router.post("/admin/activate-user", requireAuth, async (req, res) => {
     const { targetUserId, isManuallyActivated } = req.body;
     
     // Only superadmin or admin can do this
-    if (req.user!.role !== "superadmin" && req.user!.role !== "admin") {
+    if ((req as any).user.role !== "superadmin" && (req as any).user.role !== "admin") {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
