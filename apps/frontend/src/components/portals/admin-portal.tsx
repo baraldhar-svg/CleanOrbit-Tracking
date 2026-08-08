@@ -5497,11 +5497,8 @@ export default function AdminPortal({
           <h1 className="text-2xl font-bold text-primary">Admin Dashboard</h1>
           <p className="text-xs text-muted-foreground">{localTenant?.name}</p>
         </div>
-        {/* Notification Bell & Speed */}
-        <div className="flex items-center gap-2">
-          <SpeedIndicator speed={speedAlert?.speedKmh} isLive={speedAlert != null} />
-          <NotificationBell userRole="admin" />
-        </div>
+        {/* Notification Bell */}
+        <NotificationBell userRole="admin" />
       </header>
 
       <nav className="rounded-xl border border-border bg-card shadow-sm flex p-1 gap-1.5 text-xs font-semibold bg-muted/20 overflow-x-auto [&::-webkit-scrollbar]:hidden">
