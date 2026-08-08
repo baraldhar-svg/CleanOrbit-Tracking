@@ -20,6 +20,35 @@ import { sendOtpSms } from "../utils/sms";
 import { logger } from "../lib/logger";
 import { broadcast } from "../lib/sse";
 
+function calculateSubscriptionStatus(user: any) {
+  if (!user || user.role === 'superadmin' || user.role === 'admin' || user.role === 'driver') {
+    return 'active';
+  }
+  
+  if (user.isManuallyActivated) {
+    return 'active';
+  }
+  
+  const now = new Date();
+  
+  if (user.trialStartsAt) {
+    const trialEnd = new Date(user.trialStartsAt);
+    trialEnd.setDate(trialEnd.getDate() + 30);
+    if (now <= trialEnd) {
+      return 'active_trial';
+    }
+  }
+  
+  if (user.subscriptionExpiresAt) {
+    const subEnd = new Date(user.subscriptionExpiresAt);
+    if (now <= subEnd) {
+      return 'active_paid';
+    }
+  }
+  
+  return 'expired';
+}
+
 const router: Router = Router();
 
 async function registerDriverSession(normalizedPhone: string, tenantId?: number | null): Promise<string> {
@@ -133,7 +162,7 @@ router.post("/check-phone", async (req, res) => {
     return res.json({
       found: true,
       verified: false,
-      user: { ...user, tenant },
+      user: { ...user, tenant, subscriptionStatus: calculateSubscriptionStatus(user) },
       requiresSchoolCode: user.role !== "superadmin" && !!user.tenantId,
       hasEmail: !!user.email,
       maskedEmail: user.email ? (user.email.split('@')[0].length > 2 ? user.email.split('@')[0].substring(0, 2) + '***@' + user.email.split('@')[1] : user.email.split('@')[0] + '***@' + user.email.split('@')[1]) : undefined,
@@ -440,7 +469,7 @@ router.post("/verify-otp", async (req, res) => {
   }
   return res.json({
     verified: true,
-    user: { ...user, activeSessionId: sessionId ?? user.activeSessionId ?? null, tenant },
+    user: { ...user, activeSessionId: sessionId ?? user.activeSessionId ?? null, tenant, subscriptionStatus: calculateSubscriptionStatus(user) },
     token: signToken({ userId: user.id, role: user.role, tenantId: user.tenantId ?? null }),
     sessionId,
   });
@@ -483,7 +512,7 @@ router.post("/login-password", async (req, res) => {
   }
   return res.json({
     verified: true,
-    user: { ...user, activeSessionId: sessionId ?? user.activeSessionId ?? null, tenant },
+    user: { ...user, activeSessionId: sessionId ?? user.activeSessionId ?? null, tenant, subscriptionStatus: calculateSubscriptionStatus(user) },
     token: signToken({ userId: user.id, role: user.role, tenantId: user.tenantId ?? null }),
     sessionId,
   });

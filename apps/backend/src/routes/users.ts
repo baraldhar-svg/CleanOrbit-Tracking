@@ -24,6 +24,7 @@ router.get("/", async (req, res) => {
       tenantName: tenantsTable.name,
       createdAt: usersTable.createdAt,
       biometricEnabled: usersTable.biometricEnabled,
+      isManuallyActivated: usersTable.isManuallyActivated,
     })
     .from(usersTable)
     .leftJoin(tenantsTable, eq(usersTable.tenantId, tenantsTable.id))
@@ -78,6 +79,7 @@ router.patch("/:id", async (req, res) => {
       tenantName: tenantsTable.name,
       createdAt: usersTable.createdAt,
       biometricEnabled: usersTable.biometricEnabled,
+      isManuallyActivated: usersTable.isManuallyActivated,
     })
     .from(usersTable)
     .leftJoin(tenantsTable, eq(usersTable.tenantId, tenantsTable.id))

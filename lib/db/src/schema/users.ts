@@ -22,6 +22,10 @@ export const usersTable = pgTable("users", {
   assignedSection: text("assigned_section"),
   designation: text("designation"),
   email: text("email"),
+  // Subscription fields
+  trialStartsAt: timestamp("trial_starts_at").defaultNow().notNull(),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  isManuallyActivated: boolean("is_manually_activated").default(false).notNull(),
 });
 
 export type User = typeof usersTable.$inferSelect;

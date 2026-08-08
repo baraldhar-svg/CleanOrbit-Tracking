@@ -16,6 +16,7 @@ export type AuthUser = {
   isClassTeacher?: boolean;
   assignedClass?: string | null;
   assignedSection?: string | null;
+  subscriptionStatus?: string;
 };
 
 const SESSION_KEY = "orbittrack_user";

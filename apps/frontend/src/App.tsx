@@ -14,6 +14,7 @@ import SchoolProfile from "@/pages/school-profile";
 import AdvertisePage from "@/pages/advertise";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsOfService from "@/pages/terms-of-service";
+import SubscriptionPage from "@/pages/subscription";
 import VehicleLiveMap from "@/components/VehicleLiveMap";
 import { useEffect, useRef } from "react";
 import { useRealtime } from "@/hooks/use-realtime";
@@ -74,6 +75,11 @@ function Router() {
       <Route path="/school/:id" component={SchoolProfile} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/subscription">
+        <AuthGuard>
+          <SubscriptionPage />
+        </AuthGuard>
+      </Route>
       <Route path="/live-tracking" component={VehicleLiveMap} />
       <Route path="/dashboard">
         <AuthGuard>

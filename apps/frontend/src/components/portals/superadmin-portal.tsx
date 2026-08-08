@@ -336,6 +336,7 @@ type UserItem = {
   tenantId: number | null;
   tenantName: string | null;
   createdAt: string;
+  isManuallyActivated?: boolean;
 };
 
 function UserCard({ user: initial, onSave, onDelete }: {
@@ -375,6 +376,20 @@ function UserCard({ user: initial, onSave, onDelete }: {
     try { await onDelete(user.id); } finally { setDeleting(false); }
   }
 
+  async function handleToggleActivation() {
+    try {
+      const res = await apiReq("POST", "/user-subscription/admin/activate-user", {
+        targetUserId: user.id,
+        isManuallyActivated: !user.isManuallyActivated
+      });
+      if (res.success) {
+        setUser(u => ({ ...u, isManuallyActivated: !u.isManuallyActivated }));
+      }
+    } catch (e: any) {
+      alert("Failed to change activation: " + e.message);
+    }
+  }
+
   return (
     <div className={`rounded-xl border transition-colors ${editing ? "border-amber-500/50 bg-slate-800/80" : "border-slate-700/60 bg-slate-800/40 hover:bg-slate-800/70"}`}>
       {/* View mode header row */}
@@ -390,6 +405,15 @@ function UserCard({ user: initial, onSave, onDelete }: {
           <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${ROLE_STYLES[user.role] ?? ROLE_STYLES.student}`}>
             {user.role}
           </span>
+          {(user.role === "student" || user.role === "teacher" || user.role === "staff") && (
+            <button 
+              onClick={handleToggleActivation}
+              className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold uppercase transition-colors ${user.isManuallyActivated ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-slate-800 text-slate-400 border border-slate-600 hover:text-slate-200"}`}
+              title={user.isManuallyActivated ? "Remove manual active status" : "Force activate subscription"}
+            >
+              {user.isManuallyActivated ? "Active" : "Inactive"}
+            </button>
+          )}
           <button onClick={startEdit} className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:text-amber-400 hover:bg-amber-950/40 transition-colors" title="Edit">
             <Pencil size={13} />
           </button>

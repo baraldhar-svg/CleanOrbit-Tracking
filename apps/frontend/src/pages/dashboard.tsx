@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { Bus, Globe, Phone, Building2, Sun, Moon, Upload, Camera, Copy, Check, Facebook, Instagram, Youtube, Mail, CheckCircle } from "lucide-react";
+import { Bus, Globe, Phone, Building2, Sun, Moon, Upload, Camera, Copy, Check, Facebook, Instagram, Youtube, Mail, CheckCircle, ShieldCheck, Zap } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/use-auth";
 import { useLang, useT, LANGUAGES } from "@/lib/i18n";
 import StudentPortal from "@/components/portals/student-portal";
@@ -253,6 +253,8 @@ function ProfilePanel({
     finally { setDisablingBiometric(false); }
   }
 
+  const isExpired = user.subscriptionStatus === "expired";
+
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -439,6 +441,29 @@ function ProfilePanel({
                 </div>
               )}
             </div>
+
+            {/* Upgrade Subscription (Student/Teacher only) */}
+            {(user.role === "student" || user.role === "teacher" || user.role === "staff") && (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-3 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                  <ShieldCheck className="w-16 h-16 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Zap size={13} /> OrbitTrack Premium
+                  </p>
+                  <p className="text-sm font-bold text-foreground mt-1">
+                    {isExpired ? "Your subscription has expired." : "You have an active subscription."}
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate("/subscription")}
+                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-slate-900 hover:bg-amber-400 transition-colors shadow-sm"
+                >
+                  {isExpired ? "Upgrade Now" : "Manage Plan"}
+                </button>
+              </div>
+            )}
 
             {err && <p className="text-xs text-red-500">{err}</p>}
 
@@ -764,7 +789,30 @@ export default function Dashboard() {
 
         {/* Main Portal */}
         <main className="flex-1 bg-background flex flex-col relative">
-          {userRole === "student" && <StudentPortal tenant={tenant} />}
+          {userRole === "student" && (
+            <div className="flex-1 relative w-full h-full">
+              <StudentPortal tenant={tenant} />
+              {user?.subscriptionStatus === "expired" && (
+                <div className="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+                  <div className="bg-slate-900 border border-amber-500/30 p-8 rounded-3xl max-w-sm shadow-2xl space-y-4">
+                    <div className="mx-auto w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mb-4">
+                      <ShieldCheck className="w-8 h-8 text-amber-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-white">Trial Expired</h2>
+                    <p className="text-sm text-slate-300">
+                      Your 30-day free trial has ended. Upgrade your account to continue tracking your school bus and viewing live information.
+                    </p>
+                    <button
+                      onClick={() => navigate("/subscription")}
+                      className="w-full mt-4 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-3 px-4 rounded-xl transition-all active:scale-95"
+                    >
+                      View Upgrade Options
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           {userRole === "teacher" && (
             <div className="flex flex-col h-full w-full">
               {/* Tab Switcher for Teacher */}
@@ -794,8 +842,33 @@ export default function Dashboard() {
                   </span>
                 </button>
               </div>
-              <div className="flex-1 w-full bg-background">
-                {staffActiveTab === "tracking" ? <StudentPortal tenant={tenant} /> : <TeacherPortal tenant={tenant} />}
+              <div className="flex-1 w-full bg-background relative">
+                {staffActiveTab === "tracking" ? (
+                  <>
+                    <StudentPortal tenant={tenant} />
+                    {user?.subscriptionStatus === "expired" && (
+                      <div className="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+                        <div className="bg-slate-900 border border-amber-500/30 p-8 rounded-3xl max-w-sm shadow-2xl space-y-4">
+                          <div className="mx-auto w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mb-4">
+                            <ShieldCheck className="w-8 h-8 text-amber-500" />
+                          </div>
+                          <h2 className="text-xl font-bold text-white">Trial Expired</h2>
+                          <p className="text-sm text-slate-300">
+                            Your 30-day free trial has ended. Upgrade your account to continue tracking your school bus and viewing live information.
+                          </p>
+                          <button
+                            onClick={() => navigate("/subscription")}
+                            className="w-full mt-4 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-3 px-4 rounded-xl transition-all active:scale-95"
+                          >
+                            View Upgrade Options
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <TeacherPortal tenant={tenant} />
+                )}
               </div>
             </div>
           )}
