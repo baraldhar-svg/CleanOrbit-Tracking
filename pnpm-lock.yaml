@@ -401,6 +401,9 @@ importers:
 
   apps/webview-app:
     dependencies:
+      '@expo/metro-runtime':
+        specifier: ~3.2.3
+        version: 3.2.3(react-native@0.74.5(@babel/core@7.29.0)(react@18.2.0))
       expo:
         specifier: ~51.0.0
         version: 51.0.39(@babel/core@7.29.0)(react-native@0.74.5(@babel/core@7.29.0)(react@18.2.0))(react@18.2.0)
@@ -423,6 +426,9 @@ importers:
       '@babel/core':
         specifier: ^7.20.0
         version: 7.29.0
+      babel-preset-expo:
+        specifier: ~11.0.0
+        version: 11.0.15(@babel/core@7.29.0)
 
   artifacts/mockup-sandbox:
     devDependencies:
@@ -2160,6 +2166,11 @@ packages:
     peerDependenciesMeta:
       expo:
         optional: true
+
+  '@expo/metro-runtime@3.2.3':
+    resolution: {integrity: sha512-v5ji+fAGi7B9YavrxvekuF8gXEV/5fz0+PhaED5AaFDnbGB4IJIbpaiqK9nqZV1axjGZNQSw6Q8TsnFetCR3bQ==}
+    peerDependencies:
+      react-native: '*'
 
   '@expo/metro-runtime@6.1.2':
     resolution: {integrity: sha512-nvM+Qv45QH7pmYvP8JB1G8JpScrWND3KrMA6ZKe62cwwNiX/BjHU28Ear0v/4bQWXlOY0mv6B8CDIm8JxXde9g==}
@@ -10692,6 +10703,10 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+
+  '@expo/metro-runtime@3.2.3(react-native@0.74.5(@babel/core@7.29.0)(react@18.2.0))':
+    dependencies:
+      react-native: 0.74.5(@babel/core@7.29.0)(react@18.2.0)
 
   '@expo/metro-runtime@6.1.2(expo@54.0.35)(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
     dependencies:

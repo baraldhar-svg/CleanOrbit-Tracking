@@ -1,0 +1,18 @@
+- Fetching the build…
+√ Found a matching build for the project @orbitbuss-team/orbitbustrack
+
+ID                       d799334a-c4e7-4dc0-9f0e-880edd2d79d0
+Platform                 Android
+Status                   errored
+Profile                  production
+Distribution             store
+SDK Version              51.0.0
+Version                  1.0.0
+Version code             1
+Commit                   3f19a7f13dd845e08b0214357db97a1ad6e8072e
+Logs                     https://expo.dev/accounts/orbitbuss-team/projects/orbitbustrack/builds/d799334a-c4e7-4dc0-9f0e-880edd2d79d0
+Application Archive URL  null
+Build Artifacts URL      null
+Started at               8/9/2026, 7:07:51 PM
+Finished at              8/9/2026, 7:11:03 PM
+Started by               orbitbus
