@@ -414,7 +414,7 @@ importers:
         specifier: ~11.0.0
         version: 11.0.15(@babel/core@7.29.0)(@babel/preset-env@8.0.2(@babel/core@7.29.0))
       expo:
-        specifier: ~51.0.0
+        specifier: ~51.0.39
         version: 51.0.39(@babel/core@7.29.0)(@babel/preset-env@8.0.2(@babel/core@7.29.0))(react-native@0.74.5(@babel/core@7.29.0)(@babel/preset-env@8.0.2(@babel/core@7.29.0))(@types/react@18.2.79)(react@18.2.0))(react@18.2.0)
       expo-location:
         specifier: ~17.0.1
