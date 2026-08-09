@@ -1,5 +1,4 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, SafeAreaView, Platform, View } from 'react-native';
+import { StyleSheet, SafeAreaView, Platform, View, StatusBar } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
@@ -18,7 +17,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="auto" />
+      <StatusBar barStyle="dark-content" />
       <View style={styles.webviewContainer}>
         <WebView 
           source={{ uri: `https://orbitbustrack.com?t=${Date.now()}` }} 
