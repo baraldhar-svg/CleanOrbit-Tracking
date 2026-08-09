@@ -1785,7 +1785,7 @@ function DriverCommunicationsPanel() {
           </thead>
           <tbody className="divide-y divide-border">
             {(drivers ?? []).map((driver) => {
-              const pingDate = driver.locationUpdatedAt ? new Date(driver.locationUpdatedAt) : null;
+              const pingDate = (driver as any).locationUpdatedAt ? new Date((driver as any).locationUpdatedAt) : null;
               let pingStr = "No signal";
               let pingColor = "text-slate-400";
               
