@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Orbit Bus Tracker",
-    "slug": "orbit-bus-tracker",
+    "slug": "orbitbustrack",
     "version": "1.0.0",
     "sdkVersion": "51.0.0",
     "orientation": "portrait",
@@ -34,8 +34,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "0be7115f-c32b-41ac-b0cf-056bed712953"
+        "projectId": "a496a150-e4da-41b2-b3e6-b9063017ca8e"
       }
-    }
+    },
+    "owner": "orbitbuss-team"
   }
 }
