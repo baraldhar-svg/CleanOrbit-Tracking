@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useAuth, type AuthUser } from "@/hooks/use-auth";
 import { startAuthentication } from "@simplewebauthn/browser";
 import BiometricSetupModal from "@/components/BiometricSetupModal";
@@ -62,7 +62,10 @@ export default function AuthScreen() {
   const [step, setStep] = useState<Step>("phone");
   const [newEmail, setNewEmail] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-  const [phone, setPhone] = useState("");
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const paramPhone = params.get("phone");
+  const [phone, setPhone] = useState(paramPhone || "");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [schoolCode, setSchoolCode] = useState("");
   const [password, setPassword] = useState("");
@@ -130,6 +133,13 @@ export default function AuthScreen() {
     }
   }, [foundUser, step]);
 
+  useEffect(() => {
+    if (paramPhone && paramPhone.length >= 10 && step === "phone") {
+      // Auto-trigger if we came with a phone param
+      handleCheckPhone(paramPhone);
+    }
+  }, [paramPhone]);
+
   // ── Auth handlers ─────────────────────────────────────────────────────
   function finishAuth(user: AuthUser, token?: string) {
     login(user, token);
@@ -140,15 +150,16 @@ export default function AuthScreen() {
     }
   }
 
-  async function handleCheckPhone() {
+  async function handleCheckPhone(p?: string) {
+    const phoneNumber = typeof p === "string" ? p : phone;
     setErr("");
     setLoading(true);
 
     try {
-      const data = await apiPost("/auth/check-phone", { phone });
+      const data = await apiPost("/auth/check-phone", { phone: phoneNumber });
 
       if (data.found === false) {
-        navigate(`/register?phone=${encodeURIComponent(phone)}`);
+        navigate(`/register?phone=${encodeURIComponent(phoneNumber)}`);
         return;
       }
 
@@ -180,7 +191,7 @@ export default function AuthScreen() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Could not verify number";
       if (msg.toLowerCase().includes("not registered") || msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("no account")) {
-        navigate(`/register?phone=${encodeURIComponent(phone)}`);
+        navigate(`/register?phone=${encodeURIComponent(typeof p === "string" ? p : phone)}`);
       } else {
         setErr(msg);
       }

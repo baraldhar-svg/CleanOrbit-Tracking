@@ -35,22 +35,22 @@ export function SpeedIndicator({ speed, isLive = true }: SpeedIndicatorProps) {
       <div className="relative flex items-center justify-center">
         {/* The SOS Ping Animation Layer */}
         {currentSpeed >= 55 && (
-          <div className={`absolute w-6 h-6 rounded-full bg-red-500/50 ${animationClass}`}></div>
+          <div className={`absolute w-8 h-8 rounded-full bg-red-500/50 ${animationClass}`}></div>
         )}
         
         {/* Crystal Orb */}
         <div 
-          className={`relative z-10 w-5 h-5 rounded-full border border-white/40 ${orbClass} ${glowClass}`}
+          className={`relative z-10 w-7 h-7 rounded-full border border-white/40 ${orbClass} ${glowClass}`}
         >
           {/* Glass reflection highlight */}
-          <div className="absolute top-[2px] right-[3px] w-2 h-1.5 rounded-full bg-white/70 rotate-[-45deg]"></div>
-          <div className="absolute bottom-[2px] left-[3px] w-1 h-1 rounded-full bg-white/40"></div>
+          <div className="absolute top-[3px] right-[4px] w-2.5 h-2 rounded-full bg-white/70 rotate-[-45deg]"></div>
+          <div className="absolute bottom-[3px] left-[4px] w-1.5 h-1.5 rounded-full bg-white/40"></div>
         </div>
       </div>
       
       {/* Speed Label */}
-      <span className="text-[10px] font-bold mt-1 text-foreground whitespace-nowrap leading-none tracking-tight">
-        {currentSpeed} <span className="text-muted-foreground text-[8px] font-medium">km/h</span>
+      <span className="text-xs font-bold mt-1 text-foreground whitespace-nowrap leading-none tracking-tight">
+        {currentSpeed} <span className="text-muted-foreground text-[9px] font-medium">km/h</span>
       </span>
     </div>
   );
