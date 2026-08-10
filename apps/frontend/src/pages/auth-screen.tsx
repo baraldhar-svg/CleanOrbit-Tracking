@@ -528,7 +528,7 @@ export default function AuthScreen() {
               )}
 
               <button
-                onClick={handleCheckPhone}
+                onClick={() => handleCheckPhone()}
                 disabled={phone.replace(/\D/g, "").length < 7 || loading}
                 className="w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors"
               >
