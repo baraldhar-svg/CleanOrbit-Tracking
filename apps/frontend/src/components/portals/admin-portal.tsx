@@ -99,6 +99,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const WEEKDAYS_NE = ["आइत", "सोम", "मंगल", "बुध", "बिही", "शुक्र", "शनि"];
 
@@ -1683,65 +1689,73 @@ function VehicleTagGrid({
   onTagUpdated: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="font-semibold text-primary text-sm">Vehicle Assets</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Total registered transport logs configuration asset grid.
-          </p>
-        </div>
-        <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
-          {vehicles?.length ?? 0} Vehicles
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {(vehicles ?? []).map((vehicle) => {
-          const assignedRoute = routes?.find((r) => r.vehicleId === vehicle.id);
-          return (
-            <div key={vehicle.id} className="border border-border rounded-xl p-3 bg-background shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="bg-primary/10 p-2 rounded-lg">
-                    <Bus size={16} className="text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-foreground">{vehicle.plateNumber}</h3>
-                    <p className="text-[10px] text-muted-foreground">{vehicle.model}</p>
-                  </div>
-                </div>
-                <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${vehicle.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                  {vehicle.isActive ? 'Active' : 'Inactive'}
-                </div>
-              </div>
-              <div className="space-y-1.5 mt-3">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Capacity</span>
-                  <span className="font-medium">{vehicle.capacity} seats</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Route</span>
-                  <span className="font-medium text-primary truncate max-w-[120px]" title={assignedRoute?.name ?? 'Unassigned'}>
-                    {assignedRoute?.name ?? 'Unassigned'}
-                  </span>
-                </div>
-                {vehicle.tag && (
-                  <div className="flex justify-between text-xs pt-1 mt-1 border-t border-border">
-                    <span className="text-muted-foreground">Tag</span>
-                    <span className="font-medium bg-amber-100 text-amber-800 px-1.5 rounded text-[10px]">{vehicle.tag}</span>
-                  </div>
-                )}
-              </div>
+    <Accordion type="single" collapsible className="w-full">
+      <AccordionItem value="vehicle-assets" className="border-none bg-card rounded-2xl shadow-sm">
+        <AccordionTrigger className="px-4 py-3 border border-border rounded-2xl hover:no-underline hover:bg-muted/50 data-[state=open]:rounded-b-none data-[state=open]:border-b-0">
+          <div className="flex flex-1 items-center justify-between text-left mr-4">
+            <div>
+              <h2 className="font-semibold text-primary text-sm">Vehicle Assets</h2>
+              <p className="text-xs text-muted-foreground mt-1 font-normal">
+                Total registered transport logs configuration asset grid.
+              </p>
             </div>
-          );
-        })}
-        {(!vehicles || vehicles.length === 0) && (
-          <div className="col-span-full py-8 text-center text-sm text-muted-foreground">
-            No vehicle assets registered yet.
+            <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium shrink-0">
+              {vehicles?.length ?? 0} Vehicles
+            </div>
           </div>
-        )}
-      </div>
-    </div>
+        </AccordionTrigger>
+        <AccordionContent className="pt-0">
+          <div className="border border-t-0 border-border bg-card rounded-b-2xl p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {(vehicles ?? []).map((vehicle) => {
+                const assignedRoute = routes?.find((r) => r.vehicleId === vehicle.id);
+                return (
+                  <div key={vehicle.id} className="border border-border rounded-xl p-3 bg-background shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-primary/10 p-2 rounded-lg">
+                          <Bus size={16} className="text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-sm text-foreground">{vehicle.plateNumber}</h3>
+                          <p className="text-[10px] text-muted-foreground">{vehicle.model}</p>
+                        </div>
+                      </div>
+                      <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${vehicle.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                        {vehicle.isActive ? 'Active' : 'Inactive'}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 mt-3">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Capacity</span>
+                        <span className="font-medium">{vehicle.capacity} seats</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Route</span>
+                        <span className="font-medium text-primary truncate max-w-[120px]" title={assignedRoute?.name ?? 'Unassigned'}>
+                          {assignedRoute?.name ?? 'Unassigned'}
+                        </span>
+                      </div>
+                      {vehicle.tag && (
+                        <div className="flex justify-between text-xs pt-1 mt-1 border-t border-border">
+                          <span className="text-muted-foreground">Tag</span>
+                          <span className="font-medium bg-amber-100 text-amber-800 px-1.5 rounded text-[10px]">{vehicle.tag}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {(!vehicles || vehicles.length === 0) && (
+                <div className="col-span-full py-8 text-center text-sm text-muted-foreground">
+                  No vehicle assets registered yet.
+                </div>
+              )}
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
 
@@ -1759,102 +1773,107 @@ function DriverCommunicationsPanel() {
   const { data: drivers } = useListDrivers();
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="font-semibold text-primary text-sm">Driver Status Logs</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Driver network connectivity pings log.
-          </p>
-        </div>
-        <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium shrink-0">
-          {drivers?.filter(d => d.isOnline).length ?? 0} Online
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead>
-            <tr className="border-b border-border text-muted-foreground text-xs uppercase tracking-wider">
-              <th className="pb-3 pr-4 font-medium">Driver</th>
-              <th className="pb-3 px-4 font-medium">Vehicle</th>
-              <th className="pb-3 px-4 font-medium">Status</th>
-              <th className="pb-3 px-4 font-medium">Trip State</th>
-              <th className="pb-3 pl-4 font-medium text-right">Last Ping</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {(drivers ?? []).map((driver) => {
-              const pingDate = (driver as any).locationUpdatedAt ? new Date((driver as any).locationUpdatedAt) : null;
-              let pingStr = "No signal";
-              let pingColor = "text-slate-400";
-              
-              if (pingDate) {
-                const diffSec = Math.floor((Date.now() - pingDate.getTime()) / 1000);
-                if (diffSec < 60) {
-                  pingStr = `Just now`;
-                  pingColor = "text-green-600";
-                } else if (diffSec < 3600) {
-                  pingStr = `${Math.floor(diffSec / 60)}m ago`;
-                  pingColor = diffSec < 300 ? "text-green-600" : "text-amber-600";
-                } else {
-                  pingStr = `${Math.floor(diffSec / 3600)}h ago`;
-                  pingColor = "text-red-500";
-                }
-              }
-
-              return (
-                <tr key={driver.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="py-3 pr-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
-                        {driver.photoUrl ? (
-                          <img src={driver.photoUrl} alt={driver.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-[10px] font-bold text-primary">{driver.name.charAt(0)}</span>
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-medium text-foreground">{driver.name}</div>
-                        <div className="text-[10px] text-muted-foreground">{driver.phone}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Bus size={12} />
-                      <span className="font-medium text-foreground">{driver.vehicleNumber}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${driver.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-slate-300'}`} />
-                      <span className="text-xs font-medium">{driver.isOnline ? 'Online' : 'Offline'}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${driver.isActive ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>
-                      {driver.isActive ? 'In Trip' : 'Idle'}
-                    </span>
-                  </td>
-                  <td className={`py-3 pl-4 text-right text-xs font-medium ${pingColor}`}>
-                    {pingStr}
-                  </td>
+    <Accordion type="single" collapsible className="w-full">
+      <AccordionItem value="driver-status" className="border-none bg-card rounded-2xl shadow-sm">
+        <AccordionTrigger className="px-4 py-3 border border-border rounded-2xl hover:no-underline hover:bg-muted/50 data-[state=open]:rounded-b-none data-[state=open]:border-b-0">
+          <div className="flex flex-1 items-center justify-between text-left mr-4">
+            <div>
+              <h2 className="font-semibold text-primary text-sm">Driver Status Logs</h2>
+              <p className="text-xs text-muted-foreground mt-1 font-normal">
+                Driver network connectivity pings log.
+              </p>
+            </div>
+            <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium shrink-0">
+              {drivers?.filter(d => d.isOnline).length ?? 0} Online
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="pt-0">
+          <div className="border border-t-0 border-border bg-card rounded-b-2xl p-4 pt-0 overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap mt-4">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground text-xs uppercase tracking-wider">
+                  <th className="pb-3 pr-4 font-medium">Driver</th>
+                  <th className="pb-3 px-4 font-medium">Vehicle</th>
+                  <th className="pb-3 px-4 font-medium">Status</th>
+                  <th className="pb-3 px-4 font-medium">Trip State</th>
+                  <th className="pb-3 pl-4 font-medium text-right">Last Ping</th>
                 </tr>
-              );
-            })}
-            
-            {(!drivers || drivers.length === 0) && (
-              <tr>
-                <td colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
-                  No drivers registered yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {(drivers ?? []).map((driver) => {
+                  const pingDate = (driver as any).locationUpdatedAt ? new Date((driver as any).locationUpdatedAt) : null;
+                  let pingStr = "No signal";
+                  let pingColor = "text-slate-400";
+                  
+                  if (pingDate) {
+                    const diffSec = Math.floor((Date.now() - pingDate.getTime()) / 1000);
+                    if (diffSec < 60) {
+                      pingStr = `Just now`;
+                      pingColor = "text-green-600";
+                    } else if (diffSec < 3600) {
+                      pingStr = `${Math.floor(diffSec / 60)}m ago`;
+                      pingColor = diffSec < 300 ? "text-green-600" : "text-amber-600";
+                    } else {
+                      pingStr = `${Math.floor(diffSec / 3600)}h ago`;
+                      pingColor = "text-red-500";
+                    }
+                  }
+
+                  return (
+                    <tr key={driver.id} className="hover:bg-muted/50 transition-colors">
+                      <td className="py-3 pr-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
+                            {driver.photoUrl ? (
+                              <img src={driver.photoUrl} alt={driver.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-bold text-primary">{driver.name.charAt(0)}</span>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-foreground">{driver.name}</div>
+                            <div className="text-[10px] text-muted-foreground">{driver.phone}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Bus size={12} />
+                          <span className="font-medium text-foreground">{driver.vehicleNumber}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${driver.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-slate-300'}`} />
+                          <span className="text-xs font-medium">{driver.isOnline ? 'Online' : 'Offline'}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${driver.isActive ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>
+                          {driver.isActive ? 'In Trip' : 'Idle'}
+                        </span>
+                      </td>
+                      <td className={`py-3 pl-4 text-right text-xs font-medium ${pingColor}`}>
+                        {pingStr}
+                      </td>
+                    </tr>
+                  );
+                })}
+                
+                {(!drivers || drivers.length === 0) && (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                      No drivers registered yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
 
