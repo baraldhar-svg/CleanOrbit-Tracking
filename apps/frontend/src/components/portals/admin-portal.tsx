@@ -1760,7 +1760,7 @@ function VehicleTagGrid({
                         </div>
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50 border border-border">
                           {isOnline ? (
-                            <SpeedIndicator speedKmh={speed} showLabel />
+                            <SpeedIndicator speed={speed} />
                           ) : (
                             <span className="text-[10px] font-medium text-slate-500">Offline / Parked</span>
                           )}
@@ -1793,10 +1793,9 @@ function VehicleTagGrid({
                   <div className="col-span-full py-8 text-center text-sm text-muted-foreground">
                     No vehicle assets registered yet.
                   </div>
+                )}
               </div>
             </div>
-          </div>
-
       <Dialog open={!!selectedVehicle} onOpenChange={(o) => !o && setSelectedVehicle(null)}>
         <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
           <DialogHeader>

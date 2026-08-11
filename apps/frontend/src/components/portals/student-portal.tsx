@@ -404,12 +404,12 @@ Roll No.: ${roll}`;
     const stops = routeStations.filter((rs) => String(rs.stationId) === selectedStationId);
     if (stops.length === 1) return stops[0];
     if (stops.length > 1) {
-      const currentIdx = driverLoc.stationIdx ?? liveStation?.idx ?? 0;
+      const currentIdx = (driverLoc as any).stationIdx ?? liveStation?.idx ?? 0;
       const futureStops = stops.filter(rs => rs.position >= currentIdx);
       return futureStops.length > 0 ? futureStops[0] : stops[stops.length - 1];
     }
     return undefined;
-  }, [routeStations, selectedStationId, driverLoc.stationIdx, liveStation?.idx]);
+  }, [routeStations, selectedStationId, (driverLoc as any).stationIdx, liveStation?.idx]);
   const nearbyAlert = (() => {
     if (isHolidayToday || !driverLoc.isLive || !tripActive || !myStop?.lat || !myStop?.lng || geoAlertDismissed) return false;
     const dLat = (driverLoc.lat - myStop.lat) * 111000;
