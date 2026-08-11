@@ -1688,74 +1688,169 @@ function VehicleTagGrid({
   routes: any[] | undefined;
   onTagUpdated: () => void;
 }) {
+  const liveLocations = useLiveLocations();
+  const { data: passengers } = useListPassengers();
+  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
+
   return (
-    <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value="vehicle-assets" className="border-none bg-card rounded-2xl shadow-sm">
-        <AccordionTrigger className="px-4 py-3 border border-border rounded-2xl hover:no-underline hover:bg-muted/50 data-[state=open]:rounded-b-none data-[state=open]:border-b-0">
-          <div className="flex flex-1 items-center justify-between text-left mr-4">
-            <div>
-              <h2 className="font-semibold text-primary text-sm">Vehicle Assets</h2>
-              <p className="text-xs text-muted-foreground mt-1 font-normal">
-                Total registered transport logs configuration asset grid.
-              </p>
+    <>
+      <Accordion type="single" collapsible className="w-full" defaultValue="vehicle-assets">
+        <AccordionItem value="vehicle-assets" className="border-none bg-card rounded-2xl shadow-sm">
+          <AccordionTrigger className="px-4 py-3 border border-border rounded-2xl hover:no-underline hover:bg-muted/50 data-[state=open]:rounded-b-none data-[state=open]:border-b-0">
+            <div className="flex flex-1 items-center justify-between text-left mr-4">
+              <div>
+                <h2 className="font-semibold text-primary text-sm">Vehicle Assets</h2>
+                <p className="text-xs text-muted-foreground mt-1 font-normal">
+                  Live vehicle status, telemetry, and boarding metrics.
+                </p>
+              </div>
+              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium shrink-0">
+                {vehicles?.length ?? 0} Vehicles
+              </div>
             </div>
-            <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium shrink-0">
-              {vehicles?.length ?? 0} Vehicles
-            </div>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent className="pt-0">
-          <div className="border border-t-0 border-border bg-card rounded-b-2xl p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {(vehicles ?? []).map((vehicle) => {
-                const assignedRoute = routes?.find((r) => r.vehicleId === vehicle.id);
-                return (
-                  <div key={vehicle.id} className="border border-border rounded-xl p-3 bg-background shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-primary/10 p-2 rounded-lg">
-                          <Bus size={16} className="text-primary" />
+          </AccordionTrigger>
+          <AccordionContent className="pt-0">
+            <div className="border border-t-0 border-border bg-card rounded-b-2xl p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {(vehicles ?? []).map((vehicle) => {
+                  const assignedRoute = routes?.find((r) => r.vehicleId === vehicle.id);
+                  const liveData = liveLocations.find(l => l.vehicleNumber === vehicle.plateNumber);
+                  
+                  const isOnline = !!liveData?.isLive;
+                  const speed = liveData?.speedKmh ?? 0;
+                  const isStopped = speed < 2;
+                  const isSlow = speed >= 2 && speed < 15;
+                  
+                  const routePassengers = passengers?.filter(p => p.routeId === assignedRoute?.id) || [];
+                  const onboardCount = routePassengers.filter(p => p.status === "boarded").length;
+                  const absentCount = routePassengers.filter(p => p.status === "absent").length;
+
+                  let speedColor = "bg-red-500";
+                  if (isOnline) {
+                    if (isStopped) speedColor = "bg-red-500";
+                    else if (isSlow) speedColor = "bg-yellow-500";
+                    else speedColor = "bg-green-500";
+                  }
+
+                  // Super basic ETA placeholder (assume 25km/h avg speed)
+                  // Let's hide ETA for now since we don't have distToSchool here easily
+                  
+                  return (
+                    <div 
+                      key={vehicle.id} 
+                      onClick={() => setSelectedVehicle(vehicle.plateNumber)}
+                      className="border border-border rounded-xl p-3 bg-background shadow-sm hover:shadow-md hover:border-amber-400 transition-all cursor-pointer relative overflow-hidden"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`p-2 rounded-lg ${isOnline ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+                            <Bus size={18} />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-sm text-foreground leading-tight">{vehicle.plateNumber}</h3>
+                            <p className="text-[10px] text-muted-foreground">{liveData?.name || "No Driver Active"}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-bold text-sm text-foreground">{vehicle.plateNumber}</h3>
-                          <p className="text-[10px] text-muted-foreground">{vehicle.model}</p>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50 border border-border">
+                          {isOnline ? (
+                            <>
+                              <div className={`w-2 h-2 rounded-full ${speedColor} animate-pulse`} />
+                              <span className="text-[10px] font-bold text-foreground">{Math.round(speed)} <span className="font-normal text-muted-foreground">km/h</span></span>
+                            </>
+                          ) : (
+                            <span className="text-[10px] font-medium text-slate-500">Offline / Parked</span>
+                          )}
                         </div>
                       </div>
-                      <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${vehicle.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                        {vehicle.isActive ? 'Active' : 'Inactive'}
+                      
+                      <div className="space-y-2 mt-3">
+                        <div className="bg-muted/30 rounded-lg p-2 border border-border/50 text-xs flex items-center justify-between">
+                           <span className="text-muted-foreground flex items-center gap-1"><MapPin size={12} className="text-amber-500" /> Passing Station</span>
+                           <span className="font-semibold text-foreground truncate max-w-[130px]" title={liveData?.stationName || "Unknown"}>
+                             {isOnline ? (liveData?.stationName || "In Transit") : "—"}
+                           </span>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                           <div className="flex-1 bg-green-500/10 border border-green-500/20 rounded-lg p-2 flex items-center justify-between">
+                              <span className="text-[10px] font-medium text-green-700 dark:text-green-400 uppercase tracking-wider">Onboard</span>
+                              <span className="font-bold text-green-700 dark:text-green-400">{onboardCount}</span>
+                           </div>
+                           <div className="flex-1 bg-red-500/10 border border-red-500/20 rounded-lg p-2 flex items-center justify-between">
+                              <span className="text-[10px] font-medium text-red-700 dark:text-red-400 uppercase tracking-wider">Absent</span>
+                              <span className="font-bold text-red-700 dark:text-red-400">{absentCount}</span>
+                           </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="space-y-1.5 mt-3">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Capacity</span>
-                        <span className="font-medium">{vehicle.capacity} seats</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Route</span>
-                        <span className="font-medium text-primary truncate max-w-[120px]" title={assignedRoute?.name ?? 'Unassigned'}>
-                          {assignedRoute?.name ?? 'Unassigned'}
-                        </span>
-                      </div>
-                      {vehicle.tag && (
-                        <div className="flex justify-between text-xs pt-1 mt-1 border-t border-border">
-                          <span className="text-muted-foreground">Tag</span>
-                          <span className="font-medium bg-amber-100 text-amber-800 px-1.5 rounded text-[10px]">{vehicle.tag}</span>
-                        </div>
-                      )}
-                    </div>
+                  );
+                })}
+                {(!vehicles || vehicles.length === 0) && (
+                  <div className="col-span-full py-8 text-center text-sm text-muted-foreground">
+                    No vehicle assets registered yet.
                   </div>
-                );
-              })}
-              {(!vehicles || vehicles.length === 0) && (
-                <div className="col-span-full py-8 text-center text-sm text-muted-foreground">
-                  No vehicle assets registered yet.
-                </div>
-              )}
+                )}
+              </div>
             </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <Dialog open={!!selectedVehicle} onOpenChange={(o) => !o && setSelectedVehicle(null)}>
+        <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Live Notifications for {selectedVehicle}</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto flex-1 pr-2 -mr-2">
+            <VehicleNotificationList vehiclePlate={selectedVehicle} />
           </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function VehicleNotificationList({ vehiclePlate }: { vehiclePlate: string | null }) {
+  const { data, isLoading } = useQuery<any[]>({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications", { headers: tenantHeaders() });
+      if (!res.ok) throw new Error("Failed to load notifications");
+      return res.json();
+    },
+    refetchInterval: 10000,
+  });
+
+  if (isLoading) return <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>;
+
+  const notifs = (data || []).filter((n) => 
+    vehiclePlate && (
+      (n.message || "").includes(vehiclePlate) || 
+      (n.title || "").includes(vehiclePlate)
+    )
+  );
+
+  if (notifs.length === 0) {
+    return <div className="p-8 text-center text-sm text-muted-foreground">No recent notifications for this vehicle.</div>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {notifs.map(n => {
+        const d = new Date(n.createdAt);
+        return (
+          <div key={n.id} className="border border-border rounded-xl p-3 bg-muted/30">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-foreground">{n.title}</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground shrink-0">{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">{n.message}</p>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -5695,6 +5790,11 @@ export default function AdminPortal({
 
       {mainTab === "overview" && (
         <div className="space-y-6">
+          <VehicleTagGrid
+            vehicles={vehicles as any[] | undefined}
+            routes={adminRoutes as any[] | undefined}
+            onTagUpdated={refetchAll}
+          />
           <FleetCostsSummaryCard />
           <LiveFleetMapPanel />
 
@@ -5709,11 +5809,6 @@ export default function AdminPortal({
           <SmartStationManager
             stations={stations as any[] | undefined}
             onChanged={refetchAll}
-          />
-          <VehicleTagGrid
-            vehicles={vehicles as any[] | undefined}
-            routes={adminRoutes as any[] | undefined}
-            onTagUpdated={refetchAll}
           />
           <CalendarManager />
         </div>

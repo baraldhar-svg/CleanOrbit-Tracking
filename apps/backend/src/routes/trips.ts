@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { driversTable, passengersTable, stationsTable, announcementsTable, routesTable, pushTokensTable, tripLogsTable, tenantsTable, gpsLogsTable } from "@workspace/db";
-import { eq, count, and, isNotNull, isNull, sql, lt, inArray, desc, asc } from "drizzle-orm";
+import { eq, count, and, or, isNotNull, isNull, sql, lt, inArray, desc, asc } from "drizzle-orm";
 import { broadcast } from "../lib/sse";
 import { logger } from "../lib/logger";
 import { createNotification } from "../lib/notifications";
@@ -1123,6 +1123,20 @@ export function startHeartbeatWatchdog(): void {
   setInterval(async () => {
     try {
       const cutoff = new Date(Date.now() - 300_000).toISOString();
+      
+      // Determine if we are in the nightly cleanup window (4:00 AM to 4:29 AM KTM time)
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Kathmandu",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: false
+      });
+      const ktmTime = formatter.format(new Date());
+      const [hStr, mStr] = ktmTime.split(":");
+      const ktmHour = parseInt(hStr, 10);
+      const ktmMinute = parseInt(mStr, 10);
+      const isNightCleanupWindow = ktmHour === 4 && ktmMinute >= 0 && ktmMinute < 30;
+
       const stale = await db
         .select({
           id: driversTable.id,
@@ -1131,12 +1145,16 @@ export function startHeartbeatWatchdog(): void {
         })
         .from(driversTable)
         .where(
-          and(
-            eq(driversTable.isOnline, true),
-            isNotNull(driversTable.locationUpdatedAt),
-            sql`${driversTable.locationUpdatedAt} < ${cutoff}`
+          or(
+            and(
+              eq(driversTable.isOnline, true),
+              isNotNull(driversTable.locationUpdatedAt),
+              sql`${driversTable.locationUpdatedAt} < ${cutoff}`
+            ),
+            isNightCleanupWindow ? or(eq(driversTable.isOnline, true), isNotNull(driversTable.tripStartedAt)) : sql`false`
           )
         );
+
 
       for (const d of stale) {
         await db

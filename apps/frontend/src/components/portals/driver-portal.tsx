@@ -584,9 +584,17 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
 
     // To prevent snapping to the wrong leg of a round-trip (e.g. forward instead of return),
     // we only search the current station and up to 3 upcoming stations.
-    // If we search all stations, a return stop will snap back to the forward stop since they share the same coordinates.
     const startIdx = stationIdx;
-    const endIdx = Math.min(driverStations.length - 1, stationIdx + 3);
+    let endIdx = Math.min(driverStations.length - 1, stationIdx + 3);
+    
+    // Do not allow endIdx to cross a direction boundary
+    const startDirection = driverStations[startIdx]?.direction;
+    for (let i = startIdx + 1; i <= endIdx; i++) {
+      if (driverStations[i]?.direction !== startDirection) {
+        endIdx = i - 1;
+        break;
+      }
+    }
 
     for (let i = startIdx; i <= endIdx; i++) {
       const st = driverStations[i];

@@ -849,7 +849,7 @@ Roll No.: ${roll}`;
                       {displayStation
                         ? tpl(t.busAtStation, {
                             station: displayStation,
-                            dist: distToMyStopKm != null ? distToMyStopKm.toFixed(1) : "?",
+                            dist: distToMyStopKm != null ? `${distToMyStopKm.toFixed(1)} (~${Math.max(1, Math.round((distToMyStopKm / 25) * 60))}m)` : "?",
                             stop: myStop?.stationName ?? "your stop",
                           })
                         : myStop?.stationName
@@ -980,7 +980,12 @@ Roll No.: ${roll}`;
                 <div className="rounded-lg bg-white dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-3 py-2 text-center">
                   <p className="text-[10px] text-muted-foreground font-medium mb-0.5">🚏 Your Stop</p>
                   <p className="text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight">
-                    {distToMyStopKm != null ? `${distToMyStopKm.toFixed(1)} km` : "—"}
+                    {distToMyStopKm != null ? (
+                      <span className="flex flex-col items-center">
+                        <span>{distToMyStopKm.toFixed(1)} km</span>
+                        <span className="text-xs text-amber-600/80">(~{Math.max(1, Math.round((distToMyStopKm / 25) * 60))} min)</span>
+                      </span>
+                    ) : "—"}
                   </p>
                   <p className="text-[9px] text-muted-foreground truncate">{myStop?.stationName ?? "Not set"}</p>
                 </div>
