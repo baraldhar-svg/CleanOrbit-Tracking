@@ -208,7 +208,7 @@ async function fetchStationsWithEta(routeId: number, routeRow?: { departureTime:
   // Generate full stops list (forward + return if enabled)
   let fullRows = [...rows];
   
-  // Tag forward rows with "Right" if returnInSameRoute is enabled to distinguish them
+  // Tag forward rows with "Left" if returnInSameRoute is enabled to distinguish them
   if (returnInSameRoute && rows.length > 1) {
     fullRows = fullRows.map((r, index) => {
       // The last station is usually the terminal (School). We may or may not tag it.
@@ -217,7 +217,7 @@ async function fetchStationsWithEta(routeId: number, routeRow?: { departureTime:
       return {
         ...r,
         direction: "forward",
-        stationName: `${baseName} (Right)`
+        stationName: `${baseName} (Left)`
       };
     });
     
@@ -230,7 +230,7 @@ async function fetchStationsWithEta(routeId: number, routeRow?: { departureTime:
         id: r.id * 10000, // Make ID unique to prevent list key clashes in client
         position: rows.length + index,
         direction: "return",
-        stationName: `${baseName} (Left)`
+        stationName: `${baseName} (Right)`
       };
     });
     fullRows = [...fullRows, ...returnRows];

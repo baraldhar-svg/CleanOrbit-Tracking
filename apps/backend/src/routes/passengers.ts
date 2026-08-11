@@ -24,7 +24,7 @@ const QR_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 async function syncAttendanceToClass(req: any, row: any, busStatus: 'PRESENT' | 'ABSENT' | 'PENDING', classStatus: 'PRESENT' | 'ABSENT' | 'PENDING') {
   if (!row || !row.className || !row.section) return;
   const todayStr = new Date().toISOString().split("T")[0];
-  const [student] = await db.select().from(studentsTable).where(
+  let [student] = await db.select().from(studentsTable).where(
     and(
       eq(studentsTable.tenantId, req.tenantId),
       eq(studentsTable.fullName, row.name),
@@ -32,6 +32,19 @@ async function syncAttendanceToClass(req: any, row: any, busStatus: 'PRESENT' | 
       eq(studentsTable.section, row.section)
     )
   ).limit(1);
+
+  if (!student) {
+    // Auto-create student if they don't exist yet but have class details
+    const [newStudent] = await db.insert(studentsTable).values({
+      tenantId: req.tenantId,
+      fullName: row.name,
+      photoUrl: row.photoUrl,
+      className: row.className,
+      section: row.section,
+      stationName: row.stationName,
+    }).returning();
+    student = newStudent;
+  }
 
   if (student) {
     await db.insert(attendanceRecordsTable).values({
@@ -44,7 +57,6 @@ async function syncAttendanceToClass(req: any, row: any, busStatus: 'PRESENT' | 
       target: [attendanceRecordsTable.studentId, attendanceRecordsTable.date],
       set: {
         busStatus,
-        classStatus,
         markedByDriver: busStatus !== "PENDING"
       }
     });
