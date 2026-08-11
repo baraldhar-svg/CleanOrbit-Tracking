@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { db } from "@workspace/db";
 import { passengersTable, stationsTable, usersTable, tenantsTable, boardingLogsTable, driversTable, driverNotificationsTable, routesTable, announcementsTable, studentsTable, attendanceRecordsTable } from "@workspace/db";
-import { eq, desc, and, or, ne, isNull, isNotNull } from "drizzle-orm";
+import { eq, desc, and, or, ne, isNull, isNotNull, inArray } from "drizzle-orm";
 import { broadcast } from "../lib/sse";
 import { normalizePhone, syncUserAndProfiles } from "../lib/sync";
 import { createNotification } from "../lib/notifications";
@@ -204,7 +204,34 @@ router.get("/", async (req, res) => {
     .from(passengersTable)
     .leftJoin(stationsTable, eq(passengersTable.stationId, stationsTable.id))
     .where(whereClause);
-  const enriched = rows.map((r) => ({ ...r, ...computeSubStatus(r) }));
+    
+  const boardedPassengerIds = rows.filter(r => r.status === "boarded").map(r => r.id);
+  const driverMap = new Map<number, number | null>();
+
+  if (boardedPassengerIds.length > 0) {
+    const logs = await db.select({ passengerId: boardingLogsTable.passengerId, driverId: boardingLogsTable.driverId })
+      .from(boardingLogsTable)
+      .where(
+        and(
+          inArray(boardingLogsTable.passengerId, boardedPassengerIds),
+          eq(boardingLogsTable.action, "boarded"),
+          eq(boardingLogsTable.tenantId, req.tenantId)
+        )
+      )
+      .orderBy(desc(boardingLogsTable.actionAt));
+    
+    for (const log of logs) {
+      if (!driverMap.has(log.passengerId)) {
+        driverMap.set(log.passengerId, log.driverId);
+      }
+    }
+  }
+
+  const enriched = rows.map((r) => ({ 
+    ...r, 
+    ...computeSubStatus(r),
+    boardedDriverId: driverMap.get(r.id) ?? null
+  }));
   return res.json(enriched);
 });
 
@@ -568,6 +595,15 @@ router.post("/:id/board", async (req, res) => {
     });
     
     await syncAttendanceToClass(req, row, "PRESENT", "PRESENT");
+
+    // Create in-app notification — real-time push to admin portal + parent app
+    void createNotification({
+      tenantId: req.tenantId,
+      passengerId: row.id,
+      type: "boarding",
+      title: `${row.name} boarded bus`,
+      body: `${row.name} has boarded ${activeDriver?.vehicleNumber ? `Bus ${activeDriver.vehicleNumber}` : "the bus"} at ${row.stationName ?? "their stop"}.`,
+    });
   }
   broadcast(req.tenantId, "passengers_updated", { tenantId: req.tenantId, passengerId: parsed.data.id, action: "boarded" });
   return res.json({ ...row, ...computeSubStatus(row ?? { routeId: null, routeSubscribedAt: null }) });
@@ -606,7 +642,7 @@ router.post("/:id/absent", async (req, res) => {
       passengerId: row.id,
       type: "absent",
       title: `${row.name} marked absent`,
-      body: `${row.name} was marked absent at ${row.stationName ?? "their stop"} by the driver. Please arrange alternative transport if needed.`,
+      body: `${row.name} was marked absent at ${row.stationName ?? "their stop"} by the driver of Bus ${activeDriver?.vehicleNumber ?? 'Unknown'}. Please arrange alternative transport if needed.`,
     });
     
     await syncAttendanceToClass(req, row, "ABSENT", "ABSENT");

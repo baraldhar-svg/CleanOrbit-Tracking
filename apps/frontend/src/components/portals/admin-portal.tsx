@@ -1722,9 +1722,9 @@ function VehicleTagGrid({
                   const isOnline = !!liveData?.isLive;
                   const speed = liveData?.speedKmh ?? 0;
                   
-                  const routePassengers = passengers?.filter(p => p.routeId === assignedRoute?.id) || [];
-                  const onboardCount = routePassengers.filter(p => p.status === "boarded").length;
-                  const absentCount = routePassengers.filter(p => p.status === "absent").length;
+                  const driverIdForVehicle = liveData?.id ?? assignedRoute?.driverId;
+                  const onboardCount = passengers?.filter(p => p.status === "boarded" && (p.boardedDriverId === driverIdForVehicle || (p.boardedDriverId == null && p.routeId === assignedRoute?.id))).length || 0;
+                  const absentCount = passengers?.filter(p => p.status === "absent" && p.routeId === assignedRoute?.id).length || 0;
 
                   // Find nearest station
                   let passingStationName = "—";
@@ -1825,7 +1825,7 @@ function VehicleNotificationList({ vehiclePlate }: { vehiclePlate: string | null
 
   const notifs = (data || []).filter((n) => 
     vehiclePlate && (
-      (n.message || "").includes(vehiclePlate) || 
+      (n.body || "").includes(vehiclePlate) || 
       (n.title || "").includes(vehiclePlate)
     )
   );
