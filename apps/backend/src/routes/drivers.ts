@@ -155,7 +155,6 @@ router.patch("/:id", async (req, res) => {
   broadcast(req.tenantId, "drivers_updated", { tenantId: req.tenantId, driverId: id });
   if (isActive === true) {
     broadcast(req.tenantId, "driver_activated", { tenantId: req.tenantId, driverId: id, unfreeze: true });
-    broadcast(req.tenantId, "trip_started", { tenantId: req.tenantId, driverId: id, adminActivated: true });
   }
 
   if (updated[0] && updated[0].phone) {

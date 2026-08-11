@@ -719,12 +719,6 @@ router.post("/start", async (req, res) => {
   // Reset in-memory station index so students don't see a stale stop from the previous run
   if (activeDriver?.id != null) driverStationState.delete(activeDriver.id);
 
-  await db.insert(announcementsTable).values({
-    tenantId: req.tenantId,
-    message: `🚌 ${busLabel} journey started at ${timeStr}. The driver is on the way — students will be picked up at their stops shortly.`,
-    severity: "info",
-  });
-
   // ── Resolve route name for the trip log ──────────────────────────────────
   const [activeRoute] = await db
     .select({ id: routesTable.id, name: routesTable.name })
@@ -737,7 +731,26 @@ router.post("/start", async (req, res) => {
     )
     .limit(1);
 
-  // ── Count total passengers for this trip's log row ───────────────────────
+  if (activeRoute?.id) {
+    const targetedPassengers = await db
+      .select({ id: passengersTable.id })
+      .from(passengersTable)
+      .where(and(eq(passengersTable.tenantId, req.tenantId), eq(passengersTable.routeId, activeRoute.id)));
+
+    for (const p of targetedPassengers) {
+      void createNotification({
+        tenantId: req.tenantId,
+        passengerId: p.id,
+        type: "announcement",
+        title: "Journey Started",
+        body: `🚌 ${busLabel} journey started at ${timeStr}. The driver is on the way — students will be picked up at their stops shortly.`,
+        senderRole: "system",
+        senderName: "System",
+      });
+    }
+  }
+
+  // ── Count total passengers for this trip's log row ───────
   const [passengerTotal] = await db
     .select({ count: count() })
     .from(passengersTable)

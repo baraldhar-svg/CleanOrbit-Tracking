@@ -466,6 +466,11 @@ Roll No.: ${roll}`;
 
   const [activeQuickMsg, setActiveQuickMsg] = useState<string | null>(null);
 
+  const assignedDriverIdRef = useRef<number | undefined>();
+  useEffect(() => {
+    assignedDriverIdRef.current = assignedDriverId;
+  }, [assignedDriverId]);
+
   // SSE: board changes, trip lifecycle, and live station advances
   useEffect(() => {
     const es = new EventSource(`${BASE}/api/events`);
@@ -488,7 +493,11 @@ Roll No.: ${roll}`;
     });
 
     // Admin activated driver or driver started journey — UNFREEZE ALL STUDENT ACTIVITIES IMMEDIATELY!
-    es.addEventListener("driver_activated", () => {
+    es.addEventListener("driver_activated", (e) => {
+      try {
+        const d = JSON.parse((e as MessageEvent).data);
+        if (d.driverId && assignedDriverIdRef.current && d.driverId !== assignedDriverIdRef.current) return;
+      } catch {}
       queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       setTripActive(false);
       setTripCompleted(false);
@@ -501,7 +510,11 @@ Roll No.: ${roll}`;
       void syncFromPoll();
     });
 
-    es.addEventListener("trip_started", () => {
+    es.addEventListener("trip_started", (e) => {
+      try {
+        const d = JSON.parse((e as MessageEvent).data);
+        if (d.driverId && assignedDriverIdRef.current && d.driverId !== assignedDriverIdRef.current) return;
+      } catch {}
       queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       setTripActive(true);
       setTripCompleted(false);
@@ -510,7 +523,11 @@ Roll No.: ${roll}`;
       setLiveStation(null); // reset to stop 0 for the new run
     });
 
-    es.addEventListener("trip_unfrozen", () => {
+    es.addEventListener("trip_unfrozen", (e) => {
+      try {
+        const d = JSON.parse((e as MessageEvent).data);
+        if (d.driverId && assignedDriverIdRef.current && d.driverId !== assignedDriverIdRef.current) return;
+      } catch {}
       queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       setTripActive(false);
       setTripCompleted(false);
@@ -520,6 +537,10 @@ Roll No.: ${roll}`;
     });
 
     es.addEventListener("trip_completed", (e) => {
+      try {
+        const d = JSON.parse((e as MessageEvent).data);
+        if (d.driverId && assignedDriverIdRef.current && d.driverId !== assignedDriverIdRef.current) return;
+      } catch {}
       queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetTripTimelineQueryKey() });
       setTripActive(false);
