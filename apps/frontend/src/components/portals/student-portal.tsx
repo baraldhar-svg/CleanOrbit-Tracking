@@ -399,7 +399,17 @@ Roll No.: ${roll}`;
   const isBoarded = me?.status === "boarded";
 
   // Geofencing: alert when driver is within threshold of student's stop
-  const myStop = routeStations.find((rs) => String(rs.stationId) === selectedStationId);
+  const myStop = useMemo(() => {
+    if (routeStations.length === 0 || !selectedStationId) return undefined;
+    const stops = routeStations.filter((rs) => String(rs.stationId) === selectedStationId);
+    if (stops.length === 1) return stops[0];
+    if (stops.length > 1) {
+      const currentIdx = driverLoc.stationIdx ?? liveStation?.idx ?? 0;
+      const futureStops = stops.filter(rs => rs.position >= currentIdx);
+      return futureStops.length > 0 ? futureStops[0] : stops[stops.length - 1];
+    }
+    return undefined;
+  }, [routeStations, selectedStationId, driverLoc.stationIdx, liveStation?.idx]);
   const nearbyAlert = (() => {
     if (isHolidayToday || !driverLoc.isLive || !tripActive || !myStop?.lat || !myStop?.lng || geoAlertDismissed) return false;
     const dLat = (driverLoc.lat - myStop.lat) * 111000;

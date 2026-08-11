@@ -797,6 +797,23 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   const [notifiedIds, setNotifiedIds] = useState<Set<number>>(new Set());
 
   const [absentId, setAbsentId] = useState<number | null>(null);
+  const handleDropOff = async (id: number) => {
+    setUnboardingId(id);
+    setLocalUnboardedIds((prev) => new Set([...prev, id]));
+    setLocalBoardedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const tenantId = getTenantId();
+      const headers: Record<string, string> = {};
+      if (tenantId !== null) headers["x-tenant-id"] = String(tenantId);
+      await fetch(`${BASE}/api/passengers/${id}/drop-off`, { method: "POST", headers });
+      queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+      void refetch();
+    } catch {
+      setLocalUnboardedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    } finally { setUnboardingId(null); }
+  };
+
   const handleAbsent = async (id: number) => {
     setAbsentId(id);
     const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -1672,6 +1689,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 <div key={p.id} className={`flex items-center gap-3 rounded-2xl p-3 border transition-all ${
                   p.status === "boarded" ? "bg-emerald-900/20 border-emerald-700/30"
                     : (p.status as string) === "absent" ? "bg-red-900/20 border-red-700/30"
+                    : (p.status as string) === "dropped_off" ? "bg-blue-900/10 border-blue-700/20"
                     : "bg-card border-border"
                 }`}>
                   <Avatar name={p.name} photoUrl={p.photoUrl} />

@@ -1695,25 +1695,26 @@ function VehicleTagGrid({
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
 
   return (
-    <>
-      <Accordion type="single" collapsible className="w-full" defaultValue="vehicle-assets">
-        <AccordionItem value="vehicle-assets" className="border-none bg-card rounded-2xl shadow-sm">
-          <AccordionTrigger className="px-4 py-3 border border-border rounded-2xl hover:no-underline hover:bg-muted/50 data-[state=open]:rounded-b-none data-[state=open]:border-b-0">
-            <div className="flex flex-1 items-center justify-between text-left mr-4">
-              <div>
-                <h2 className="font-semibold text-primary text-sm">Vehicle Assets</h2>
-                <p className="text-xs text-muted-foreground mt-1 font-normal">
-                  Live vehicle status, telemetry, and boarding metrics.
-                </p>
-              </div>
-              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium shrink-0">
-                {vehicles?.length ?? 0} Vehicles
-              </div>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="pt-0">
-            <div className="border border-t-0 border-border bg-card rounded-b-2xl p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="mb-6">
+      <div className="flex flex-1 items-center justify-between text-left mb-3">
+        <div>
+          <h2 className="font-semibold text-primary text-sm flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            Live Vehicle Status
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1 font-normal">
+            Real-time telemetry, passing stations, and boarding metrics for each bus.
+          </p>
+        </div>
+        <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium shrink-0">
+          {vehicles?.length ?? 0} Vehicles
+        </div>
+      </div>
+      <div className="border border-border bg-card rounded-2xl p-4 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {(vehicles ?? []).map((vehicle) => {
                   const liveData = liveLocations.find(l => l.vehicleNumber === vehicle.plateNumber);
                   const assignedRoute = routes?.find((r) => r.vehicleId === vehicle.id || (liveData && r.driverId === liveData.id));
@@ -1792,12 +1793,9 @@ function VehicleTagGrid({
                   <div className="col-span-full py-8 text-center text-sm text-muted-foreground">
                     No vehicle assets registered yet.
                   </div>
-                )}
               </div>
             </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+          </div>
 
       <Dialog open={!!selectedVehicle} onOpenChange={(o) => !o && setSelectedVehicle(null)}>
         <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
@@ -1809,7 +1807,7 @@ function VehicleTagGrid({
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
 

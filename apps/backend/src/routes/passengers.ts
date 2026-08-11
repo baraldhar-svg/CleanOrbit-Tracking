@@ -624,6 +624,28 @@ router.post("/:id/unboard", async (req, res) => {
   return res.json({ ...row, ...computeSubStatus(row ?? { routeId: null, routeSubscribedAt: null }) });
 });
 
+router.post("/:id/drop-off", async (req, res) => {
+  const parsed = BoardPassengerParams.safeParse({ id: Number(req.params.id) });
+  if (!parsed.success) return res.status(400).json({ error: "Invalid id" });
+  await db
+    .update(passengersTable)
+    .set({ status: "dropped_off", boardedAt: null })
+    .where(eq(passengersTable.id, parsed.data.id));
+  const [row] = await db
+    .select(PASSENGER_SELECT)
+    .from(passengersTable)
+    .leftJoin(stationsTable, eq(passengersTable.stationId, stationsTable.id))
+    .where(eq(passengersTable.id, parsed.data.id));
+    
+  if (row) {
+    // Keep them marked as PRESENT in class attendance if they were dropped off
+    await syncAttendanceToClass(req, row, "PRESENT", "PRESENT");
+  }
+    
+  broadcast(req.tenantId, "passengers_updated", { tenantId: req.tenantId, passengerId: parsed.data.id, action: "dropped_off" });
+  return res.json({ ...row, ...computeSubStatus(row ?? { routeId: null, routeSubscribedAt: null }) });
+});
+
 router.post("/:id/leave", async (req, res) => {
   const parsed = MarkPassengerLeaveParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) return res.status(400).json({ error: "Invalid id" });

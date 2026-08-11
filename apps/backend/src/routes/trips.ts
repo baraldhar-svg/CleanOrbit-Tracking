@@ -312,16 +312,21 @@ router.get("/locations", async (req, res) => {
     .where(eq(driversTable.tenantId, req.tenantId));
 
   return res.json(
-    drivers.map((d) => ({
-      id: d.id,
-      name: d.name,
-      vehicleNumber: d.vehicleNumber,
-      lat: d.currentLat ?? 27.7172,
-      lng: d.currentLng ?? 85.3240,
-      isLive: d.isOnline === true && d.currentLat != null,
-      updatedAt: d.locationUpdatedAt ?? null,
-      speedKmh: d.speedKmh ?? null,
-    }))
+    drivers.map((d) => {
+      const st = driverStationState.get(d.id);
+      return {
+        id: d.id,
+        name: d.name,
+        vehicleNumber: d.vehicleNumber,
+        lat: d.currentLat ?? 27.7172,
+        lng: d.currentLng ?? 85.3240,
+        isLive: d.isOnline === true && d.currentLat != null,
+        updatedAt: d.locationUpdatedAt ?? null,
+        speedKmh: d.speedKmh ?? null,
+        stationIdx: st?.stationIdx ?? null,
+        stationName: st?.stationName ?? null,
+      };
+    })
   );
 });
 
