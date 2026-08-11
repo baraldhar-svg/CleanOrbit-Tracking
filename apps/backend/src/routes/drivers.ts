@@ -144,7 +144,12 @@ router.patch("/:id", async (req, res) => {
       (updates as any).tripCompletedAt = null;
     }
   }
-  if (isOnline !== undefined) updates.isOnline = isOnline;
+  if (isOnline !== undefined) {
+    updates.isOnline = isOnline;
+    if (isOnline) {
+      (updates as any).locationUpdatedAt = new Date().toISOString();
+    }
+  }
   const updated = await db
     .update(driversTable)
     .set(updates)

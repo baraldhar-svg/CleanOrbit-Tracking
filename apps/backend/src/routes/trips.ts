@@ -707,7 +707,7 @@ router.post("/start", async (req, res) => {
 
   // Stamp trip start time and clear any prior delay alert so the watchdog can re-arm
   await db.update(driversTable)
-    .set({ isOnline: true, tripStartedAt: now, delayAlertSentAt: null })
+    .set({ isOnline: true, tripStartedAt: now, delayAlertSentAt: null, locationUpdatedAt: now.toISOString() })
     .where(driverCondition);
 
   // Reset proximity alert flags on all passengers so the watchdog re-arms for this trip
