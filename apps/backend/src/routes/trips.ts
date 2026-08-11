@@ -688,7 +688,7 @@ router.post("/location", async (req, res) => {
 // Body: { driverId? } — scopes the start to a specific driver.
 // Without driverId all isActive drivers in the tenant are marked online (single-driver compat).
 router.post("/start", async (req, res) => {
-  const { driverId } = req.body as { driverId?: number };
+  const { driverId, tripType } = req.body as { driverId?: number; tripType?: "morning" | "evening" };
   const now = new Date();
   const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kathmandu" });
 
@@ -707,7 +707,13 @@ router.post("/start", async (req, res) => {
 
   // Stamp trip start time and clear any prior delay alert so the watchdog can re-arm
   await db.update(driversTable)
-    .set({ isOnline: true, tripStartedAt: now, delayAlertSentAt: null, locationUpdatedAt: now.toISOString() })
+    .set({ 
+      isOnline: true, 
+      tripStartedAt: now, 
+      delayAlertSentAt: null, 
+      locationUpdatedAt: now.toISOString(),
+      tripType: tripType || null
+    })
     .where(driverCondition);
 
   // Reset proximity alert flags on all passengers so the watchdog re-arms for this trip

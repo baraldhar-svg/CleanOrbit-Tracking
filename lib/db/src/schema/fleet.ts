@@ -26,6 +26,7 @@ export const driversTable = pgTable("drivers", {
   activeSessionId: text("active_session_id"),
   unfrozenAt: timestamp("unfrozen_at"),
   email: text("email"),
+  tripType: text("trip_type"), // 'morning' or 'evening'
 });
 
 export const insertDriverSchema = createInsertSchema(driversTable).omit({ id: true });

@@ -316,6 +316,15 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   const [quickMsgOpen, setQuickMsgOpen] = useState(false);
   const [customMsg, setCustomMsg] = useState("");
   const [lastSent, setLastSent] = useState<string | null>(null);
+  const [tripType, setTripType] = useState<"morning" | "evening" | null>(() => {
+    if (!sessionPhone) return null;
+    try {
+      const raw = localStorage.getItem(mkJourneyKey(sessionPhone));
+      if (!raw) return null;
+      return (JSON.parse(raw) as { tripType?: "morning" | "evening" }).tripType ?? null;
+    } catch { return null; }
+  });
+  const [showTripTypeModal, setShowTripTypeModal] = useState(false);
 
   const [delayAlertOpen, setDelayAlertOpen] = useState(false);
   const [selectedDelay, setSelectedDelay] = useState<number>(10);
@@ -740,6 +749,32 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       });
   }, [passengers, myRoute, driverStationIds, localBoardedIds, localUnboardedIds]);
 
+  // Generate full set of stations for this driver's route
+  const processedDriverStations = useMemo(() => {
+    let stations = driverStations || [];
+    if (stations.length === 0) return [];
+    if (myRoute?.returnInSameRoute && stations.length > 1) {
+      let nextPos = stations[stations.length - 1].position + 1;
+      const reversed = [...stations].reverse().slice(1);
+      
+      const forwardStations = stations.map(r => ({ ...r, direction: "forward", stationName: `${r.stopLabel || r.stationName} (Left)` }));
+      const returnStations = reversed.map(r => ({ ...r, direction: "return", position: nextPos++, stationName: `${r.stopLabel || r.stationName} (Right)` }));
+      
+      stations = [...forwardStations, ...returnStations];
+    } else {
+      stations = stations.map(r => ({ ...r, direction: "forward" }));
+    }
+
+    // Filter stations based on tripType
+    if (tripType === "morning") {
+      stations = stations.filter(s => s.direction === "return" || stations.indexOf(s) === stations.length - 1); // Keep return stations and last terminal
+    } else if (tripType === "evening") {
+      stations = stations.filter(s => s.direction === "forward"); // Keep forward stations
+    }
+    
+    return stations;
+  }, [driverStations, myRoute, tripType]);
+
   const boardedCount = riderPassengers.filter((p) => p.status === "boarded").length;
   const totalCount = riderPassengers.length;
   const liveTodayPassengers = riderPassengers.filter((p) => p.liveToday === 1);
@@ -747,10 +782,10 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   const onLeavePassengers = riderPassengers.filter((p) => p.quickMessage === "Staying home today");
 
   // Bus is "near school/last stop" when driver reaches the last station or final destination
-  const nearSchool = driverStations.length > 0 && stationIdx >= driverStations.length - 1;
+  const nearSchool = processedDriverStations.length > 0 && stationIdx >= processedDriverStations.length - 1;
 
   // Distance to destination
-  const lastStation = driverStations.length > 0 ? driverStations[driverStations.length - 1] : undefined;
+  const lastStation = processedDriverStations.length > 0 ? processedDriverStations[processedDriverStations.length - 1] : undefined;
   const distToSchoolKm =
     driverPos != null && lastStation?.lat != null && lastStation?.lng != null
       ? haversineKm(driverPos.lat, driverPos.lng, lastStation.lat, lastStation.lng)
@@ -762,7 +797,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   // 3) OR nearSchool is true
   const canCompleteJourney =
     nearSchool ||
-    (driverStations.length > 0 && stationIdx >= driverStations.length) ||
+    (processedDriverStations.length > 0 && stationIdx >= processedDriverStations.length) ||
     (distToSchoolKm != null ? distToSchoolKm <= 1.5 : false);
 
   const handleBoard = async (id: number) => {
@@ -986,7 +1021,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
     }
   }
 
-  async function handleStartJourney() {
+  async function handleStartJourney(selectedTripType: "morning" | "evening") {
+    setShowTripTypeModal(false);
+    setTripType(selectedTripType);
     setJourneyStarted(true);
     const now = new Date();
     const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
@@ -997,7 +1034,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
     if (sessionPhone) {
       localStorage.setItem(
         mkJourneyKey(sessionPhone),
-        JSON.stringify({ started: true, time: timeStr })
+        JSON.stringify({ started: true, time: timeStr, tripType: selectedTripType })
       );
     }
 
@@ -1010,7 +1047,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       await fetch(`${BASE_GPS}/api/trips/start`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ driverId: myDriver?.id }),
+        body: JSON.stringify({ driverId: myDriver?.id, tripType: selectedTripType }),
       });
       queryClient.invalidateQueries({ queryKey: getListAnnouncementsQueryKey() });
     } catch {
@@ -1122,6 +1159,20 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         </div>
       )}
 
+      {/* Trip Type Selector Modal */}
+      {showTripTypeModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
+            <p className="text-lg font-bold">Select Trip Type</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => handleStartJourney("morning")} className="bg-amber-500 text-white font-bold py-3 rounded-xl">Morning</button>
+              <button onClick={() => handleStartJourney("evening")} className="bg-blue-600 text-white font-bold py-3 rounded-xl">Evening</button>
+            </div>
+            <button onClick={() => setShowTripTypeModal(false)} className="w-full py-2 text-sm text-muted-foreground hover:text-foreground">Cancel</button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="px-4 py-4 border-b border-border">
         <div className="flex items-center justify-between">
@@ -1177,7 +1228,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         <div className={`border-b overflow-hidden ${gpsActive ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/40" : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/40"}`}>
           {gpsActive ? (() => {
             // Build ticker items: current station → next station → each upcoming-station user
-            const nextStation = driverStations[stationIdx + 1] ?? null;
+            const nextStation = processedDriverStations[stationIdx + 1] ?? null;
             const nextPassengers = nextStation
               ? riderPassengers.filter((p) => p.stationId === nextStation.stationId)
               : [];
@@ -1295,7 +1346,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
         <div>
           {!journeyStarted ? (
             <button
-              onClick={isOffline || myDriver?.isActive === false || isHolidayToday || isFreezeActive ? undefined : handleStartJourney}
+              onClick={isOffline || myDriver?.isActive === false || isHolidayToday || isFreezeActive ? undefined : () => setShowTripTypeModal(true)}
               disabled={isOffline || myDriver?.isActive === false || isHolidayToday || isFreezeActive}
               className={`w-full rounded-2xl py-4 text-center font-bold text-primary-foreground shadow-lg transition-all active:scale-[0.98] ${
                 isOffline || myDriver?.isActive === false || isHolidayToday || isFreezeActive
@@ -1322,6 +1373,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 setCompletedTime(null);
                 setStationIdx(0);
                 setDriverPos(null);
+                setTripType(null);
               }}
               disabled={isOffline}
               className={`w-full rounded-2xl py-4 text-center font-bold text-primary-foreground shadow-lg transition-all active:scale-[0.98] ${
