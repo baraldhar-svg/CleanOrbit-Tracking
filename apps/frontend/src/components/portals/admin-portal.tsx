@@ -1682,10 +1682,12 @@ function SmartStationManager({
 function VehicleTagGrid({
   vehicles,
   routes,
+  stations,
   onTagUpdated,
 }: {
   vehicles: any[] | undefined;
   routes: any[] | undefined;
+  stations: any[] | undefined;
   onTagUpdated: () => void;
 }) {
   const liveLocations = useLiveLocations();
@@ -1713,27 +1715,31 @@ function VehicleTagGrid({
             <div className="border border-t-0 border-border bg-card rounded-b-2xl p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {(vehicles ?? []).map((vehicle) => {
-                  const assignedRoute = routes?.find((r) => r.vehicleId === vehicle.id);
                   const liveData = liveLocations.find(l => l.vehicleNumber === vehicle.plateNumber);
+                  const assignedRoute = routes?.find((r) => r.vehicleId === vehicle.id || (liveData && r.driverId === liveData.id));
                   
                   const isOnline = !!liveData?.isLive;
                   const speed = liveData?.speedKmh ?? 0;
-                  const isStopped = speed < 2;
-                  const isSlow = speed >= 2 && speed < 15;
                   
                   const routePassengers = passengers?.filter(p => p.routeId === assignedRoute?.id) || [];
                   const onboardCount = routePassengers.filter(p => p.status === "boarded").length;
                   const absentCount = routePassengers.filter(p => p.status === "absent").length;
 
-                  let speedColor = "bg-red-500";
-                  if (isOnline) {
-                    if (isStopped) speedColor = "bg-red-500";
-                    else if (isSlow) speedColor = "bg-yellow-500";
-                    else speedColor = "bg-green-500";
+                  // Find nearest station
+                  let passingStationName = "—";
+                  if (isOnline && stations && stations.length > 0 && liveData?.lat && liveData?.lng) {
+                    let best: { name: string; dist: number } | null = null;
+                    const R = 6371; // km
+                    for (const st of stations) {
+                      if (!st.lat || !st.lng) continue;
+                      const dLat = (st.lat - liveData.lat) * Math.PI / 180;
+                      const dLon = (st.lng - liveData.lng) * Math.PI / 180;
+                      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(liveData.lat * Math.PI / 180) * Math.cos(st.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+                      const d = R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+                      if (!best || d < best.dist) best = { name: st.name, dist: d };
+                    }
+                    if (best && best.dist < 5) passingStationName = best.name;
                   }
-
-                  // Super basic ETA placeholder (assume 25km/h avg speed)
-                  // Let's hide ETA for now since we don't have distToSchool here easily
                   
                   return (
                     <div 
@@ -1753,10 +1759,7 @@ function VehicleTagGrid({
                         </div>
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50 border border-border">
                           {isOnline ? (
-                            <>
-                              <div className={`w-2 h-2 rounded-full ${speedColor} animate-pulse`} />
-                              <span className="text-[10px] font-bold text-foreground">{Math.round(speed)} <span className="font-normal text-muted-foreground">km/h</span></span>
-                            </>
+                            <SpeedIndicator speedKmh={speed} showLabel />
                           ) : (
                             <span className="text-[10px] font-medium text-slate-500">Offline / Parked</span>
                           )}
@@ -1766,8 +1769,8 @@ function VehicleTagGrid({
                       <div className="space-y-2 mt-3">
                         <div className="bg-muted/30 rounded-lg p-2 border border-border/50 text-xs flex items-center justify-between">
                            <span className="text-muted-foreground flex items-center gap-1"><MapPin size={12} className="text-amber-500" /> Passing Station</span>
-                           <span className="font-semibold text-foreground truncate max-w-[130px]" title={liveData?.stationName || "Unknown"}>
-                             {isOnline ? (liveData?.stationName || "In Transit") : "—"}
+                           <span className="font-semibold text-foreground truncate max-w-[130px]" title={passingStationName}>
+                             {isOnline ? passingStationName : "—"}
                            </span>
                         </div>
                         
@@ -5793,6 +5796,7 @@ export default function AdminPortal({
           <VehicleTagGrid
             vehicles={vehicles as any[] | undefined}
             routes={adminRoutes as any[] | undefined}
+            stations={stations as any[] | undefined}
             onTagUpdated={refetchAll}
           />
           <FleetCostsSummaryCard />
