@@ -229,7 +229,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
   const myRoute = useMemo(() => {
     if (!myDriver || !routes || routes.length === 0) return null;
     // 1. Direct match: route has driverId === myDriver.id
-    const directMatch = (routes as Array<{ id: number; name?: string; driverId?: number | null }>).find(
+    const directMatch = (routes as Array<any>).find(
       (r) => r.driverId === myDriver.id
     );
     if (directMatch) return directMatch;
@@ -237,7 +237,7 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
     // 2. Name-based match: route name matches driver name or vehicle
     const dName = (myDriver.name || "").toLowerCase();
     const vNum = (myDriver.vehicleNumber || "").toLowerCase();
-    const nameMatch = (routes as Array<{ id: number; name?: string; driverId?: number | null }>).find((r) => {
+    const nameMatch = (routes as Array<any>).find((r) => {
       const rName = (r.name || "").toLowerCase();
       return (dName && (rName.includes(dName) || dName.includes(rName))) ||
              (vNum && rName.includes(vNum));

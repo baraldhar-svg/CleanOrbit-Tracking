@@ -466,7 +466,7 @@ Roll No.: ${roll}`;
 
   const [activeQuickMsg, setActiveQuickMsg] = useState<string | null>(null);
 
-  const assignedDriverIdRef = useRef<number | undefined>();
+  const assignedDriverIdRef = useRef<number | undefined>(undefined);
   useEffect(() => {
     assignedDriverIdRef.current = assignedDriverId;
   }, [assignedDriverId]);

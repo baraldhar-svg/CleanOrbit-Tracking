@@ -264,6 +264,8 @@ type Passenger = {
   stationName?: string | null;
   quickMessage?: string | null;
   photoUrl?: string | null;
+  routeId?: number | null;
+  boardedDriverId?: number | null;
 };
 type CalendarEvent = {
   id: number;
