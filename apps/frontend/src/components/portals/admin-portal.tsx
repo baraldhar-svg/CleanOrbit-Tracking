@@ -1725,8 +1725,8 @@ function VehicleTagGrid({
                   const speed = liveData?.speedKmh ?? 0;
                   
                   const driverIdForVehicle = liveData?.id ?? assignedRoute?.driverId;
-                  const onboardCount = passengers?.filter(p => p.status === "boarded" && (p.boardedDriverId === driverIdForVehicle || (p.boardedDriverId == null && p.routeId === assignedRoute?.id))).length || 0;
-                  const absentCount = passengers?.filter(p => p.status === "absent" && p.routeId === assignedRoute?.id).length || 0;
+                  const onboardCount = passengers?.filter((p: any) => p.status === "boarded" && (p.boardedDriverId === driverIdForVehicle || (p.boardedDriverId == null && p.routeId === assignedRoute?.id))).length || 0;
+                  const absentCount = passengers?.filter((p: any) => p.status === "absent" && p.routeId === assignedRoute?.id).length || 0;
 
                   // Find nearest station
                   let passingStationName = "—";
