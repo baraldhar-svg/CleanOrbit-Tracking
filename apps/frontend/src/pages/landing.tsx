@@ -348,48 +348,12 @@ export default function Landing() {
         <p className="mt-2 text-xs text-slate-600">Reach thousands of parents &amp; schools across Nepal</p>
       </div>
 
-      {/* ── Floating Sticky Contact Buttons ──────────────────── */}
+      {/* ── Floating Sticky Contact Buttons (Temporarily Disabled) ──────────────────── 
       <div className="fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-4">
-        {/* WhatsApp Button */}
-        <a
-          href="https://wa.me/9779747468885"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-b from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white p-2.5 shadow-2xl shadow-emerald-950/80 border border-emerald-300/40 transition-all hover:scale-110 active:scale-95 group backdrop-blur-md"
-          title="Chat on WhatsApp (Get More Info): 9747468885"
-        >
-          <div className="relative flex items-center justify-center">
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-300"></span>
-            </span>
-            <svg viewBox="0 0 24 24" className="h-7 w-7 fill-white drop-shadow" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.858L.057 23.882a.5.5 0 0 0 .61.61l6.098-1.464A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.9a9.886 9.886 0 0 1-5.031-1.37l-.361-.214-3.741.899.934-3.672-.235-.376A9.865 9.865 0 0 1 2.1 12C2.1 6.534 6.534 2.1 12 2.1c5.466 0 9.9 4.434 9.9 9.9 0 5.466-4.434 9.9-9.9 9.9z"/>
-            </svg>
-          </div>
-          <span className="text-[10px] font-bold tracking-tight text-white drop-shadow whitespace-nowrap">Get more</span>
-        </a>
-
-        {/* AI Call Me Button */}
-        <button
-          onClick={() => {
-            if (window.confirm("Call charge per Minute 1.20 pisa NTC want to call us?")) {
-              window.location.href = "tel:142412602702428";
-            }
-          }}
-          className="flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-b from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white p-2.5 shadow-2xl shadow-blue-950/80 border border-blue-300/40 transition-all hover:scale-110 active:scale-95 group backdrop-blur-md cursor-pointer"
-          title="Call Us"
-        >
-          <div className="relative flex items-center justify-center">
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-200 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-300"></span>
-            </span>
-            <Bot className="h-7 w-7 drop-shadow" strokeWidth={1.5} />
-          </div>
-          <span className="text-[10px] font-bold tracking-tight text-white drop-shadow whitespace-nowrap">Call me</span>
-        </button>
+        ... (WhatsApp Button) ...
+        ... (AI Call Me Button) ...
       </div>
+      */}
 
       <AppFooter variant="dark" />
 
