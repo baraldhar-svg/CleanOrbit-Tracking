@@ -75,7 +75,7 @@ export default function Home() {
           {role === "superadmin" && <SuperadminPortal />}
         </main>
 
-        {subscription?.paywallActive && <PaywallModal subscription={subscription} />}
+        {subscription?.paywallActive && role === "student" && <PaywallModal subscription={subscription} />}
       </div>
     </div>
   );

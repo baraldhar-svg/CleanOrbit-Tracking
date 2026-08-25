@@ -879,7 +879,7 @@ export default function Dashboard() {
 
         <AppFooter />
 
-        {subscription?.paywallActive && <PaywallModal subscription={subscription} />}
+        {subscription?.paywallActive && (userRole === "student" || userRole === "teacher") && <PaywallModal subscription={subscription} />}
 
         {profileOpen && user && (
           <ProfilePanel
