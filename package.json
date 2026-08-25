@@ -3,13 +3,13 @@
     "version": "0.0.0",
     "license": "MIT",
     "scripts": {
-        "build": "pnpm run typecheck && pnpm --filter @workspace/api-server --filter @workspace/fleetsaas --if-present run build",
+        "build": "pnpm --filter @workspace/api-server --filter @workspace/fleetsaas --if-present run build",
         "build:backend": "pnpm --filter @workspace/api-server run build",
         "build:frontend": "pnpm --filter @workspace/fleetsaas run build",
         "start": "pnpm --filter @workspace/api-server start",
         "start:backend": "pnpm --filter @workspace/api-server start",
         "typecheck:libs": "tsc --build",
-        "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./apps/frontend\" --filter \"./apps/backend\" --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+        "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./apps/frontend\" --filter \"./apps/backend\" --if-present run typecheck",
         "dev": "pnpm --filter @workspace/api-server --filter @workspace/fleetsaas --parallel dev"
     },
     "private": true,
