@@ -2572,6 +2572,7 @@ const STUDENT_FACULTY_CLASSES = new Set(["11", "12", "Others"]);
 function ImportStudentsExcelButton({ onSuccess }: { onSuccess: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const { toast } = useToast();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2660,13 +2661,70 @@ function ImportStudentsExcelButton({ onSuccess }: { onSuccess: () => void }) {
         ref={fileInputRef}
         onChange={handleFileChange}
       />
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        disabled={importing}
-        className="flex items-center gap-1 bg-green-600 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-green-500 disabled:opacity-50"
-      >
-        <Upload size={12} /> {importing ? "Importing..." : "Import Excel"}
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={importing}
+          className="flex items-center gap-1 bg-green-600 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-green-500 disabled:opacity-50"
+        >
+          <Upload size={12} /> {importing ? "Importing..." : "Import Excel"}
+        </button>
+        <button
+          onClick={() => setInfoOpen(true)}
+          className="flex items-center justify-center w-7 h-7 rounded-full text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+          title="View Excel Format Instructions"
+        >
+          <span className="font-bold text-sm">?</span>
+        </button>
+      </div>
+
+      <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Excel Import Format</DialogTitle>
+            <DialogDescription>
+              Please ensure your Excel (.xlsx) or CSV file has the following column headers in the first row.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="overflow-x-auto border border-border rounded-xl">
+              <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
+                <thead>
+                  <tr className="bg-muted">
+                    <th className="p-3 border-b font-semibold">Name *</th>
+                    <th className="p-3 border-b font-semibold">Mobile Number</th>
+                    <th className="p-3 border-b font-semibold">Class</th>
+                    <th className="p-3 border-b font-semibold">Section</th>
+                    <th className="p-3 border-b font-semibold">Roll Number</th>
+                    <th className="p-3 border-b font-semibold">Parent Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="p-3 border-b font-medium">Ram Sharma</td>
+                    <td className="p-3 border-b text-muted-foreground">9840123456</td>
+                    <td className="p-3 border-b text-muted-foreground">10</td>
+                    <td className="p-3 border-b text-muted-foreground">A</td>
+                    <td className="p-3 border-b text-muted-foreground">15</td>
+                    <td className="p-3 border-b text-muted-foreground">Hari Sharma</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-medium">Sita Thapa</td>
+                    <td className="p-3 text-muted-foreground">9800000000</td>
+                    <td className="p-3 text-muted-foreground">LKG</td>
+                    <td className="p-3 text-muted-foreground">Rose</td>
+                    <td className="p-3 text-muted-foreground">4</td>
+                    <td className="p-3 text-muted-foreground">Shyam Thapa</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-[11px] text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border/50">
+              * The <strong>Name</strong> column is mandatory. Other columns are optional but recommended. The system supports various column names like "Student Name", "Phone", "Roll no.", etc.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
