@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { driversTable, usersTable, tenantsTable, routesTable, passengersTable } from "@workspace/db";
+import { driversTable, usersTable, tenantsTable, routesTable, passengersTable, tripLogsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { CreateDriverBody, PatchDriverParams, PatchDriverBody } from "@workspace/api-zod";
 import { broadcast } from "../lib/sse";
@@ -187,6 +187,12 @@ router.delete("/:id", async (req, res) => {
     .update(routesTable)
     .set({ driverId: null })
     .where(and(eq(routesTable.driverId, id), eq(routesTable.tenantId, req.tenantId)));
+
+  // 1.5 Unassign from any trip logs
+  await db
+    .update(tripLogsTable)
+    .set({ driverId: null })
+    .where(and(eq(tripLogsTable.driverId, id), eq(tripLogsTable.tenantId, req.tenantId)));
 
   // 2. Delete the associated user login record if it exists
   if (driver.phone) {
