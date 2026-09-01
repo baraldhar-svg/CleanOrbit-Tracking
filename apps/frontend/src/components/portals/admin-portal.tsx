@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { SpeedIndicator } from "@/components/ui/SpeedIndicator";
 import { PhotoPicker } from "@/components/photo-picker";
@@ -1695,12 +1696,16 @@ function VehicleTagGrid({
   const liveLocations = useLiveLocations();
   const { data: passengers } = useListPassengers();
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(true);
 
   return (
     <div className="mb-6">
-      <div className="flex flex-1 items-center justify-between text-left mb-3">
+      <div 
+        className="flex flex-1 items-center justify-between text-left mb-3 cursor-pointer select-none group"
+        onClick={() => setIsOpen(!isOpen)}
+      >
         <div>
-          <h2 className="font-semibold text-primary text-sm flex items-center gap-2">
+          <h2 className="font-semibold text-primary text-sm flex items-center gap-2 group-hover:text-amber-500 transition-colors">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
@@ -1711,11 +1716,18 @@ function VehicleTagGrid({
             Real-time telemetry, passing stations, and boarding metrics for each bus.
           </p>
         </div>
-        <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium shrink-0">
-          {vehicles?.length ?? 0} Vehicles
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium shrink-0">
+            {vehicles?.length ?? 0} Vehicles
+          </div>
+          <button className="text-muted-foreground group-hover:text-amber-500 transition-colors">
+            {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </button>
         </div>
       </div>
-      <div className="border border-border bg-card rounded-2xl p-4 shadow-sm">
+      
+      {isOpen && (
+        <div className="border border-border bg-card rounded-2xl p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {(vehicles ?? []).map((vehicle) => {
                   const liveData = liveLocations.find(l => l.vehicleNumber === vehicle.plateNumber);
@@ -1798,6 +1810,7 @@ function VehicleTagGrid({
                 )}
               </div>
             </div>
+      )}
       <Dialog open={!!selectedVehicle} onOpenChange={(o) => !o && setSelectedVehicle(null)}>
         <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
           <DialogHeader>
@@ -2463,6 +2476,108 @@ const STUDENT_FACULTY_OPTIONS = [
 ];
 
 const STUDENT_FACULTY_CLASSES = new Set(["11", "12", "Others"]);
+
+function ImportStudentsExcelButton({ onSuccess }: { onSuccess: () => void }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet) as any[];
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const row of rows) {
+        const name = String(row["Name"] || row["Student Name"] || row["name"] || "").trim();
+        if (!name || name === "undefined") continue; // Skip empty rows
+
+        const phone = String(row["Mobile Number"] || row["Mobile"] || row["Phone"] || row["mobile"] || "").trim();
+        const className = String(row["Class"] || row["class"] || "").trim();
+        const section = String(row["Section"] || row["section"] || "").trim();
+        const rollNumber = String(row["Roll Number"] || row["Roll no."] || row["Roll"] || row["rollNumber"] || "").trim();
+        const parentName = String(row["Parent Name"] || row["parentName"] || "").trim();
+
+        try {
+          const payload: any = {
+            name: name,
+            role: "student",
+          };
+          if (phone && phone !== "undefined") payload.phone = phone;
+          if (className && className !== "undefined") payload.className = className;
+          if (section && section !== "undefined") payload.section = section;
+          if (rollNumber && rollNumber !== "undefined") payload.rollNumber = rollNumber;
+          if (parentName && parentName !== "undefined") payload.parentName = parentName;
+
+          const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+          const token = localStorage.getItem("orbittrack_token");
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (token) headers["Authorization"] = `Bearer ${token}`;
+          const tenantId = getTenantId();
+          if (tenantId !== null) headers["x-tenant-id"] = String(tenantId);
+
+          const res = await fetch(`${BASE}/api/passengers`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(payload)
+          });
+          
+          if (res.ok) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        } catch (error) {
+          console.error("Failed to import row:", row, error);
+          errorCount++;
+        }
+      }
+
+      toast({
+        title: "Import Complete",
+        description: `Successfully imported ${successCount} students. ${errorCount > 0 ? `Failed to import ${errorCount} students.` : ""}`,
+        variant: errorCount > 0 ? "destructive" : "default",
+      });
+      if (successCount > 0) onSuccess();
+    } catch (err) {
+      toast({
+        title: "Import Failed",
+        description: "Failed to read the Excel file. Please ensure it is a valid .xlsx or .csv file.",
+        variant: "destructive",
+      });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <>
+      <input
+        type="file"
+        accept=".xlsx, .xls, .csv"
+        className="hidden"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+      />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        disabled={importing}
+        className="flex items-center gap-1 bg-green-600 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-green-500 disabled:opacity-50"
+      >
+        <Upload size={12} /> {importing ? "Importing..." : "Import Excel"}
+      </button>
+    </>
+  );
+}
 
 // ── ➕ Add Student / Staff Dialog (mirrors public registration form fields) ──
 function AddPersonDialog({
@@ -3547,6 +3662,7 @@ function EditPersonDialog({
 
 // ── 🎓 Students Panel: class → section → students, search by name/mobile/class ──
 function StudentsPanel() {
+  const queryClient = useQueryClient();
   const { data: passengers } = useListPassengers();
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("");
@@ -3622,12 +3738,15 @@ function StudentsPanel() {
         <span className="flex items-center gap-2">
           <User size={15} className="text-amber-500" /> Students Directory
         </span>
-        <button
-          onClick={() => setAddOpen(true)}
-          className="flex items-center gap-1 bg-amber-500 text-slate-900 text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-amber-400"
-        >
-          <Plus size={12} /> Add New
-        </button>
+        <div className="flex items-center gap-2">
+          <ImportStudentsExcelButton onSuccess={() => queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() })} />
+          <button
+            onClick={() => setAddOpen(true)}
+            className="flex items-center gap-1 bg-amber-500 text-slate-900 text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-amber-400"
+          >
+            <Plus size={12} /> Add New
+          </button>
+        </div>
       </div>
       <AddPersonDialog open={addOpen} onOpenChange={setAddOpen} role="student" />
       <EditPersonDialog
