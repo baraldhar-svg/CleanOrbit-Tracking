@@ -5991,7 +5991,7 @@ export default function AdminPortal({
         <NotificationBell userRole="admin" />
       </header>
 
-      <nav className="rounded-xl border border-border bg-card shadow-sm flex p-1 gap-1.5 text-xs font-semibold bg-muted/20 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+      <nav className="rounded-xl border border-border bg-card shadow-sm flex flex-wrap p-1 gap-1.5 text-xs font-semibold bg-muted/20">
         {(
           [
             { key: "overview",       label: "Dashboard", icon: null },
