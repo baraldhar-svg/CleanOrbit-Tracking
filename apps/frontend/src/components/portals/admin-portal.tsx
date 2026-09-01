@@ -3255,6 +3255,7 @@ function EditDriverDialog({
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [routeId, setRouteId] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -3272,6 +3273,38 @@ function EditDriverDialog({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [driver, open]);
+
+  async function handleResetLogin() {
+    if (!driver || !phone) return;
+    if (!window.confirm("Reset login credentials for this driver? They will be logged out everywhere and can sign in fresh with their mobile number.")) return;
+    setResetting(true);
+    setErr("");
+    try {
+      await apiPost("/users/reset-login", { phone: driver.phone, role: "driver" });
+      alert("Login reset successful.");
+    } catch (e: any) {
+      setErr(e.message || "Failed to reset login");
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!driver) return;
+    if (!window.confirm("Are you sure you want to delete this driver?")) return;
+    setSaving(true);
+    setErr("");
+    try {
+      await apiDelete(`/drivers/${driver.id}`);
+      queryClient.invalidateQueries({ queryKey: getListDriversQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getListRoutesQueryKey() });
+      onOpenChange(false);
+    } catch (e: any) {
+      setErr(e.message || "Failed to delete driver");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleSave() {
     if (!driver) return;
@@ -3301,8 +3334,8 @@ function EditDriverDialog({
       queryClient.invalidateQueries({ queryKey: getListDriversQueryKey() });
       queryClient.invalidateQueries({ queryKey: getListRoutesQueryKey() });
       onOpenChange(false);
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Failed to update driver");
+    } catch (e: any) {
+      setErr(e.message || "Failed to update driver");
     } finally {
       setSaving(false);
     }
@@ -3385,10 +3418,20 @@ function EditDriverDialog({
             </select>
           </div>
           {err && <p className="text-red-500 font-semibold">{err}</p>}
+          <div className="flex gap-2 mt-2">
+            <button onClick={handleResetLogin} disabled={resetting || saving || !driver?.phone}
+              className="flex-1 border border-amber-500/50 text-amber-600 font-bold py-2 rounded-lg disabled:opacity-50 hover:bg-amber-500/10 transition-colors text-xs sm:text-sm">
+              {resetting ? "Resetting..." : "Reset Login"}
+            </button>
+            <button onClick={handleDelete} disabled={saving || resetting}
+              className="flex-1 border border-red-500 text-red-500 font-bold py-2 rounded-lg disabled:opacity-50 hover:bg-red-500/10 transition-colors flex items-center justify-center gap-1 text-xs sm:text-sm">
+              <Trash2 size={14} /> Delete
+            </button>
+          </div>
           <button
             onClick={handleSave}
-            disabled={saving}
-            className="w-full bg-amber-500 text-slate-900 font-bold py-2 rounded-lg disabled:opacity-50"
+            disabled={saving || resetting}
+            className="w-full bg-amber-500 text-slate-900 font-bold py-2 rounded-lg disabled:opacity-50 mt-1"
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>
