@@ -3482,6 +3482,20 @@ function EditPersonDialog({
     }
   }
 
+  async function handleDelete() {
+    if (!person?.id) return;
+    if (!confirm("Are you sure you want to permanently delete this user? This action cannot be undone.")) return;
+    setSaving(true);
+    try {
+      await apiDelete(`/passengers/${person.id}`);
+      queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+      onOpenChange(false);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed to delete");
+      setSaving(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm max-h-[90dvh] overflow-y-auto">
@@ -3646,14 +3660,18 @@ function EditPersonDialog({
           {err && <p className="text-red-500 font-semibold">{err}</p>}
           <div className="flex gap-2">
             <button onClick={handleResetLogin} disabled={resetting || saving || !person?.phone}
-              className="w-full border border-red-500 text-red-500 font-bold py-2 rounded-lg disabled:opacity-50 hover:bg-red-500/10 transition-colors">
+              className="flex-1 border border-amber-500/50 text-amber-600 font-bold py-2 rounded-lg disabled:opacity-50 hover:bg-amber-500/10 transition-colors text-xs sm:text-sm">
               {resetting ? "Resetting..." : "Reset Login"}
             </button>
-            <button onClick={handleSave} disabled={saving || resetting}
-              className="w-full bg-amber-500 text-slate-900 font-bold py-2 rounded-lg disabled:opacity-50 hover:bg-amber-400 transition-colors">
-              {saving ? "Saving..." : "Save Changes"}
+            <button onClick={handleDelete} disabled={saving || resetting}
+              className="flex-1 border border-red-500 text-red-500 font-bold py-2 rounded-lg disabled:opacity-50 hover:bg-red-500/10 transition-colors flex items-center justify-center gap-1 text-xs sm:text-sm">
+              <Trash2 size={14} /> Delete
             </button>
           </div>
+          <button onClick={handleSave} disabled={saving || resetting}
+            className="w-full bg-amber-500 text-slate-900 font-bold py-2 rounded-lg disabled:opacity-50 hover:bg-amber-400 transition-colors mt-2">
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
         </div>
       </DialogContent>
     </Dialog>
