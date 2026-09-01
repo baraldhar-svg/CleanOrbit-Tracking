@@ -279,7 +279,7 @@ type CalendarEvent = {
 };
 
 // ── 🛠️ १. VEHICLE SERVICE & MANAGEMENT PANEL COMPONENT (ब्याकटिक्स एरर फिक्स गरिएको) ──
-function VehicleServiceTabs({ vehicles }: { vehicles: any[] | undefined }) {
+function VehicleServiceTabs({ vehicles, routes, stations }: { vehicles: any[] | undefined, routes?: any[], stations?: any[] }) {
   const queryClient = useQueryClient();
   const [subTab, setSubTab] = useState<"fuel" | "service" | "docs" | "buses">("fuel");
   
@@ -879,7 +879,72 @@ function VehicleServiceTabs({ vehicles }: { vehicles: any[] | undefined }) {
                   </div>
                 );
               })}
-            </div>
+          </div>
+        )}
+        {!loading && subTab === "buses" && (
+          <div className="space-y-4">
+            {editingVehicleId && (
+              <div className="border border-amber-500 bg-amber-500/10 p-4 rounded-xl space-y-3 relative">
+                <h3 className="font-bold text-amber-700 text-xs flex items-center gap-2">
+                  <Pencil size={14} /> Edit Vehicle
+                </h3>
+                <button 
+                  onClick={() => setEditingVehicleId(null)}
+                  className="absolute top-2 right-2 text-muted-foreground hover:text-foreground p-1"
+                >
+                  <X size={14} />
+                </button>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <input
+                    value={editForm.plateNumber}
+                    onChange={(e) => setEditForm((f) => ({ ...f, plateNumber: e.target.value }))}
+                    placeholder="Plate Number"
+                    className="border rounded-lg p-2 bg-background"
+                  />
+                  <input
+                    value={editForm.model}
+                    onChange={(e) => setEditForm((f) => ({ ...f, model: e.target.value }))}
+                    placeholder="Model"
+                    className="border rounded-lg p-2 bg-background"
+                  />
+                  <input
+                    type="number"
+                    value={editForm.capacity}
+                    onChange={(e) => setEditForm((f) => ({ ...f, capacity: e.target.value }))}
+                    placeholder="Capacity"
+                    className="border rounded-lg p-2 bg-background"
+                  />
+                </div>
+                {fleetError && <p className="text-red-500 text-xs font-bold">{fleetError}</p>}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEditFleetSave(editingVehicleId)}
+                    disabled={fleetSaving}
+                    className="flex-1 bg-amber-500 text-slate-900 font-bold py-2 rounded-xl text-xs disabled:opacity-50"
+                  >
+                    {fleetSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            <VehicleTagGrid
+              vehicles={vehicles}
+              routes={routes}
+              stations={stations}
+              onTagUpdated={() => queryClient.invalidateQueries({ queryKey: getListVehiclesQueryKey() })}
+              allowEdit={true}
+              onEdit={(v) => {
+                setEditingVehicleId(v.id);
+                setEditForm({
+                  plateNumber: v.plateNumber || "",
+                  model: v.model || "",
+                  capacity: String(v.capacity || ""),
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onDelete={(id) => handleDeleteFleet(id)}
+            />
           </div>
         )}
       </div>
@@ -1687,11 +1752,17 @@ function VehicleTagGrid({
   routes,
   stations,
   onTagUpdated,
+  allowEdit,
+  onEdit,
+  onDelete,
 }: {
   vehicles: any[] | undefined;
   routes: any[] | undefined;
   stations: any[] | undefined;
   onTagUpdated: () => void;
+  allowEdit?: boolean;
+  onEdit?: (vehicle: any) => void;
+  onDelete?: (id: number) => void;
 }) {
   const liveLocations = useLiveLocations();
   const { data: passengers } = useListPassengers();
@@ -1772,11 +1843,31 @@ function VehicleTagGrid({
                             <p className="text-[10px] text-muted-foreground">{liveData?.name || "No Driver Active"}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50 border border-border">
-                          {isOnline ? (
-                            <SpeedIndicator speed={speed} />
-                          ) : (
-                            <span className="text-[10px] font-medium text-slate-500">Offline / Parked</span>
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50 border border-border">
+                            {isOnline ? (
+                              <SpeedIndicator speed={speed} />
+                            ) : (
+                              <span className="text-[10px] font-medium text-slate-500">Offline / Parked</span>
+                            )}
+                          </div>
+                          {allowEdit && (
+                            <div className="flex gap-1">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onEdit?.(vehicle); }}
+                                className="p-1.5 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded transition-colors"
+                                title="Edit Vehicle"
+                              >
+                                <Pencil size={12} />
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onDelete?.(vehicle.id); }}
+                                className="p-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors"
+                                title="Delete Vehicle"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -5986,7 +6077,11 @@ export default function AdminPortal({
 
       {mainTab === "vehicleService" && (
         <div className="space-y-6">
-          <VehicleServiceTabs vehicles={vehicles as any[] | undefined} />
+          <VehicleServiceTabs 
+            vehicles={vehicles as any[] | undefined} 
+            routes={adminRoutes as any[] | undefined}
+            stations={stations as any[] | undefined}
+          />
         </div>
       )}
 
