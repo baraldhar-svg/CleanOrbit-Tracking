@@ -206,7 +206,7 @@ router.delete("/:id", async (req, res) => {
     .delete(driversTable)
     .where(and(eq(driversTable.id, id), eq(driversTable.tenantId, req.tenantId)));
 
-  res.status(204).end();
+  return res.status(204).end();
 });
 
 export default router;
