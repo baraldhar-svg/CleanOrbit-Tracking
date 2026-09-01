@@ -3838,6 +3838,35 @@ function StudentsPanel() {
   const [facultyFilter, setFacultyFilter] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<any | null>(null);
+  const { toast } = useToast();
+
+  const handleDeleteClass = async (cls: string) => {
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const token = localStorage.getItem("orbittrack_token");
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
+      const res = await fetch(`${BASE}/api/passengers/bulk/class?className=${encodeURIComponent(cls)}`, {
+        method: "DELETE",
+        headers
+      });
+      
+      if (!res.ok) throw new Error("Failed to delete class");
+      
+      toast({
+        title: "Class Deleted",
+        description: `Successfully deleted all students in ${cls}.`,
+      });
+      queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to delete class.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const students = useMemo(
     () => (passengers ?? []).filter((p: any) => p.role === "student"),
@@ -3972,7 +4001,19 @@ function StudentsPanel() {
           <div className="space-y-3">
             {Array.from(grouped.entries()).map(([cls, secMap]) => (
               <div key={cls} className="space-y-2">
-                <p className="text-xs font-bold text-amber-600">{cls}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-amber-600">{cls}</p>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete ALL students in class ${cls}? This action cannot be undone.`)) {
+                        handleDeleteClass(cls);
+                      }
+                    }}
+                    className="flex items-center gap-1 text-[10px] text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors"
+                  >
+                    <Trash2 size={12} /> Delete Class
+                  </button>
+                </div>
                 {Array.from(secMap.entries()).map(([sec, list]) => (
                   <div key={sec} className="border rounded-xl overflow-hidden bg-muted/10">
                     <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground bg-muted/30 flex items-center justify-between">

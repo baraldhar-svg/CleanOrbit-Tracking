@@ -512,6 +512,30 @@ router.delete("/:id", async (req, res) => {
   return res.status(204).end();
 });
 
+router.delete("/bulk/class", async (req, res) => {
+  const className = req.query.className as string;
+  if (!className) return res.status(400).json({ error: "Missing className" });
+
+  const tenantId = req.tenantId;
+
+  // Find passengers to get their phone numbers
+  const passengers = await db.select().from(passengersTable).where(and(eq(passengersTable.className, className), eq(passengersTable.tenantId, tenantId), eq(passengersTable.role, "student")));
+
+  const phones = passengers.map(p => p.phone).filter(Boolean) as string[];
+
+  // Delete associated users
+  if (phones.length > 0) {
+    for (const phone of phones) {
+      await db.delete(usersTable).where(and(eq(usersTable.phone, phone), eq(usersTable.tenantId, tenantId)));
+    }
+  }
+
+  // Delete passengers
+  await db.delete(passengersTable).where(and(eq(passengersTable.className, className), eq(passengersTable.tenantId, tenantId), eq(passengersTable.role, "student")));
+
+  return res.status(204).end();
+});
+
 // POST /api/passengers/:id/renew — reset subscription window to now (manual renewal / payment success)
 router.post("/:id/renew", async (req, res) => {
   const id = Number(req.params.id);
