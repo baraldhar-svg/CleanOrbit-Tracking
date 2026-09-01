@@ -3852,17 +3852,20 @@ function StudentsPanel() {
         headers
       });
       
-      if (!res.ok) throw new Error("Failed to delete class");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || errData?.message || "Failed to delete class");
+      }
       
       toast({
         title: "Class Deleted",
         description: `Successfully deleted all students in ${cls}.`,
       });
       queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
-    } catch (err) {
+    } catch (err: any) {
       toast({
         title: "Error",
-        description: "Failed to delete class.",
+        description: err.message || "Failed to delete class.",
         variant: "destructive"
       });
     }
