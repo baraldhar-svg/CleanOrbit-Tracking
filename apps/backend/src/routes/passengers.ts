@@ -497,21 +497,6 @@ router.post("/:id/reset-login", async (req, res) => {
   return res.json({ success: true, message: "Login credentials reset successfully." });
 });
 
-router.delete("/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  if (!id || isNaN(id)) return res.status(400).json({ error: "Invalid id" });
-  
-  // Find passenger first to get phone number
-  const [passenger] = await db.select().from(passengersTable).where(eq(passengersTable.id, id));
-  if (passenger && passenger.phone) {
-    // Delete associated user record so they lose access
-    await db.delete(usersTable).where(and(eq(usersTable.phone, passenger.phone), eq(usersTable.tenantId, passenger.tenantId ?? req.tenantId)));
-  }
-  
-  await db.delete(passengersTable).where(eq(passengersTable.id, id));
-  return res.status(204).end();
-});
-
 router.delete("/bulk/class", async (req, res) => {
   const className = req.query.className as string;
   if (!className) return res.status(400).json({ error: "Missing className" });
@@ -533,6 +518,21 @@ router.delete("/bulk/class", async (req, res) => {
   // Delete passengers
   await db.delete(passengersTable).where(and(eq(passengersTable.className, className), eq(passengersTable.tenantId, tenantId), eq(passengersTable.role, "student")));
 
+  return res.status(204).end();
+});
+
+router.delete("/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id || isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+  
+  // Find passenger first to get phone number
+  const [passenger] = await db.select().from(passengersTable).where(eq(passengersTable.id, id));
+  if (passenger && passenger.phone) {
+    // Delete associated user record so they lose access
+    await db.delete(usersTable).where(and(eq(usersTable.phone, passenger.phone), eq(usersTable.tenantId, passenger.tenantId ?? req.tenantId)));
+  }
+  
+  await db.delete(passengersTable).where(eq(passengersTable.id, id));
   return res.status(204).end();
 });
 
