@@ -879,6 +879,7 @@ function VehicleServiceTabs({ vehicles, routes, stations }: { vehicles: any[] | 
                   </div>
                 );
               })}
+            </div>
           </div>
         )}
         {!loading && subTab === "buses" && (
