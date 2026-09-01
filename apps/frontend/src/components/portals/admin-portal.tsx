@@ -2548,7 +2548,7 @@ function FleetCostsSummaryCard() {
 }
 
 const STUDENT_CLASS_OPTIONS = [
-  "Play Group", "Nursery", "LKG", "UKG",
+  "Play Group", "Nursery", "LKG", "UKG", "SKG",
   "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12",
   "Others",
 ];
