@@ -171,11 +171,35 @@ router.patch("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   const id = Number(req.params["id"]);
-  const deleted = await db
+
+  // Find the driver first to get the phone number
+  const [driver] = await db
+    .select()
+    .from(driversTable)
+    .where(and(eq(driversTable.id, id), eq(driversTable.tenantId, req.tenantId)));
+
+  if (!driver) {
+    return res.status(404).json({ error: "Driver not found" });
+  }
+
+  // 1. Unassign from any routes to prevent foreign key constraint violation
+  await db
+    .update(routesTable)
+    .set({ driverId: null })
+    .where(and(eq(routesTable.driverId, id), eq(routesTable.tenantId, req.tenantId)));
+
+  // 2. Delete the associated user login record if it exists
+  if (driver.phone) {
+    await db
+      .delete(usersTable)
+      .where(and(eq(usersTable.phone, driver.phone), eq(usersTable.tenantId, req.tenantId)));
+  }
+
+  // 3. Finally, delete the driver
+  await db
     .delete(driversTable)
-    .where(and(eq(driversTable.id, id), eq(driversTable.tenantId, req.tenantId)))
-    .returning();
-  if (!deleted[0]) { res.status(404).json({ error: "Driver not found" }); return; }
+    .where(and(eq(driversTable.id, id), eq(driversTable.tenantId, req.tenantId)));
+
   res.status(204).end();
 });
 
