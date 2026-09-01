@@ -3844,7 +3844,7 @@ function StudentsPanel() {
     try {
       const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
       const token = localStorage.getItem("orbittrack_token");
-      const headers: Record<string, string> = {};
+      const headers = tenantHeaders();
       if (token) headers["Authorization"] = `Bearer ${token}`;
       
       const res = await fetch(`${BASE}/api/passengers/bulk/class?className=${encodeURIComponent(cls)}`, {
