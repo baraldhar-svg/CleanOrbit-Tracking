@@ -28,7 +28,9 @@ router.get("/me", async (req, res) => {
   const now = new Date();
   const createdDaysAgo = Math.floor((now.getTime() - sub.createdAt.getTime()) / (1000 * 60 * 60 * 24));
   const trialDaysRemaining = Math.max(0, 30 - createdDaysAgo);
-  const paywallActive = sub.tier === "trial" && trialDaysRemaining === 0;
+  // The school itself doesn't pay anymore. We only charge students.
+  // So the tenant-level paywall should ALWAYS be false.
+  const paywallActive = false;
 
   return res.json({
     id: sub.id,
