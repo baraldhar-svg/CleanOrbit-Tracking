@@ -1,0 +1,1 @@
+const { Client } = require("pg"); require("dotenv").config(); const client = new Client({ connectionString: process.env.DATABASE_URL }); client.connect().then(async () => { const res = await client.query("SELECT id, name FROM tenants WHERE code = $$", ["GOLDEN202620"]); console.log(res.rows); client.end(); }).catch(console.error);

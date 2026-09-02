@@ -6,17 +6,13 @@ export default function PaywallModal({ subscription }: { subscription: Subscript
       <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
         <h2 className="mb-2 text-2xl font-bold text-destructive text-center">TRIAL EXPIRED</h2>
         <p className="mb-6 text-center text-muted-foreground">
-          Your 30-day free trial has expired. Please select a plan to resume services.
+          Your trial has expired. Please subscribe to continue tracking the bus.
         </p>
 
         <div className="space-y-3 mb-6">
           <button className="w-full rounded-lg border border-border p-4 text-left hover:border-primary hover:bg-muted transition-colors">
-            <div className="font-bold text-primary">Silver Plan</div>
-            <div className="text-sm text-muted-foreground">NPR 500 / vehicle / month</div>
-          </button>
-          <button className="w-full rounded-lg border border-border p-4 text-left hover:border-primary hover:bg-muted transition-colors">
-            <div className="font-bold text-primary">Gold Plan</div>
-            <div className="text-sm text-muted-foreground">NPR 1000 / vehicle / month</div>
+            <div className="font-bold text-primary">Student Tracking Plan</div>
+            <div className="text-sm text-muted-foreground">NPR 100 / month</div>
           </button>
         </div>
 
