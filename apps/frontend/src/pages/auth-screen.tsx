@@ -59,22 +59,46 @@ export default function AuthScreen() {
   const [bioAutoState, setBioAutoState] = useState<BiometricAutoState>("idle");
   const [bioCredentialId, setBioCredentialId] = useState<string | null>(null);
 
-  const [step, setStep] = useState<Step>("phone");
+  const [step, setStep] = useState<Step>(() => {
+    try { return (sessionStorage.getItem("auth_step") as Step) || "phone"; } catch { return "phone"; }
+  });
   const [newEmail, setNewEmail] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const search = useSearch();
   const params = new URLSearchParams(search);
   const paramPhone = params.get("phone");
-  const [phone, setPhone] = useState(paramPhone || "");
+  const [phone, setPhone] = useState(() => {
+    try { return paramPhone || sessionStorage.getItem("auth_phone") || ""; } catch { return paramPhone || ""; }
+  });
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [schoolCode, setSchoolCode] = useState("");
+  const [schoolCode, setSchoolCode] = useState(() => {
+    try { return sessionStorage.getItem("auth_schoolCode") || ""; } catch { return ""; }
+  });
   const [password, setPassword] = useState("");
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
-  const [foundUser, setFoundUser] = useState<FoundUser | null>(null);
-  const [loginMethod, setLoginMethod] = useState<"otp" | "password">("otp");
+  const [foundUser, setFoundUser] = useState<FoundUser | null>(() => {
+    try {
+      const stored = sessionStorage.getItem("auth_foundUser");
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  });
+  const [loginMethod, setLoginMethod] = useState<"otp" | "password">(() => {
+    try { return (sessionStorage.getItem("auth_loginMethod") as "otp" | "password") || "otp"; } catch { return "otp"; }
+  });
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("auth_step", step);
+      sessionStorage.setItem("auth_phone", phone);
+      sessionStorage.setItem("auth_schoolCode", schoolCode);
+      sessionStorage.setItem("auth_loginMethod", loginMethod);
+      if (foundUser) sessionStorage.setItem("auth_foundUser", JSON.stringify(foundUser));
+      else sessionStorage.removeItem("auth_foundUser");
+    } catch {}
+  }, [step, phone, schoolCode, loginMethod, foundUser]);
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -142,6 +166,14 @@ export default function AuthScreen() {
 
   // ── Auth handlers ─────────────────────────────────────────────────────
   function finishAuth(user: AuthUser, token?: string) {
+    try {
+      sessionStorage.removeItem("auth_step");
+      sessionStorage.removeItem("auth_phone");
+      sessionStorage.removeItem("auth_schoolCode");
+      sessionStorage.removeItem("auth_foundUser");
+      sessionStorage.removeItem("auth_loginMethod");
+    } catch {}
+
     login(user, token);
     if (!user.biometricEnabled && isBiometricSupported()) {
       setPendingUser(user);
@@ -271,7 +303,7 @@ export default function AuthScreen() {
           : {}),
       });
       if (data.sessionId) {
-        localStorage.setItem("orbittrack_session_id", data.sessionId);
+        try { localStorage.setItem("orbittrack_session_id", data.sessionId); } catch (e) {}
       }
       if (data.user) {
         finishAuth({ ...data.user, tenant: data.user.tenant ?? null }, data.token as string | undefined);

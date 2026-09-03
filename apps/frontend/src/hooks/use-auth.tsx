@@ -36,17 +36,21 @@ function readSession(): AuthUser | null {
 }
 
 function writeSession(user: AuthUser | null, token?: string | null) {
-  if (user) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    if (user.activeSessionId) {
-      localStorage.setItem("orbittrack_session_id", user.activeSessionId);
+  try {
+    if (user) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      if (user.activeSessionId) {
+        localStorage.setItem("orbittrack_session_id", user.activeSessionId);
+      }
+      if (token) localStorage.setItem(TOKEN_KEY, token);
+      else if (token === null) localStorage.removeItem(TOKEN_KEY);
+    } else {
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem("orbittrack_session_id");
     }
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else if (token === null) localStorage.removeItem(TOKEN_KEY);
-  } else {
-    localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem("orbittrack_session_id");
+  } catch (err) {
+    console.warn("Failed to write session to localStorage:", err);
   }
 }
 
