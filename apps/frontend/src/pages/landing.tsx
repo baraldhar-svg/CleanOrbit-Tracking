@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import AppFooter from "@/components/app-footer";
-import { Bot } from "lucide-react";
+import { Bot, Sparkles, ArrowRight } from "lucide-react";
+import LiquidButton from "@/components/ui/liquid-button";
 
 interface FeatureDetail {
   id: string;
@@ -111,10 +112,29 @@ export default function Landing() {
   const [selectedFeature, setSelectedFeature] = useState<FeatureDetail | null>(null);
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-y-scroll bg-[#0F172A] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-slate-900 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-700 hover:[&::-webkit-scrollbar-thumb]:bg-amber-500">
+    <div className="relative flex min-h-[100dvh] flex-col overflow-y-scroll bg-[#0B1120] text-slate-100 selection:bg-amber-500 selection:text-slate-900 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-slate-950 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-800 hover:[&::-webkit-scrollbar-thumb]:bg-amber-500">
+
+      {/* ── Background Blurred Fluid Blobs ─────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        {/* Top-Right Blue Blob */}
+        <div
+          className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl animate-pulse"
+          style={{ animationDuration: "8s" }}
+        />
+        {/* Center Amber/Gold Blob */}
+        <div
+          className="absolute top-1/3 -left-32 w-96 h-96 rounded-full bg-amber-500/15 blur-3xl animate-pulse"
+          style={{ animationDuration: "10s", animationDelay: "2s" }}
+        />
+        {/* Bottom Emerald Blob */}
+        <div
+          className="absolute bottom-10 right-1/4 w-80 h-80 rounded-full bg-emerald-500/15 blur-3xl animate-pulse"
+          style={{ animationDuration: "9s", animationDelay: "4s" }}
+        />
+      </div>
 
       {/* ── Top Nav ─────────────────────────────────────────────────── */}
-      <header className="relative z-20 flex items-center justify-between px-6 py-4">
+      <header className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-900/50 backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <div className="relative flex h-11 w-11 items-center justify-center">
             <img src="/logo.png" alt="OrbitTrack Logo" className="bus-logo-bounce w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(255,208,0,0.5)]" />
@@ -126,19 +146,21 @@ export default function Landing() {
             <p className="text-[10px] font-medium text-slate-400 -mt-0.5">Nepal's Smart Bus Platform</p>
           </div>
         </div>
-        <button
+        <LiquidButton
           onClick={() => navigate("/auth")}
-          className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-300 hover:border-amber-500 hover:text-amber-400 transition-colors"
+          size="sm"
+          variant="glass"
+          shape="curved"
         >
           Sign In
-        </button>
+        </LiquidButton>
       </header>
 
       {/* ── Hero ────────────────────────────────────────────────────── */}
-      <main className="relative z-10 flex flex-col items-center justify-center px-4 pb-8 pt-6 text-center">
+      <main className="relative z-10 flex flex-col items-center justify-center px-4 pb-12 pt-8 text-center max-w-4xl mx-auto">
 
         {/* Moving bus above headline */}
-        <div className="relative w-full max-w-xl mx-auto h-20 mb-2 overflow-hidden rounded-full border border-slate-800/50 bg-slate-900/30 shadow-inner">
+        <div className="relative w-full max-w-xl mx-auto h-20 mb-3 overflow-hidden rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-inner">
           <div className="absolute top-1" style={{ animation: "bus-drive 12s linear infinite" }}>
             <div className="relative inline-block h-16 w-32">
               <img src="/bus.png" alt="Bus" className="h-full w-full object-contain drop-shadow-md" />
@@ -151,35 +173,44 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Headline text (adjusted to smaller size as requested) */}
-        <h1 className="mb-3 text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl max-w-xl leading-tight">
+        {/* Headline text */}
+        <h1 className="mb-3 text-2xl font-black tracking-tight text-white sm:text-3xl md:text-5xl max-w-2xl leading-tight drop-shadow-sm">
           Track Every School Bus.{" "}
-          <span className="text-[#ffd000]">Every Stop. In Real Time.</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500">
+            Every Stop. In Real Time.
+          </span>
         </h1>
-        <p className="mb-6 max-w-md text-xs sm:text-sm text-slate-400 leading-relaxed">
+        <p className="mb-8 max-w-lg text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
           OrbitTrack connects parents, drivers and school admins with live GPS tracking, OTP boarding, geofencing alerts and smart fleet management — built for Nepal.
         </p>
 
-        <div className="flex flex-col gap-3 sm:flex-row items-center justify-center">
-          <button
+        <div className="flex flex-col gap-3.5 sm:flex-row items-center justify-center w-full max-w-sm">
+          <LiquidButton
             onClick={() => navigate("/auth")}
-            className="ctaButton signInButton rounded-2xl transition-all hover:scale-105"
+            size="md"
+            variant="glass"
+            shape="curved"
+            className="w-full sm:w-auto px-8 py-3 text-sm font-bold border-white/20"
           >
             Sign In
-          </button>
-          <button
+          </LiquidButton>
+          <LiquidButton
             onClick={() => navigate("/register")}
-            className="ctaButton getStartedButton rounded-2xl transition-all hover:scale-105"
+            size="md"
+            variant="amber"
+            shape="curved"
+            className="w-full sm:w-auto px-8 py-3 text-sm font-black shadow-amber-500/30 text-slate-900"
+            icon={<Sparkles size={16} />}
           >
             Get Started Free
-          </button>
+          </LiquidButton>
         </div>
       </main>
 
       {/* ── Main Features (3 portal cards) ──────────────────────────── */}
-      <section className="relative z-10 border-t border-slate-800 bg-slate-900/60 backdrop-blur px-4 py-10">
-        <div className="mx-auto max-w-3xl space-y-8">
-          <h3 className="text-center text-xl font-black text-white">
+      <section className="relative z-10 border-t border-white/10 bg-slate-900/60 backdrop-blur-2xl px-4 py-12">
+        <div className="mx-auto max-w-4xl space-y-8">
+          <h3 className="text-center text-2xl font-black text-white tracking-tight">
             Everything Your School Needs
           </h3>
 
@@ -187,51 +218,51 @@ export default function Landing() {
             {/* Live GPS Tracking */}
             <div 
               onClick={() => setSelectedFeature(FEATURE_DETAILS["live-gps"])}
-              className="rounded-2xl border border-blue-800/60 bg-blue-950/40 p-5 hover:border-blue-500/60 transition-all cursor-pointer hover:bg-blue-950/60 active:scale-[0.98]"
+              className="rounded-3xl border border-blue-500/30 bg-blue-950/30 backdrop-blur-xl p-6 hover:border-blue-400/70 transition-all cursor-pointer hover:bg-blue-950/50 hover:-translate-y-1 shadow-lg hover:shadow-blue-500/20 active:scale-[0.98] group"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 border border-blue-600/40 text-2xl">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/25 border border-blue-500/40 text-2xl shadow-inner group-hover:scale-110 transition-transform">
                 🛰️
               </div>
               <h4 className="text-sm font-black text-blue-300 uppercase tracking-wide mb-1">Live GPS Tracking</h4>
-              <p className="text-sm text-slate-400 leading-relaxed">Monitor bus location &amp; route in real time on OpenStreetMap.</p>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">Monitor bus location &amp; route in real time on OpenStreetMap.</p>
             </div>
 
             {/* Parent Portal */}
             <div 
               onClick={() => setSelectedFeature(FEATURE_DETAILS["parent-portal"])}
-              className="rounded-2xl border border-green-800/60 bg-green-950/40 p-5 hover:border-green-500/60 transition-all cursor-pointer hover:bg-green-950/60 active:scale-[0.98]"
+              className="rounded-3xl border border-green-500/30 bg-green-950/30 backdrop-blur-xl p-6 hover:border-green-400/70 transition-all cursor-pointer hover:bg-green-950/50 hover:-translate-y-1 shadow-lg hover:shadow-green-500/20 active:scale-[0.98] group"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-green-600/20 border border-green-600/40 text-2xl">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-600/25 border border-green-500/40 text-2xl shadow-inner group-hover:scale-110 transition-transform">
                 👨‍👩‍👧
               </div>
               <h4 className="text-sm font-black text-green-300 uppercase tracking-wide mb-1">Parent Portal</h4>
-              <p className="text-sm text-slate-400 leading-relaxed">Ensure child safety &amp; convenience with live tracking and alerts.</p>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">Ensure child safety &amp; convenience with live tracking and alerts.</p>
             </div>
 
             {/* Driver Dashboard */}
             <div 
               onClick={() => setSelectedFeature(FEATURE_DETAILS["driver-dashboard"])}
-              className="rounded-2xl border border-amber-800/60 bg-amber-950/30 p-5 hover:border-amber-500/60 transition-all cursor-pointer hover:bg-amber-950/50 active:scale-[0.98]"
+              className="rounded-3xl border border-amber-500/30 bg-amber-950/25 backdrop-blur-xl p-6 hover:border-amber-400/70 transition-all cursor-pointer hover:bg-amber-950/45 hover:-translate-y-1 shadow-lg hover:shadow-amber-500/20 active:scale-[0.98] group"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-600/20 border border-amber-600/40 text-2xl">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-600/25 border border-amber-500/40 text-2xl shadow-inner group-hover:scale-110 transition-transform">
                 🚍
               </div>
               <h4 className="text-sm font-black text-amber-300 uppercase tracking-wide mb-1">Driver Dashboard</h4>
-              <p className="text-sm text-slate-400 leading-relaxed">Easy navigation &amp; updates for drivers, station by station.</p>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">Easy navigation &amp; updates for drivers, station by station.</p>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="border-t border-slate-800" />
+          <div className="border-t border-white/10" />
 
           {/* Sub-features */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* View Bus Location on Map */}
             <div 
               onClick={() => setSelectedFeature(FEATURE_DETAILS["bus-location"])}
-              className="flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 hover:border-blue-500/40 transition-all cursor-pointer hover:bg-slate-800 active:scale-[0.98]"
+              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-800/50 backdrop-blur-xl p-4 hover:border-blue-500/50 transition-all cursor-pointer hover:bg-slate-800/80 hover:-translate-y-0.5 active:scale-[0.98]"
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl shadow-lg shadow-blue-900/40 animate-pulse-slow">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl shadow-lg shadow-blue-900/50">
                 🗺️
               </div>
               <div>
@@ -243,9 +274,9 @@ export default function Landing() {
             {/* ETA & Stop Updates */}
             <div 
               onClick={() => setSelectedFeature(FEATURE_DETAILS["eta-updates"])}
-              className="flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 hover:border-amber-500/40 transition-all cursor-pointer hover:bg-slate-800 active:scale-[0.98]"
+              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-800/50 backdrop-blur-xl p-4 hover:border-amber-500/50 transition-all cursor-pointer hover:bg-slate-800/80 hover:-translate-y-0.5 active:scale-[0.98]"
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-xl shadow-lg shadow-amber-900/40">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-xl shadow-lg shadow-amber-900/50 text-slate-900">
                 ⏱️
               </div>
               <div>
@@ -257,9 +288,9 @@ export default function Landing() {
             {/* Ride History */}
             <div 
               onClick={() => setSelectedFeature(FEATURE_DETAILS["ride-history"])}
-              className="flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 hover:border-purple-500/40 transition-all cursor-pointer hover:bg-slate-800 active:scale-[0.98]"
+              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-800/50 backdrop-blur-xl p-4 hover:border-purple-500/50 transition-all cursor-pointer hover:bg-slate-800/80 hover:-translate-y-0.5 active:scale-[0.98]"
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-600 text-xl shadow-lg shadow-purple-900/40">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-600 text-xl shadow-lg shadow-purple-900/50">
                 📋
               </div>
               <div>
@@ -302,12 +333,16 @@ export default function Landing() {
           <p className="mt-2 text-sm text-blue-200">
             Real-time safety, every school day.
           </p>
-          <button
-            onClick={() => navigate("/register")}
-            className="mt-5 rounded-2xl bg-[#ffd000] px-8 py-3 text-sm font-black text-slate-900 hover:bg-yellow-300 transition-all hover:scale-105 shadow-lg shadow-black/30"
-          >
-            Start Free Today →
-          </button>
+          <div className="mt-5 flex justify-center">
+            <LiquidButton
+              variant="accent"
+              shape="curved"
+              size="lg"
+              text="Start Free Today →"
+              onClick={() => navigate("/register")}
+              className="px-8 py-3.5 text-base font-black !shadow-yellow-500/30"
+            />
+          </div>
         </div>
       </div>
 
@@ -337,15 +372,17 @@ export default function Landing() {
       </div>
 
       {/* ── Advertise with Us (bottom) ───────────────────────────────── */}
-      <div className="relative z-10 border-t border-slate-800 bg-slate-900/80 px-4 py-5 text-center">
-        <button
+      <div className="relative z-10 border-t border-slate-800 bg-slate-900/80 px-4 py-6 text-center">
+        <LiquidButton
+          variant="glass"
+          shape="curved"
+          size="md"
+          icon={<span>📢</span>}
+          text="Advertise with Us"
           onClick={() => navigate("/advertise")}
-          className="inline-flex items-center gap-2.5 rounded-2xl border border-amber-700/40 bg-amber-500/10 px-6 py-3 text-sm font-semibold text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/60 transition-colors"
-        >
-          📢
-          <span>Advertise with Us</span>
-        </button>
-        <p className="mt-2 text-xs text-slate-600">Reach thousands of parents &amp; schools across Nepal</p>
+          className="border-amber-500/40 text-amber-300 hover:border-amber-400"
+        />
+        <p className="mt-2 text-xs text-slate-400">Reach thousands of parents &amp; schools across Nepal</p>
       </div>
 
       {/* ── Floating Sticky Contact Buttons (Temporarily Disabled) ──────────────────── 

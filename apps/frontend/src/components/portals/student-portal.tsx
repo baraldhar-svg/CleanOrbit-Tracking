@@ -22,6 +22,7 @@ import AdCarousel, { type Ad } from "@/components/ad-carousel";
 import { useT, tpl } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 import { PhotoPicker } from "@/components/photo-picker";
+import LiquidStatusToggle from "@/components/ui/liquid-status-toggle";
 import {
   Bus, ClipboardList, Map, Clock, MessageSquare, X, Send,
   User, Timer, Home, MapPin, HeartPulse, ThumbsUp, Route, Navigation, CheckCircle, RefreshCw,
@@ -1036,68 +1037,26 @@ Roll No.: ${roll}`;
         })()
       )}
 
-      {/* Riding Today / Leave Status */}
-      <div className="liquid-glass-card rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 space-y-3.5 shadow-xl relative overflow-hidden">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-extrabold text-slate-800 dark:text-white">{t.todaysStatus}</p>
-          {(isFreezeActive || tripCompleted) && (
-            <span className="flex items-center gap-1 rounded-full bg-sky-950/40 border border-sky-500/40 px-2.5 py-0.5 text-[10px] font-bold text-sky-400 shadow-xs">
-              <Lock size={10} /> 4h Freeze Active
-            </span>
-          )}
-        </div>
-        <div className={`grid grid-cols-2 gap-3 ${(isFreezeActive || tripCompleted) ? "opacity-50 pointer-events-none select-none" : ""}`}>
-          <button
-            onClick={handleLiveToday}
-            disabled={isBoarded || onLeave || isFreezeActive || tripCompleted}
-            className={`rounded-2xl py-3.5 px-4 text-sm font-black transition-all transform active:scale-95 shadow-lg relative overflow-hidden ${
-              isBoarded || isFreezeActive || tripCompleted
-                ? "bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed"
-                : liveToday && !onLeave
-                  ? "liquid-btn-green-active shadow-emerald-500/35"
-                  : "liquid-btn-glass text-slate-700 dark:text-slate-200"
-            }`}
-          >
-            {liveToday && !onLeave && !isBoarded ? t.ridingToday : t.markLive}
-          </button>
-          <button
-            onClick={handleLeaveClick}
-            disabled={isBoarded || isFreezeActive || tripCompleted}
-            className={`rounded-2xl py-3.5 px-4 text-sm font-black transition-all transform active:scale-95 select-none shadow-lg relative overflow-hidden ${
-              isBoarded || isFreezeActive || tripCompleted
-                ? "bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed"
-                : onLeave
-                  ? "liquid-btn-rose-active shadow-rose-500/35"
-                  : "liquid-btn-glass text-slate-700 dark:text-slate-200"
-            }`}
-          >
-            {isBoarded ? (
-              <span className="flex items-center justify-center gap-1"><Lock size={12} /> {t.locked}</span>
-            ) : isFreezeActive || tripCompleted ? (
-              <span className="flex items-center justify-center gap-1"><Lock size={12} /> Frozen</span>
-            ) : onLeave ? (
-              <span className="flex items-center justify-center gap-1"><X size={12} /> {t.onLeave}</span>
-            ) : t.takeLeave}
-          </button>
-        </div>
-        {(isFreezeActive || tripCompleted) ? (
-          <div className="flex items-center gap-2 rounded-2xl border border-sky-200 dark:border-sky-800 bg-sky-50/90 dark:bg-sky-950/40 px-3.5 py-2.5 shadow-xs">
-            <Lock size={12} className="shrink-0 text-sky-600 dark:text-sky-400" />
-            <p className="text-xs text-sky-700 dark:text-sky-400 font-medium">
-              Status updates frozen after journey completion. Unfreezes when driver starts next run.
-            </p>
-          </div>
-        ) : isBoarded ? (
-          <div className="flex items-center gap-2 rounded-2xl border border-green-200 dark:border-green-800 bg-green-50/90 dark:bg-green-950/40 px-3.5 py-2.5 shadow-xs">
-            <Lock size={12} className="shrink-0 text-green-600 dark:text-green-400" />
-            <p className="text-xs text-green-700 dark:text-green-400 font-medium">{t.actionsLocked}</p>
-          </div>
-        ) : sentMsg ? (
-          <div className="rounded-2xl dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-3.5 py-2.5 bg-background text-xs font-extrabold text-foreground shadow-xs">
-            Driver notified: <span className="font-semibold text-green-600 dark:text-green-400">{onLeave ? "Not Riding Today" : "Coming to School Today"}</span>
-          </div>
-        ) : null}
-      </div>
+      {/* Riding Today / Leave Status Liquid Glass Toggle */}
+      <LiquidStatusToggle
+        title={t.todaysStatus}
+        isMarkLiveActive={Boolean(liveToday && !onLeave && !isBoarded)}
+        isTakeLeaveActive={Boolean(onLeave)}
+        onMarkLive={handleLiveToday}
+        onTakeLeave={handleLeaveClick}
+        disabled={isBoarded || isFreezeActive || tripCompleted}
+        isLocked={isBoarded}
+        isFreezeActive={isFreezeActive || tripCompleted}
+        lockMessage={
+          isFreezeActive || tripCompleted
+            ? "Status updates frozen after journey completion. Unfreezes when driver starts next run."
+            : isBoarded
+            ? t.actionsLocked
+            : undefined
+        }
+        markLiveText={liveToday && !onLeave && !isBoarded ? t.ridingToday : t.markLive}
+        takeLeaveText={isBoarded ? t.locked : onLeave ? t.onLeave : t.takeLeave}
+      />
 
       {/* Featured School Spotlight Advertisement Board — placed between Today's Status and Notice Board */}
       {ads.length > 0 && (
