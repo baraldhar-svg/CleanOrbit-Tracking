@@ -649,11 +649,11 @@ Roll No.: ${roll}`;
 
       {/* Profile setup / edit modal — fullscreen blocking on first login, drawer on edit */}
       {editProfileOpen && me && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-background">
+        <div className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur-lg">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/20 dark:border-white/10 bg-card/90 backdrop-blur-md">
             <div>
-              <p className="text-sm font-bold text-foreground">
+              <p className="text-base font-bold text-foreground">
                 {profileComplete ? "Edit Profile" : "Complete Your Profile"}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -661,42 +661,42 @@ Roll No.: ${roll}`;
               </p>
             </div>
             {profileComplete && (
-              <button onClick={() => setEditProfileOpen(false)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
+              <button onClick={() => setEditProfileOpen(false)} className="rounded-full p-2 hover:bg-muted/80 transition-colors border border-border">
                 <X size={18} className="text-muted-foreground" />
               </button>
             )}
           </div>
           {/* Scrollable form */}
-          <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 max-w-lg mx-auto w-full">
             {/* Photo inside modal */}
-            <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+            <div className="rounded-2xl border border-white/40 dark:border-white/10 bg-card/80 backdrop-blur-md p-4 space-y-3 shadow-md">
               <p className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <User size={14} className="text-amber-500" /> Profile Photo
               </p>
               <PhotoPicker value={localPhotoUrl} onChange={setLocalPhotoUrl} name={me.name} />
               {localPhotoUrl !== (me.photoUrl ?? "") && (
                 <button onClick={handleSavePhoto} disabled={photoSaving}
-                  className="w-full rounded-xl bg-amber-500 py-2 text-sm font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors">
+                  className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 py-2.5 text-sm font-bold text-slate-900 shadow-md shadow-amber-500/20 border border-white/30 hover:brightness-105 active:scale-98 disabled:opacity-40 transition-all">
                   {photoSaving ? "Saving…" : "Save Photo"}
                 </button>
               )}
             </div>
 
             {/* Profile fields */}
-            <div className="rounded-2xl border border-border bg-card p-4 space-y-3 text-xs">
+            <div className="rounded-2xl border border-white/40 dark:border-white/10 bg-card/80 backdrop-blur-md p-4 space-y-3 text-xs shadow-md">
               <p className="text-sm font-semibold text-foreground">Personal Details</p>
               <div>
                 <label className="mb-1 block font-semibold text-muted-foreground">Parent / Guardian Name <span className="text-red-500">*</span></label>
                 <input value={localParentName} onChange={(e) => setLocalParentName(e.target.value)}
                   placeholder="e.g., Ram Prasad Shrestha"
-                  className="w-full border border-border rounded-lg p-2.5 bg-background outline-none" />
+                  className="w-full border border-border rounded-xl p-2.5 bg-background/80 outline-none focus:border-amber-500 transition-colors" />
               </div>
               <div>
                 <label className="mb-1 block font-semibold text-muted-foreground">Gender <span className="text-red-500">*</span></label>
                 <div className="flex gap-2">
                   {["Male", "Female", "Other"].map((g) => (
                     <button key={g} type="button" onClick={() => setLocalGender(localGender === g ? "" : g)}
-                      className={`flex-1 rounded-lg border py-2 text-xs font-semibold transition-colors ${localGender === g ? "bg-amber-500 border-amber-500 text-slate-900" : "border-border bg-background text-foreground hover:bg-muted"}`}>
+                      className={`flex-1 rounded-xl border py-2.5 text-xs font-semibold transition-all ${localGender === g ? "bg-gradient-to-r from-amber-500 to-amber-400 border-amber-500 text-slate-900 shadow-md font-bold" : "border-border bg-background/80 text-foreground hover:bg-muted"}`}>
                       {g}
                     </button>
                   ))}
@@ -706,7 +706,7 @@ Roll No.: ${roll}`;
                 <div>
                   <label className="mb-1 block font-semibold text-muted-foreground">Class</label>
                   <select value={localClassName} onChange={(e) => setLocalClassName(e.target.value)}
-                    className="w-full border border-border rounded-lg p-2.5 bg-background">
+                    className="w-full border border-border rounded-xl p-2.5 bg-background/80 outline-none focus:border-amber-500">
                     <option value="">Select class</option>
                     {["Play Group","Nursery","LKG","UKG","1","2","3","4","5","6","7","8","9","10","11","12","Others"].map((c) => (
                       <option key={c} value={c}>{c}</option>
@@ -717,23 +717,23 @@ Roll No.: ${roll}`;
                   <label className="mb-1 block font-semibold text-muted-foreground">Section</label>
                   <input value={localSection} onChange={(e) => setLocalSection(e.target.value.toUpperCase())}
                     placeholder="e.g., A"
-                    className="w-full border border-border rounded-lg p-2.5 bg-background outline-none" />
+                    className="w-full border border-border rounded-xl p-2.5 bg-background/80 outline-none focus:border-amber-500" />
                 </div>
               </div>
               <div>
                 <label className="mb-1 block font-semibold text-muted-foreground">Roll Number</label>
                 <input value={localRollNumber} onChange={(e) => setLocalRollNumber(e.target.value)}
                   placeholder="e.g., 12"
-                  className="w-full border border-border rounded-lg p-2.5 bg-background outline-none" />
+                  className="w-full border border-border rounded-xl p-2.5 bg-background/80 outline-none focus:border-amber-500" />
               </div>
             </div>
           </div>
           {/* Sticky save button */}
-          <div className="px-4 py-4 border-t border-border bg-card">
+          <div className="px-4 py-4 border-t border-white/20 dark:border-white/10 bg-card/90 backdrop-blur-md max-w-lg mx-auto w-full">
             <button
               onClick={handleSaveProfile}
               disabled={profileSaving || !localParentName.trim() || !localGender}
-              className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors"
+              className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 py-3 text-sm font-bold text-slate-900 hover:brightness-105 shadow-lg shadow-amber-500/25 border border-white/30 disabled:opacity-40 active:scale-98 transition-all"
             >
               {profileSaving ? "Saving…" : profileSaved ? "✓ Saved!" : profileComplete ? "Update Profile" : "Save & Continue"}
             </button>
@@ -743,7 +743,7 @@ Roll No.: ${roll}`;
 
       {/* Subscription expiry warning banner */}
       {showExpiryBanner && daysLeft !== null && (
-        <div className="flex items-start gap-3 rounded-xl border border-orange-400 bg-orange-50 dark:bg-orange-950/30 px-4 py-3">
+        <div className="flex items-start gap-3 rounded-2xl border border-orange-400/80 bg-orange-50/90 dark:bg-orange-950/40 backdrop-blur-md px-4 py-3.5 shadow-md">
           <AlertTriangle size={16} className="text-orange-500 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-orange-800 dark:text-orange-300">
@@ -755,7 +755,7 @@ Roll No.: ${roll}`;
           </div>
           <button
             onClick={() => setPaymentModalOpen(true)}
-            className="shrink-0 rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-orange-600 transition-colors"
+            className="shrink-0 rounded-xl bg-orange-500 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-orange-600 shadow-md transition-colors"
           >
             Renew
           </button>
@@ -769,7 +769,7 @@ Roll No.: ${roll}`;
             const isToday = ev.eventDate === todayAdStr;
             const isHoliday = ev.type === "holiday";
             return (
-              <div key={ev.id} className={`flex items-start gap-3 rounded-xl border p-3 ${isHoliday ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30" : "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30"}`}>
+              <div key={ev.id} className={`flex items-start gap-3 rounded-2xl border p-3.5 shadow-md backdrop-blur-md ${isHoliday ? "border-red-300 bg-red-50/90 dark:border-red-800 dark:bg-red-950/40" : "border-amber-300 bg-amber-50/90 dark:border-amber-800 dark:bg-amber-950/40"}`}>
                 <span className="text-lg">{isHoliday ? "🎉" : "📅"}</span>
                 <div className="flex-1 min-w-0">
                   <p className={`text-xs font-bold uppercase tracking-wide ${isHoliday ? "text-red-600 dark:text-red-400" : "text-amber-700 dark:text-amber-400"}`}>
@@ -783,18 +783,19 @@ Roll No.: ${roll}`;
           })}
         </div>
       )}
+
       {/* ── Bus Status Banner — always visible, three lifecycle states ── */}
       {(() => {
         // State 3: Journey Completed & 4-Hour Freeze Period — evaluated FIRST so boarded students see completion
         if (tripCompleted || isFreezeActive) {
           return (
-            <div className="rounded-xl border border-sky-400 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 py-2.5 px-4 text-white shadow-lg space-y-2">
+            <div className="rounded-2xl border border-sky-400/80 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 py-3.5 px-4 text-white shadow-xl backdrop-blur-md space-y-2.5 relative overflow-hidden">
               <div className="flex items-center gap-3">
                 <CheckCircle size={30} className="text-white drop-shadow shrink-0 animate-bounce" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between flex-wrap gap-1">
                     <p className="font-bold text-sm">Journey Completed! 🎒</p>
-                    <span className="rounded-full bg-sky-950/70 border border-sky-300/40 px-2 py-0.5 text-[10px] font-bold text-sky-200">
+                    <span className="rounded-full bg-sky-950/70 border border-sky-300/40 px-2.5 py-0.5 text-[10px] font-bold text-sky-200 shadow-sm">
                       🔒 4h Freeze Active {freezeRemainingMinutes ? `(${freezeRemainingMinutes}m left)` : ""}
                     </span>
                   </div>
@@ -804,11 +805,11 @@ Roll No.: ${roll}`;
                   </p>
                 </div>
               </div>
-              <div className="pt-1.5 border-t border-sky-400/30 flex items-center justify-between gap-2">
+              <div className="pt-2 border-t border-sky-400/30 flex items-center justify-between gap-2">
                 <span className="text-[11px] text-sky-100">Need help or have an inquiry for Admin?</span>
                 <button
                   onClick={() => setAdminMsgModalOpen(true)}
-                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-blue-900 hover:bg-sky-50 shadow transition-colors flex items-center gap-1.5 shrink-0"
+                  className="rounded-xl bg-white/95 hover:bg-white text-blue-950 px-3.5 py-1.5 text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 shrink-0 transform active:scale-95"
                 >
                   <Send size={12} />
                   Message Admin
@@ -826,7 +827,7 @@ Roll No.: ${roll}`;
               : null;
           const passingStation = nearestDriverStation?.rs.stationName ?? null;
           return (
-            <div className="rounded-xl border border-green-400 bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white shadow-lg">
+            <div className="rounded-2xl border border-green-400/80 bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white shadow-xl backdrop-blur-md relative overflow-hidden">
               <div className="flex items-center gap-3">
                 <Bus size={36} className="text-white drop-shadow shrink-0 animate-pulse" />
                 <div className="min-w-0">
@@ -846,7 +847,7 @@ Roll No.: ${roll}`;
         // State 0: Holiday Today — School & Bus service closed
         if (isHolidayToday) {
           return (
-            <div className="rounded-xl border border-red-300 dark:border-red-800/60 bg-gradient-to-r from-red-500/90 via-rose-600 to-rose-700 p-4 text-white shadow-md">
+            <div className="rounded-2xl border border-red-300 dark:border-red-800/60 bg-gradient-to-r from-red-500/90 via-rose-600 to-rose-700 p-4 text-white shadow-xl backdrop-blur-md relative overflow-hidden">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">🎉</span>
                 <div className="min-w-0">
@@ -865,9 +866,9 @@ Roll No.: ${roll}`;
           // Use the exact stop from driver SSE if available, fall back to GPS-nearest
           const displayStation = liveStation?.name ?? nearestDriverStation?.rs.stationName ?? null;
           return (
-            <div className="relative rounded-xl border border-amber-400 bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white shadow-lg">
+            <div className="relative rounded-2xl border border-amber-400/80 bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white shadow-xl backdrop-blur-md overflow-hidden">
               {nearbyAlert && (
-                <span className="absolute -top-2 -right-2 animate-bounce rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white shadow">
+                <span className="absolute -top-1 -right-1 animate-bounce rounded-full bg-red-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg">
                   NEAR!
                 </span>
               )}
@@ -892,7 +893,7 @@ Roll No.: ${roll}`;
                 {!geoAlertDismissed && (
                   <button
                     onClick={() => setGeoAlertDismissed(true)}
-                    className="shrink-0 rounded-full p-1 hover:bg-white/20 text-white text-xs"
+                    className="shrink-0 rounded-full p-1.5 hover:bg-white/20 text-white text-xs transition-colors"
                   >✕</button>
                 )}
               </div>
@@ -902,7 +903,7 @@ Roll No.: ${roll}`;
         // State 1b-active: Journey started, driver advancing stops but no GPS yet
         if (tripActive && liveStation != null) {
           return (
-            <div className="relative rounded-xl border border-amber-400 bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white shadow-lg">
+            <div className="relative rounded-2xl border border-amber-400/80 bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white shadow-xl backdrop-blur-md overflow-hidden">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <Bus size={36} className="text-white drop-shadow shrink-0 animate-pulse" />
@@ -922,7 +923,7 @@ Roll No.: ${roll}`;
         // State 1b-waiting: Journey active but no station data yet
         if (tripActive) {
           return (
-            <div className="rounded-xl border border-amber-400 bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white shadow-lg">
+            <div className="rounded-2xl border border-amber-400/80 bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white shadow-xl backdrop-blur-md overflow-hidden">
               <div className="flex items-center gap-3">
                 <Bus size={36} className="text-white drop-shadow shrink-0 animate-pulse" />
                 <div className="min-w-0">
@@ -939,7 +940,7 @@ Roll No.: ${roll}`;
         }
         // State 1b: Before Boarding — waiting for bus to start
         return (
-          <div className="rounded-xl border border-amber-300 dark:border-amber-700/60 bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white shadow-sm opacity-75">
+          <div className="rounded-2xl border border-amber-300 dark:border-amber-700/60 bg-gradient-to-r from-amber-500/90 to-orange-500/90 p-4 text-white shadow-md backdrop-blur-md opacity-85">
             <div className="flex items-center gap-3">
               <Bus size={36} className="text-white/80 drop-shadow shrink-0" />
               <div className="min-w-0">
@@ -959,10 +960,10 @@ Roll No.: ${roll}`;
         <div className="flex items-center gap-2 w-full">
           <button
             onClick={() => setEditProfileOpen(true)}
-            className="flex-1 border border-border rounded-xl bg-gradient-to-r from-amber-500/10 to-transparent px-3 py-2.5 flex items-center gap-3 hover:bg-amber-500/10 transition-colors text-left min-w-0"
+            className="flex-1 border border-white/60 dark:border-white/10 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-card/60 px-3.5 py-3 flex items-center gap-3 hover:shadow-lg transition-all duration-300 shadow-md text-left min-w-0 backdrop-blur-md"
           >
             {/* Avatar */}
-            <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-amber-400 bg-muted shrink-0 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-amber-400 bg-muted shrink-0 flex items-center justify-center shadow-sm">
               {localPhotoUrl || me?.photoUrl
                 ? <img src={localPhotoUrl || me?.photoUrl!} alt={user.name} className="h-full w-full object-cover" />
                 : <User size={18} className="text-muted-foreground" />}
@@ -973,7 +974,7 @@ Roll No.: ${roll}`;
                 <span className="text-sm font-semibold text-foreground">
                   {user.title ? `${user.title} ` : ""}{user.name}
                 </span>
-                <span className="rounded-full bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase">
+                <span className="rounded-full bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase shadow-xs">
                   {user.role}
                 </span>
               </div>
@@ -1002,13 +1003,13 @@ Roll No.: ${roll}`;
             ? haversineKm(driverLoc.lat, driverLoc.lng, schoolStation.lat, schoolStation.lng)
             : null;
           return (
-            <div className="rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
+            <div className="rounded-2xl border border-amber-300/80 dark:border-amber-700/60 bg-gradient-to-b from-amber-50/90 to-amber-100/40 dark:from-amber-950/40 dark:to-slate-900/40 backdrop-blur-md px-4 py-3.5 shadow-lg relative overflow-hidden">
               <div className="flex items-center gap-2 mb-2">
                 <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse shrink-0" />
                 <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Live Bus Distance</p>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-lg bg-white dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-3 py-2 text-center">
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-xl bg-white/80 dark:bg-amber-900/20 border border-white/60 dark:border-amber-700/40 px-3 py-2.5 text-center shadow-xs backdrop-blur-sm">
                   <p className="text-[10px] text-muted-foreground font-medium mb-0.5">🚏 Your Stop</p>
                   <p className="text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight">
                     {distToMyStopKm != null ? (
@@ -1020,7 +1021,7 @@ Roll No.: ${roll}`;
                   </p>
                   <p className="text-[9px] text-muted-foreground truncate">{myStop?.stationName ?? "Not set"}</p>
                 </div>
-                <div className="rounded-lg bg-white dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-3 py-2 text-center">
+                <div className="rounded-xl bg-white/80 dark:bg-amber-900/20 border border-white/60 dark:border-amber-700/40 px-3 py-2.5 text-center shadow-xs backdrop-blur-sm">
                   <p className="text-[10px] text-muted-foreground font-medium mb-0.5">🏫 School</p>
                   <p className="text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight">
                     {distToSchoolKm != null ? `${distToSchoolKm.toFixed(1)} km` : "—"}
@@ -1034,25 +1035,25 @@ Roll No.: ${roll}`;
       )}
 
       {/* Riding Today / Leave Status */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm">
+      <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-card/80 backdrop-blur-md p-4 space-y-3 shadow-lg relative overflow-hidden">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-foreground">{t.todaysStatus}</p>
           {(isFreezeActive || tripCompleted) && (
-            <span className="flex items-center gap-1 rounded-full bg-sky-950/40 border border-sky-500/40 px-2 py-0.5 text-[10px] font-bold text-sky-400">
+            <span className="flex items-center gap-1 rounded-full bg-sky-950/40 border border-sky-500/40 px-2.5 py-0.5 text-[10px] font-bold text-sky-400 shadow-xs">
               <Lock size={10} /> 4h Freeze Active
             </span>
           )}
         </div>
-        <div className={`grid grid-cols-2 gap-2 ${(isFreezeActive || tripCompleted) ? "opacity-50 pointer-events-none select-none" : ""}`}>
+        <div className={`grid grid-cols-2 gap-2.5 ${(isFreezeActive || tripCompleted) ? "opacity-50 pointer-events-none select-none" : ""}`}>
           <button
             onClick={handleLiveToday}
             disabled={isBoarded || onLeave || isFreezeActive || tripCompleted}
-            className={`rounded-xl py-3 text-sm font-semibold transition-all ${
+            className={`rounded-2xl py-3 px-4 text-sm font-bold transition-all transform active:scale-95 shadow-md ${
               isBoarded || isFreezeActive || tripCompleted
                 ? "bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed"
                 : liveToday && !onLeave
-                  ? "bg-green-600 text-white shadow-md"
-                  : "bg-muted text-muted-foreground border border-border disabled:opacity-50"
+                  ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-green-600/30 border border-white/40 shadow-lg"
+                  : "bg-muted/80 hover:bg-muted text-muted-foreground border border-border"
             }`}
           >
             {liveToday && !onLeave && !isBoarded ? t.ridingToday : t.markLive}
@@ -1060,12 +1061,12 @@ Roll No.: ${roll}`;
           <button
             onClick={handleLeaveClick}
             disabled={isBoarded || isFreezeActive || tripCompleted}
-            className={`rounded-xl py-3 text-sm font-semibold transition-all select-none ${
+            className={`rounded-2xl py-3 px-4 text-sm font-bold transition-all transform active:scale-95 select-none shadow-md ${
               isBoarded || isFreezeActive || tripCompleted
                 ? "bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed"
                 : onLeave
-                  ? "bg-red-600 text-white shadow-md"
-                  : "bg-muted text-muted-foreground border border-border"
+                  ? "bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-red-600/30 border border-white/40 shadow-lg"
+                  : "bg-muted/80 hover:bg-muted text-muted-foreground border border-border"
             }`}
           >
             {isBoarded ? (
@@ -1078,20 +1079,20 @@ Roll No.: ${roll}`;
           </button>
         </div>
         {(isFreezeActive || tripCompleted) ? (
-          <div className="flex items-center gap-2 rounded-lg border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/30 px-3 py-2">
+          <div className="flex items-center gap-2 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50/90 dark:bg-sky-950/40 px-3.5 py-2.5 shadow-xs">
             <Lock size={12} className="shrink-0 text-sky-600 dark:text-sky-400" />
             <p className="text-xs text-sky-700 dark:text-sky-400 font-medium">
               Status updates frozen after journey completion. Unfreezes when driver starts next run.
             </p>
           </div>
         ) : isBoarded ? (
-          <div className="flex items-center gap-2 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-3 py-2">
+          <div className="flex items-center gap-2 rounded-xl border border-green-200 dark:border-green-800 bg-green-50/90 dark:bg-green-950/40 px-3.5 py-2.5 shadow-xs">
             <Lock size={12} className="shrink-0 text-green-600 dark:text-green-400" />
             <p className="text-xs text-green-700 dark:text-green-400 font-medium">{t.actionsLocked}</p>
           </div>
         ) : sentMsg ? (
-          <div className="rounded-lg dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 px-3 py-2 bg-background text-xs font-extrabold text-[#000]">
-            Driver notified: <span className="font-semibold text-[#007500]">{onLeave ? "Not Riding Today" : "Coming to School Today"}</span>
+          <div className="rounded-xl dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-3.5 py-2.5 bg-background text-xs font-extrabold text-foreground shadow-xs">
+            Driver notified: <span className="font-semibold text-green-600 dark:text-green-400">{onLeave ? "Not Riding Today" : "Coming to School Today"}</span>
           </div>
         ) : null}
       </div>
@@ -1102,26 +1103,26 @@ Roll No.: ${roll}`;
       )}
 
       {/* Notice Board */}
-      <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 overflow-hidden shadow-sm">
+      <div className="rounded-2xl border border-amber-200/80 dark:border-amber-800/50 bg-amber-50/80 dark:bg-amber-950/30 backdrop-blur-md overflow-hidden shadow-lg relative">
         {/* Board header */}
-        <div className="flex items-center gap-2 px-4 py-3 bg-[#FFF078]">
+        <div className="flex items-center gap-2 px-4 py-3.5 bg-gradient-to-r from-[#FFF078] to-[#FFE54C] border-b border-amber-300/60 shadow-sm">
           <ClipboardList size={18} className="text-slate-900" />
           <div className="flex-1">
             <p className="font-bold text-slate-900 text-sm leading-tight">Notice Board</p>
-            <p className="text-[10px] text-amber-900/70">From your school administration</p>
+            <p className="text-[10px] text-amber-900/70 font-medium">From your school administration</p>
           </div>
           {filteredAnnouncements?.length ? (
-            <span className="rounded-full bg-slate-900/20 px-2 py-0.5 text-[10px] font-bold text-slate-900">
+            <span className="rounded-full bg-slate-900/15 border border-slate-900/20 px-2.5 py-0.5 text-[10px] font-bold text-slate-900 shadow-xs">
               {filteredAnnouncements.length} notice{filteredAnnouncements.length > 1 ? "s" : ""}
             </span>
           ) : null}
         </div>
         {/* Notices list — 2 visible, rest scrollable */}
-        <div className="divide-y divide-amber-200 dark:divide-amber-800/30 max-h-[116px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-300 dark:[&::-webkit-scrollbar-thumb]:bg-amber-700 hover:[&::-webkit-scrollbar-thumb]:bg-amber-500">
+        <div className="divide-y divide-amber-200/60 dark:divide-amber-800/30 max-h-[120px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-300 dark:[&::-webkit-scrollbar-thumb]:bg-amber-700 hover:[&::-webkit-scrollbar-thumb]:bg-amber-500">
           {filteredAnnouncements?.length ? (
             filteredAnnouncements.map((a, idx) => (
-              <div key={a.id} className="flex items-start gap-3 px-4 py-3 bg-background">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-slate-900 bg-[#fff647]">
+              <div key={a.id} className="flex items-start gap-3 px-4 py-3 bg-background/90 dark:bg-slate-900/80">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-slate-900 bg-[#fff647] shadow-xs">
                   {idx + 1}
                 </span>
                 <p className="text-sm dark:text-amber-200 leading-snug text-[#FF9F00] font-bold">{a.message}</p>
@@ -1129,274 +1130,277 @@ Roll No.: ${roll}`;
             ))
           ) : (
             <div className="px-4 py-6 text-center">
-              <p className="text-sm text-amber-700 dark:text-amber-400">No notices at this time</p>
-              <p className="text-xs text-amber-600/60 dark:text-[#FFF078]/50 mt-0.5">Check back later for updates from your school</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400 font-semibold">No notices at this time</p>
+              <p className="text-xs text-amber-600/70 dark:text-[#FFF078]/60 mt-0.5">Check back later for updates from your school</p>
             </div>
           )}
         </div>
       </div>
 
-
-
-        {/* GPS / Tracking — paying users only */}
-        {isPaying ? (
-        <><div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-primary text-sm flex items-center gap-1.5"><Map size={14} /> Live Bus Location</h2>
-            <div className="flex items-center gap-2">
-              {(isFreezeActive || tripCompleted) ? (
-                <span className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-bold">
-                  <Lock size={12} /> CLOSED
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                  <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse inline-block" />
-                  LIVE
-                </span>
-              )}
-            </div>
-          </div>
-
-          {(isFreezeActive || tripCompleted) ? (
-            <div className="rounded-2xl border border-sky-300 dark:border-sky-800/60 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-indigo-950/40 p-5 text-center space-y-2 shadow-inner">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-300">
-                <Lock size={24} />
+      {/* GPS / Tracking — paying users only */}
+      {isPaying ? (
+        <>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-primary text-sm flex items-center gap-1.5"><Map size={14} /> Live Bus Location</h2>
+              <div className="flex items-center gap-2">
+                {(isFreezeActive || tripCompleted) ? (
+                  <span className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-bold">
+                    <Lock size={12} /> CLOSED
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-xs text-green-600 font-bold">
+                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse inline-block" />
+                    LIVE
+                  </span>
+                )}
               </div>
-              <p className="text-sm font-bold text-sky-900 dark:text-sky-200">
-                Live Map &amp; Bus Tracking Closed / नक्सा तथा बस स्थान बन्द छ 🎒
-              </p>
-              <p className="text-xs text-sky-700 dark:text-sky-300 max-w-sm mx-auto leading-relaxed">
-                Today's bus journey is completed. Map tracking &amp; live location are frozen for 4 hours and will automatically unfreeze when the driver starts the next route run.
-              </p>
             </div>
-          ) : (
-            <>
-              {/* Route-locked Bus Info Banner */}
-              {(() => {
-                const selRoute = (routes ?? []).find((r) => r.id === Number(selectedRouteId));
-                if (!selRoute) return (
-                  <button
-                    onClick={() => setTransportOpen(true)}
-                    className="w-full flex items-center gap-3 rounded-xl border border-dashed border-amber-400/60 bg-amber-50/40 dark:bg-amber-950/10 px-4 py-2.5 text-left hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
-                  >
-                    <Route size={14} className="text-amber-500 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">No route selected</p>
-                      <p className="text-[10px] text-amber-600/70 dark:text-amber-500/70">Tap to choose your bus route ↓</p>
-                    </div>
-                  </button>
-                );
-                return (
-                  <div className="flex items-center gap-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 px-4 py-2.5">
-                    <div className={`h-2 w-2 rounded-full shrink-0 ${selRoute.isActive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-foreground truncate">{selRoute.name}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {selRoute.vehiclePlate ? (
-                          <><span className="font-semibold text-amber-700 dark:text-amber-400">{selRoute.vehiclePlate}</span>{selRoute.driverName ? ` · ${selRoute.driverName}` : ""}</>
-                        ) : selRoute.driverName ?? "No bus assigned"}
-                      </p>
-                    </div>
-                    <button onClick={() => setTransportOpen(true)} className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2">change</button>
-                  </div>
-                );
-              })()}
 
-              {/* GPS Status Bar with Real-Time Speed & Motion State */}
-              {(() => {
-                const isBusLive = driverLoc.isLive || tripActive;
-                return (
-                  <div className="rounded-xl border border-border bg-muted/40 p-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 truncate">
-                        <Bus size={12} className="text-amber-500 shrink-0" />
-                        {driverLoc.vehicleNumber ? `Bus: ${driverLoc.vehicleNumber}` : "Bus Location"}
-                      </p>
-                      <p className="text-sm font-semibold text-foreground font-mono truncate">
-                        {isBusLive
-                          ? `${driverLoc.lat.toFixed(4)}°N, ${driverLoc.lng.toFixed(4)}°E`
-                          : "Bus Offline (Parked)"}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-xs text-muted-foreground font-medium">
-                        {isBusLive
-                          ? ((driverLoc.speedKmh ?? 0) > 3 ? "⚡ Moving" : "⏸️ Stopped")
-                          : "Status"}
-                      </p>
-                      <p className={`text-sm font-bold flex items-center gap-1 justify-end ${isBusLive ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
-                        <span className={`h-2 w-2 rounded-full inline-block ${isBusLive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
-                        {isBusLive
-                          ? `${driverLoc.speedKmh != null && driverLoc.speedKmh > 0 ? Math.round(driverLoc.speedKmh) : 0} km/h`
-                          : "Offline"}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div className="rounded-xl overflow-hidden border border-border shadow-sm" style={{ height: 280 }}>
-                <OsmMap
-                  mode="tracking"
-                  route={routeStations.filter((rs) => rs.lat && rs.lng).map((rs) => ({ lat: rs.lat!, lng: rs.lng!, name: rs.stationName ?? `Stop ${rs.id}` }))}
-                  lat={driverLoc.lat}
-                  lng={driverLoc.lng}
-                  isLive={driverLoc.isLive || tripActive}
-                  label={driverLoc.vehicleNumber ?? undefined}
-                  height={280}
-                />
-              </div>
-              {routeStations.length > 0 ? (
-                <p className="text-xs text-muted-foreground text-center">
-                  Your route · {routeStations.length} stop{routeStations.length !== 1 ? "s" : ""}
+            {(isFreezeActive || tripCompleted) ? (
+              <div className="rounded-2xl border border-sky-300 dark:border-sky-800/60 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-indigo-950/40 p-5 text-center space-y-2 shadow-inner backdrop-blur-md">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-300 shadow-md">
+                  <Lock size={24} />
+                </div>
+                <p className="text-sm font-bold text-sky-900 dark:text-sky-200">
+                  Live Map &amp; Bus Tracking Closed / नक्सा तथा बस स्थान बन्द छ 🎒
                 </p>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center">Next stop: Kalanki Chowk</p>
-              )}
-            </>
-          )}
-      </div>
-
-      {/* Route Stops — my stop pinned, rest scrollable */}
-      {routeStations.length > 0 && (() => {
-        const myStop = routeStations.find(rs => String(rs.stationId) === selectedStationId);
-        const otherStops = routeStations.filter(rs => String(rs.stationId) !== selectedStationId);
-        const saveStop = async (rs: RouteStationItem) => {
-          setSelectedStationId(String(rs.stationId));
-          setTransportSaving(true);
-          try {
-            await updatePassenger.mutateAsync({
-              id: me?.id ?? 1,
-              data: { routeId: selectedRouteId ? Number(selectedRouteId) : undefined, stationId: rs.stationId },
-            });
-            queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
-            setTransportSaved(true);
-            setTimeout(() => setTransportSaved(false), 2500);
-          } catch { /* ignore */ }
-          finally { setTransportSaving(false); }
-        };
-        return (
-          <div className="space-y-1.5">
-            <button
-              onClick={() => setRouteStopsOpen(!routeStopsOpen)}
-              className="w-full flex items-center justify-between font-semibold text-primary text-sm focus:outline-none hover:opacity-85 transition-opacity"
-            >
-              <span className="flex items-center gap-1.5">
-                <Navigation size={14} /> Your Route Stops
-              </span>
-              {routeStopsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-            
-            {routeStopsOpen && (
-              <div className="rounded-xl border border-border bg-card overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
-                {/* Pinned: user's current stop */}
-                {myStop && (
-                  <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-800/40">
-                    <MapPin size={13} className="shrink-0 text-amber-500" />
-                    <p className="flex-1 text-sm font-bold text-amber-700 dark:text-amber-400 truncate">
-                      {myStop.stationName ?? `Stop ${myStop.stationId}`}
-                    </p>
-                    <span className="shrink-0 rounded-full bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">Your stop</span>
-                  </div>
-                )}
-                {/* Scrollable: all other stops */}
-                {otherStops.length > 0 && (
-                  <div className="divide-y divide-border max-h-[180px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-amber-400">
-                    {otherStops.map((rs) => (
-                      <button
-                        key={rs.id}
-                        onClick={() => saveStop(rs)}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-muted/40 transition-colors"
-                      >
-                        <div className="h-2 w-2 shrink-0 rounded-full border border-border bg-transparent" />
-                        <p className="flex-1 text-xs text-foreground truncate">
-                          {rs.stationName ?? `Stop ${rs.stationId}`}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <p className="text-xs text-sky-700 dark:text-sky-300 max-w-sm mx-auto leading-relaxed">
+                  Today's bus journey is completed. Map tracking &amp; live location are frozen for 4 hours and will automatically unfreeze when the driver starts the next route run.
+                </p>
               </div>
-            )}
-            {transportSaved && (
-              <p className="text-xs text-green-600 font-medium flex items-center gap-1 px-1">
-                <CheckCircle size={11} /> Stop updated
-              </p>
+            ) : (
+              <>
+                {/* Route-locked Bus Info Banner */}
+                {(() => {
+                  const selRoute = (routes ?? []).find((r) => r.id === Number(selectedRouteId));
+                  if (!selRoute) return (
+                    <button
+                      onClick={() => setTransportOpen(true)}
+                      className="w-full flex items-center gap-3 rounded-2xl border border-dashed border-amber-400/80 bg-amber-50/50 dark:bg-amber-950/20 px-4 py-3 text-left hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors shadow-sm"
+                    >
+                      <Route size={14} className="text-amber-500 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">No route selected</p>
+                        <p className="text-[10px] text-amber-600/70 dark:text-amber-500/70">Tap to choose your bus route ↓</p>
+                      </div>
+                    </button>
+                  );
+                  return (
+                    <div className="flex items-center gap-3 rounded-2xl border border-amber-300 dark:border-amber-700/80 bg-amber-50/80 dark:bg-amber-950/30 px-4 py-3 shadow-md backdrop-blur-sm">
+                      <div className={`h-2.5 w-2.5 rounded-full shrink-0 ${selRoute.isActive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-foreground truncate">{selRoute.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {selRoute.vehiclePlate ? (
+                            <><span className="font-semibold text-amber-700 dark:text-amber-400">{selRoute.vehiclePlate}</span>{selRoute.driverName ? ` · ${selRoute.driverName}` : ""}</>
+                          ) : selRoute.driverName ?? "No bus assigned"}
+                        </p>
+                      </div>
+                      <button onClick={() => setTransportOpen(true)} className="shrink-0 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline">Change</button>
+                    </div>
+                  );
+                })()}
+
+                {/* GPS Status Bar with Real-Time Speed & Motion State */}
+                {(() => {
+                  const isBusLive = driverLoc.isLive || tripActive;
+                  return (
+                    <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-muted/40 backdrop-blur-md p-3.5 flex items-center justify-between gap-3 shadow-md">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 truncate">
+                          <Bus size={12} className="text-amber-500 shrink-0" />
+                          {driverLoc.vehicleNumber ? `Bus: ${driverLoc.vehicleNumber}` : "Bus Location"}
+                        </p>
+                        <p className="text-sm font-semibold text-foreground font-mono truncate">
+                          {isBusLive
+                            ? `${driverLoc.lat.toFixed(4)}°N, ${driverLoc.lng.toFixed(4)}°E`
+                            : "Bus Offline (Parked)"}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {isBusLive
+                            ? ((driverLoc.speedKmh ?? 0) > 3 ? "⚡ Moving" : "⏸️ Stopped")
+                            : "Status"}
+                        </p>
+                        <p className={`text-sm font-bold flex items-center gap-1 justify-end ${isBusLive ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                          <span className={`h-2 w-2 rounded-full inline-block ${isBusLive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+                          {isBusLive
+                            ? `${driverLoc.speedKmh != null && driverLoc.speedKmh > 0 ? Math.round(driverLoc.speedKmh) : 0} km/h`
+                            : "Offline"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="rounded-2xl overflow-hidden border border-white/60 dark:border-white/10 shadow-lg" style={{ height: 280 }}>
+                  <OsmMap
+                    mode="tracking"
+                    route={routeStations.filter((rs) => rs.lat && rs.lng).map((rs) => ({ lat: rs.lat!, lng: rs.lng!, name: rs.stationName ?? `Stop ${rs.id}` }))}
+                    lat={driverLoc.lat}
+                    lng={driverLoc.lng}
+                    isLive={driverLoc.isLive || tripActive}
+                    label={driverLoc.vehicleNumber ?? undefined}
+                    height={280}
+                  />
+                </div>
+                {routeStations.length > 0 ? (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Your route · {routeStations.length} stop{routeStations.length !== 1 ? "s" : ""}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center">Next stop: Kalanki Chowk</p>
+                )}
+              </>
             )}
           </div>
-        );
-      })()}
 
-      {/* Tracking Timeline */}
-      <div className="space-y-2">
-        <h2 className="font-semibold text-primary text-sm flex items-center gap-1.5"><Clock size={14} /> Tracking Timeline</h2>
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          {timeline ? (
-            <div className="divide-y divide-border max-h-52 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-muted [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-amber-500">
-              {timeline.map((event, idx) => (
-                <div key={event.id} className="flex items-start gap-3 px-4 py-3">
-                  <div className="flex flex-col items-center gap-1 pt-0.5">
-                    <div className={`h-3 w-3 rounded-full border-2 ${
-                      event.status === "completed"
-                        ? "border-green-500 bg-green-500"
-                        : idx === timeline.findIndex(e => e.status !== "completed")
-                        ? "border-amber-500 bg-amber-500 animate-pulse"
-                        : "border-border bg-transparent"
-                    }`} />
-                    {idx < timeline.length - 1 && (
-                      <div className={`w-0.5 h-4 ${event.status === "completed" ? "bg-green-300" : "bg-border"}`} />
+          {/* Route Stops — my stop pinned, rest scrollable */}
+          {routeStations.length > 0 && (() => {
+            const myStop = routeStations.find(rs => String(rs.stationId) === selectedStationId);
+            const otherStops = routeStations.filter(rs => String(rs.stationId) !== selectedStationId);
+            const saveStop = async (rs: RouteStationItem) => {
+              setSelectedStationId(String(rs.stationId));
+              setTransportSaving(true);
+              try {
+                await updatePassenger.mutateAsync({
+                  id: me?.id ?? 1,
+                  data: { routeId: selectedRouteId ? Number(selectedRouteId) : undefined, stationId: rs.stationId },
+                });
+                queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() });
+                setTransportSaved(true);
+                setTimeout(() => setTransportSaved(false), 2500);
+              } catch { /* ignore */ }
+              finally { setTransportSaving(false); }
+            };
+            return (
+              <div className="space-y-1.5">
+                <button
+                  onClick={() => setRouteStopsOpen(!routeStopsOpen)}
+                  className="w-full flex items-center justify-between font-semibold text-primary text-sm focus:outline-none hover:opacity-85 transition-opacity px-1"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Navigation size={14} /> Your Route Stops
+                  </span>
+                  {routeStopsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                
+                {routeStopsOpen && (
+                  <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-card/90 backdrop-blur-md overflow-hidden shadow-lg animate-in fade-in slide-in-from-top-1 duration-200">
+                    {/* Pinned: user's current stop */}
+                    {myStop && (
+                      <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50/90 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800/40">
+                        <MapPin size={13} className="shrink-0 text-amber-500" />
+                        <p className="flex-1 text-sm font-bold text-amber-700 dark:text-amber-400 truncate">
+                          {myStop.stationName ?? `Stop ${myStop.stationId}`}
+                        </p>
+                        <span className="shrink-0 rounded-full bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400 shadow-xs">Your stop</span>
+                      </div>
+                    )}
+                    {/* Scrollable: all other stops */}
+                    {otherStops.length > 0 && (
+                      <div className="divide-y divide-border/60 max-h-[180px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-amber-400">
+                        {otherStops.map((rs) => (
+                          <button
+                            key={rs.id}
+                            onClick={() => saveStop(rs)}
+                            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                          >
+                            <div className="h-2 w-2 shrink-0 rounded-full border border-border bg-transparent" />
+                            <p className="flex-1 text-xs text-foreground truncate">
+                              {rs.stationName ?? `Stop ${rs.stationId}`}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  <div className="flex-1 pb-1">
-                    <p className="text-sm font-medium text-foreground">{event.description}</p>
-                    <p className="text-xs text-muted-foreground">{event.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground p-4">Loading timeline...</p>
-          )}
-        </div>
-      </div>
-      <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-foreground flex items-center gap-1.5"><MessageSquare size={14} /> Quick Message to Driver</p>
-          {(isFreezeActive || tripCompleted) ? (
-            <span className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-bold"><Lock size={10} /> Frozen</span>
-          ) : isBoarded ? (
-            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium"><Lock size={10} /> {t.locked}</span>
-          ) : sentMsg ? (
-            <span className="text-xs text-green-600 font-medium">✓ Sent</span>
-          ) : null}
-        </div>
-        <div className={`grid grid-cols-2 gap-2 ${(isBoarded || isFreezeActive || tripCompleted) ? "opacity-50 pointer-events-none select-none" : ""}`}>
-          {QUICK_MESSAGES.map((msg) => {
-            const isActive = activeQuickMsg === msg.value;
-            return (
-              <button
-                key={msg.value}
-                onClick={() => handleQuickMessage(msg.value)}
-                disabled={isBoarded || isFreezeActive || tripCompleted}
-                className={`rounded-xl border px-3 py-2.5 text-xs font-medium text-left transition-all active:scale-[0.97] ${
-                  isActive
-                    ? "border-[#ffee47] bg-[#ffee47] text-slate-900 shadow-md scale-[0.98]"
-                    : "border-amber-500/60 bg-amber-50 dark:bg-amber-950/40 text-[#ffcd28] dark:text-amber-300 hover:border-[#ffee47] hover:bg-amber-100 dark:hover:bg-amber-950/70"
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <msg.Icon size={13} className="shrink-0" />
-                  {msg.label}
-                </span>
-              </button>
+                )}
+                {transportSaved && (
+                  <p className="text-xs text-green-600 font-medium flex items-center gap-1 px-1">
+                    <CheckCircle size={11} /> Stop updated
+                  </p>
+                )}
+              </div>
             );
-          })}
-        </div>
-      </div></>) : (
+          })()}
+
+          {/* Tracking Timeline */}
+          <div className="space-y-2">
+            <h2 className="font-semibold text-primary text-sm flex items-center gap-1.5"><Clock size={14} /> Tracking Timeline</h2>
+            <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-card/80 backdrop-blur-md overflow-hidden shadow-lg">
+              {timeline ? (
+                <div className="divide-y divide-border/60 max-h-52 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-muted [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-amber-500">
+                  {timeline.map((event, idx) => (
+                    <div key={event.id} className="flex items-start gap-3 px-4 py-3">
+                      <div className="flex flex-col items-center gap-1 pt-0.5">
+                        <div className={`h-3 w-3 rounded-full border-2 ${
+                          event.status === "completed"
+                            ? "border-green-500 bg-green-500 shadow-xs"
+                            : idx === timeline.findIndex(e => e.status !== "completed")
+                            ? "border-amber-500 bg-amber-500 animate-pulse shadow-xs"
+                            : "border-border bg-transparent"
+                        }`} />
+                        {idx < timeline.length - 1 && (
+                          <div className={`w-0.5 h-4 ${event.status === "completed" ? "bg-green-300" : "bg-border"}`} />
+                        )}
+                      </div>
+                      <div className="flex-1 pb-1">
+                        <p className="text-sm font-medium text-foreground">{event.description}</p>
+                        <p className="text-xs text-muted-foreground">{event.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground p-4">Loading timeline...</p>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Message to Driver */}
+          <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-card/80 backdrop-blur-md p-4 space-y-3 shadow-lg relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-1.5"><MessageSquare size={14} /> Quick Message to Driver</p>
+              {(isFreezeActive || tripCompleted) ? (
+                <span className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-bold"><Lock size={10} /> Frozen</span>
+              ) : isBoarded ? (
+                <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium"><Lock size={10} /> {t.locked}</span>
+              ) : sentMsg ? (
+                <span className="text-xs text-green-600 font-bold">✓ Sent</span>
+              ) : null}
+            </div>
+            <div className={`grid grid-cols-2 gap-2.5 ${(isBoarded || isFreezeActive || tripCompleted) ? "opacity-50 pointer-events-none select-none" : ""}`}>
+              {QUICK_MESSAGES.map((msg) => {
+                const isActive = activeQuickMsg === msg.value;
+                return (
+                  <button
+                    key={msg.value}
+                    onClick={() => handleQuickMessage(msg.value)}
+                    disabled={isBoarded || isFreezeActive || tripCompleted}
+                    className={`rounded-2xl border px-3.5 py-3 text-xs font-semibold text-left transition-all transform active:scale-95 shadow-md relative overflow-hidden ${
+                      isActive
+                        ? "border-amber-300 bg-gradient-to-br from-[#FFF078] to-[#FFD54F] text-slate-900 shadow-amber-500/20 font-bold border-white/60"
+                        : "border-amber-500/30 bg-amber-50/60 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300 hover:bg-amber-100/80 hover:border-amber-400 backdrop-blur-sm"
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <msg.Icon size={13} className="shrink-0" />
+                      {msg.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      ) : (
         /* Non-paying paywall card */
-        <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-          <div className="flex items-center gap-3 px-5 py-4 bg-slate-100 dark:bg-slate-800/70 border-b border-border">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-200 dark:bg-slate-700">
+        <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-card/80 backdrop-blur-md overflow-hidden shadow-lg">
+          <div className="flex items-center gap-3 px-5 py-4 bg-slate-100/80 dark:bg-slate-800/70 border-b border-border">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-200 dark:bg-slate-700 shadow-xs">
               <ShieldAlert size={18} className="text-slate-500" />
             </div>
             <div>
@@ -1417,7 +1421,7 @@ Roll No.: ${roll}`;
                 </div>
               ))}
             </div>
-            <div className="h-32 rounded-xl border border-dashed border-border bg-muted/30 flex items-center justify-center">
+            <div className="h-32 rounded-2xl border border-dashed border-border bg-muted/30 flex items-center justify-center">
               <div className="text-center">
                 <Map size={28} className="text-muted-foreground/40 mx-auto mb-2" />
                 <p className="text-xs text-muted-foreground">GPS map locked</p>
@@ -1426,7 +1430,7 @@ Roll No.: ${roll}`;
             {me?.routeId ? (
               <button
                 onClick={() => setPaymentModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-bold text-slate-900 hover:bg-amber-400 transition-colors"
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 py-3 text-sm font-bold text-slate-900 shadow-lg shadow-amber-500/25 border border-white/30 hover:brightness-105 active:scale-98 transition-all"
               >
                 <CreditCard size={15} />
                 Renew Bus Access — NPR 1,500/mo
@@ -1436,7 +1440,7 @@ Roll No.: ${roll}`;
                 <p className="text-xs text-muted-foreground text-center">First, select your route below to activate tracking</p>
                 <button
                   onClick={() => { setTransportOpen(true); (document.getElementById("transport-config") as HTMLElement)?.scrollIntoView({ behavior: "smooth" }); }}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-amber-500 bg-amber-50 dark:bg-amber-950/30 py-3 text-sm font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl border border-amber-500/80 bg-amber-50/90 dark:bg-amber-950/40 py-3 text-sm font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/60 shadow-md transition-all active:scale-98"
                 >
                   <Route size={15} />
                   Select Your Route Below
@@ -1448,14 +1452,14 @@ Roll No.: ${roll}`;
       )}
 
       {/* Transport Configuration */}
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-card/80 backdrop-blur-md shadow-lg overflow-hidden">
         <button
           onClick={() => !(isFreezeActive || tripCompleted) && setTransportOpen((v) => !v)}
           disabled={isFreezeActive || tripCompleted}
-          className={`w-full flex items-center justify-between px-4 py-3.5 transition-colors ${(isFreezeActive || tripCompleted) ? "opacity-60 cursor-not-allowed bg-muted/20" : "hover:bg-muted/40"}`}
+          className={`w-full flex items-center justify-between px-4 py-4 transition-colors ${(isFreezeActive || tripCompleted) ? "opacity-60 cursor-not-allowed bg-muted/20" : "hover:bg-muted/40"}`}
         >
           <div className="flex items-center gap-2.5">
-            <Route size={15} className="text-[#FFF078] shrink-0" />
+            <Route size={16} className="text-[#FFF078] shrink-0" />
             <div className="text-left">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-semibold text-foreground">Transport Configuration</p>
@@ -1478,14 +1482,14 @@ Roll No.: ${roll}`;
         </button>
 
         {transportOpen && !(isFreezeActive || tripCompleted) && (
-          <div className="border-t border-border px-4 pb-4 pt-3 space-y-3">
+          <div className="border-t border-white/20 dark:border-white/10 px-4 pb-4 pt-3 space-y-3">
             {/* Route picker */}
             <div>
               <label className="mb-1 block text-xs font-semibold text-muted-foreground">Your Route</label>
               <select
                 value={selectedRouteId}
                 onChange={(e) => { setSelectedRouteId(e.target.value); setSelectedStationId(""); }}
-                className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-sm text-foreground outline-none focus:border-amber-500"
+                className="w-full rounded-2xl border border-border bg-muted/50 px-3 py-2.5 text-sm text-foreground outline-none focus:border-amber-500"
               >
                 <option value="">Select a route…</option>
                 {(routes ?? []).filter((r) => r.isActive).map((r) => (
@@ -1512,9 +1516,9 @@ Roll No.: ${roll}`;
                       <button
                         key={rs.id}
                         onClick={() => setSelectedStationId(String(rs.stationId))}
-                        className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all ${
+                        className={`w-full flex items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left transition-all ${
                           selectedStationId === String(rs.stationId)
-                            ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
+                            ? "border-amber-500 bg-amber-50/90 dark:bg-amber-950/40 shadow-xs font-bold"
                             : "border-border bg-muted/30 hover:border-amber-300"
                         }`}
                       >
@@ -1538,12 +1542,12 @@ Roll No.: ${roll}`;
               <button
                 onClick={handleSaveTransport}
                 disabled={!selectedRouteId || !selectedStationId || transportSaving}
-                className="flex-1 rounded-xl py-2.5 text-xs font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-50 transition-colors bg-[#ffee47]"
+                className="flex-1 rounded-2xl py-3 text-xs font-bold text-slate-900 hover:brightness-105 disabled:opacity-50 transition-all bg-gradient-to-r from-[#FFF078] via-[#FFE240] to-[#FFD54F] shadow-lg shadow-amber-500/20 border border-white/40 active:scale-98"
               >
                 {transportSaving ? "Saving…" : "Save Transport Config"}
               </button>
               {transportSaved && (
-                <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                <span className="text-xs text-green-600 font-bold flex items-center gap-1">
                   <CheckCircle size={12} />Saved!
                 </span>
               )}
@@ -1558,7 +1562,7 @@ Roll No.: ${roll}`;
 
       {/* ── Approved Leave Application Banner ── */}
       {appApproved && (
-        <div className="rounded-xl border border-emerald-400 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-700 p-4 text-white shadow-lg space-y-2 animate-in fade-in duration-300">
+        <div className="rounded-2xl border border-emerald-400/80 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-700 p-4 text-white shadow-xl backdrop-blur-md space-y-2 animate-in fade-in duration-300 relative overflow-hidden">
           <div className="flex items-center gap-3">
             <CheckCircle size={32} className="text-white shrink-0 animate-bounce" />
             <div className="flex-1 min-w-0">
@@ -1569,7 +1573,7 @@ Roll No.: ${roll}`;
             </div>
             <button
               onClick={() => setAppApproved(false)}
-              className="rounded-lg bg-emerald-900/60 p-1 text-emerald-200 hover:text-white"
+              className="rounded-full bg-emerald-900/60 p-1.5 text-emerald-200 hover:text-white transition-colors"
             >
               <X size={16} />
             </button>
@@ -1577,15 +1581,15 @@ Roll No.: ${roll}`;
         </div>
       )}
 
-      {/* ── Direct Message to School Admin Section (Visible when unfrozen; during 4h freeze top blue banner handles this) ── */}
+      {/* ── Direct Message to School Admin Section (Bottom) ── */}
       {!(isFreezeActive || tripCompleted) && (
-        <div className="rounded-xl border border-slate-700 bg-slate-800 p-3 space-y-1.5 shadow-sm">
+        <div className="rounded-2xl border border-slate-700/80 bg-gradient-to-br from-slate-800 to-slate-900 p-4 space-y-2.5 shadow-xl relative overflow-hidden backdrop-blur-md">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-blue-400">
               <MessageSquare size={14} />
               <p className="text-xs font-bold text-white">Send Message to School Admin</p>
             </div>
-            <span className="rounded-full bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 text-[9px] font-bold text-emerald-400">
+            <span className="rounded-full bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-0.5 text-[9px] font-bold text-emerald-400 shadow-xs">
               ✓ Active & Available
             </span>
           </div>
@@ -1594,7 +1598,7 @@ Roll No.: ${roll}`;
           </p>
           <button
             onClick={openAdminMsgModal}
-            className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] py-2 transition-colors shadow-md"
+            className="w-full flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs py-3 transition-all shadow-lg shadow-blue-600/25 border border-white/20 active:scale-98"
           >
             <Send size={12} />
             Message Admin / प्रशासनलाई सन्देश पठाउनुहोस्
@@ -1604,11 +1608,11 @@ Roll No.: ${roll}`;
 
       {/* ── Direct Message to School Admin Modal ── */}
       {adminMsgModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl bg-card/95 backdrop-blur-xl border border-white/30 dark:border-white/10 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-600/30">
                   <Send size={16} />
                 </div>
                 <div>
@@ -1618,14 +1622,14 @@ Roll No.: ${roll}`;
               </div>
               <button
                 onClick={() => setAdminMsgModalOpen(false)}
-                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+                className="rounded-full p-2 text-muted-foreground hover:bg-muted transition-colors border border-border"
               >
                 <X size={18} />
               </button>
             </div>
 
             {adminMsgToast ? (
-              <div className="rounded-xl bg-emerald-950/40 border border-emerald-500/40 p-4 text-xs text-emerald-300 font-semibold text-center space-y-1">
+              <div className="rounded-2xl bg-emerald-950/40 border border-emerald-500/40 p-4 text-xs text-emerald-300 font-semibold text-center space-y-1 shadow-md">
                 <p className="text-sm font-bold">✓ {adminMsgToast}</p>
                 <p className="text-[10px] text-emerald-400/80">Delivered to School Administration log.</p>
               </div>
@@ -1636,19 +1640,19 @@ Roll No.: ${roll}`;
                   <div className="flex flex-wrap gap-1.5">
                     <button
                       onClick={() => setAdminMsgText(generateLeaveTemplate())}
-                      className="rounded-lg border border-blue-400/50 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1.5 text-[11px] font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex items-center gap-1"
+                      className="rounded-xl border border-blue-400/50 bg-blue-50/90 dark:bg-blue-950/40 px-3 py-1.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 shadow-xs transition-colors flex items-center gap-1"
                     >
                       📄 Leave Application (बिदाको निवेदन)
                     </button>
                     <button
                       onClick={() => setAdminMsgText("Respected Admin,\nI have an inquiry regarding bus pickup timing & route today. Kindly inform.\nThank you!")}
-                      className="rounded-lg border border-amber-400/50 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors flex items-center gap-1"
+                      className="rounded-xl border border-amber-400/50 bg-amber-50/90 dark:bg-amber-950/40 px-3 py-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 shadow-xs transition-colors flex items-center gap-1"
                     >
                       🚌 Bus Inquiry (बस जानकारी)
                     </button>
                     <button
                       onClick={() => setAdminMsgText("")}
-                      className="rounded-lg border border-border bg-muted px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
+                      className="rounded-xl border border-border bg-muted/70 px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted transition-colors"
                     >
                       ✏️ Clear / Custom
                     </button>
@@ -1662,21 +1666,21 @@ Roll No.: ${roll}`;
                     onChange={(e) => setAdminMsgText(e.target.value)}
                     placeholder="Type your message to admin here... (उदा: बिदाको निवेदन / प्रश्न)"
                     rows={11}
-                    className="w-full rounded-xl border border-input bg-background p-3 text-xs text-foreground font-mono focus:border-blue-500 focus:outline-none leading-relaxed resize-y select-text"
+                    className="w-full rounded-2xl border border-input bg-background/90 p-3 text-xs text-foreground font-mono focus:border-blue-500 focus:outline-none leading-relaxed resize-y select-text shadow-inner"
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                <div className="flex justify-end gap-2.5 pt-2 border-t border-border">
                   <button
                     onClick={() => setAdminMsgModalOpen(false)}
-                    className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
+                    className="rounded-2xl border border-border px-4 py-2.5 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSendAdminMessage}
                     disabled={!adminMsgText.trim() || adminMsgSending}
-                    className="rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-5 py-2 text-xs font-bold text-white shadow-md transition-all flex items-center gap-1.5"
+                    className="rounded-2xl bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-600/30 border border-white/20 transition-all flex items-center gap-1.5 active:scale-98"
                   >
                     {adminMsgSending ? "Sending…" : "Send Application ✓"}
                   </button>
