@@ -3,9 +3,9 @@
     "version": "0.0.0",
     "license": "MIT",
     "scripts": {
-        "build": "pnpm --filter @workspace/api-server --filter @workspace/fleetsaas --if-present run build",
+        "build": "pnpm --filter @workspace/api-server run build && vite build --config apps/frontend/vite.config.ts",
         "build:backend": "pnpm --filter @workspace/api-server run build",
-        "build:frontend": "pnpm --filter @workspace/fleetsaas run build",
+        "build:frontend": "vite build --config apps/frontend/vite.config.ts",
         "start": "pnpm --filter @workspace/api-server start",
         "start:backend": "pnpm --filter @workspace/api-server start",
         "typecheck:libs": "tsc --build",

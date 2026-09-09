@@ -52,7 +52,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) navigate("/auth");
   }, [user, navigate]);
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-amber-400 font-mono text-sm">
+        Redirecting to login...
+      </div>
+    );
+  }
   return <>{children}</>;
 }
 
@@ -116,7 +122,7 @@ function App() {
         <TooltipProvider>
           <AuthProvider>
             <CacheInvalidator />
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "") || undefined}>
               <Router />
             </WouterRouter>
             <RealtimeBridge />
