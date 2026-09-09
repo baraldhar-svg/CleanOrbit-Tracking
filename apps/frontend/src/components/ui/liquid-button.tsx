@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export interface LiquidButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
-  variant?: "liquid" | "glass" | "primary" | "secondary" | "danger" | "ghost";
+  variant?: "liquid" | "glass" | "primary" | "secondary" | "danger" | "ghost" | "amber" | "green" | "rose" | "blue";
   size?: "sm" | "md" | "lg";
   icon?: React.ReactNode;
   badge?: string | number;
@@ -53,6 +53,28 @@ export function LiquidButton({
     lg: "px-6 py-2.5 text-sm sm:text-base gap-2.5 rounded-full",
   };
 
+  let variantClass = "liquid-btn-glass text-slate-700 dark:text-slate-200";
+
+  if (active) {
+    if (variant === "green") {
+      variantClass = "liquid-btn-green-active";
+    } else if (variant === "rose" || variant === "danger") {
+      variantClass = "liquid-btn-rose-active";
+    } else if (variant === "amber") {
+      variantClass = "liquid-btn-amber-msg-active";
+    } else if (variant === "blue") {
+      variantClass = "liquid-btn-blue-admin";
+    } else {
+      variantClass = "liquid-btn-active text-white font-bold";
+    }
+  } else if (variant === "amber") {
+    variantClass = "liquid-btn-amber-msg";
+  } else if (variant === "green") {
+    variantClass = "liquid-btn-glass text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-50 dark:hover:bg-emerald-950/40";
+  } else if (variant === "rose") {
+    variantClass = "liquid-btn-glass text-rose-700 dark:text-rose-300 border-rose-500/40 hover:bg-rose-50 dark:hover:bg-rose-950/40";
+  }
+
   return (
     <button
       ref={buttonRef}
@@ -67,22 +89,20 @@ export function LiquidButton({
         "relative select-none font-medium flex items-center justify-center transition-all duration-300 outline-none focus:outline-none",
         "active:scale-95",
         sizeStyles[size],
-        active
-          ? "liquid-btn-active text-white font-bold"
-          : "liquid-btn-glass text-slate-700 dark:text-slate-200",
+        variantClass,
         className
       )}
       style={{
-        transform: isHovered && !active ? "translateY(-1px)" : undefined,
+        transform: isHovered && !active ? "translateY(-2px) scale(1.02)" : undefined,
       }}
       {...props}
     >
-      {/* Specular 3D light reflection tracking mouse */}
+      {/* Specular 3D light reflection tracking mouse coordinates */}
       {isHovered && !active && (
         <span
-          className="absolute inset-0 pointer-events-none rounded-inherit transition-opacity duration-300"
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300"
           style={{
-            background: `radial-gradient(circle 60px at ${mousePos.x}% ${mousePos.y}%, rgba(255, 255, 255, 0.45), transparent 70%)`,
+            background: `radial-gradient(circle 70px at ${mousePos.x}% ${mousePos.y}%, rgba(255, 255, 255, 0.55), transparent 70%)`,
             borderRadius: "inherit",
           }}
         />
@@ -91,7 +111,7 @@ export function LiquidButton({
       {/* Ripple effect on click */}
       {ripple && (
         <span
-          className="absolute pointer-events-none rounded-full animate-ping bg-white/40"
+          className="absolute pointer-events-none rounded-full animate-ping bg-white/50"
           style={{
             left: ripple.x - 15,
             top: ripple.y - 15,
@@ -107,7 +127,7 @@ export function LiquidButton({
       {/* Text Label */}
       <span className="relative z-10 whitespace-nowrap">{children}</span>
 
-      {/* Badge (e.g. unread count or indicator) */}
+      {/* Badge */}
       {badge !== undefined && (
         <span
           className={cn(

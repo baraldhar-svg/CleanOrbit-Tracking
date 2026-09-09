@@ -940,12 +940,14 @@ Roll No.: ${roll}`;
         }
         // State 1b: Before Boarding — waiting for bus to start
         return (
-          <div className="rounded-2xl border border-amber-300 dark:border-amber-700/60 bg-gradient-to-r from-amber-500/90 to-orange-500/90 p-4 text-white shadow-md backdrop-blur-md opacity-85">
-            <div className="flex items-center gap-3">
-              <Bus size={36} className="text-white/80 drop-shadow shrink-0" />
-              <div className="min-w-0">
-                <p className="font-bold text-sm">Waiting for bus service…</p>
-                <p className="text-xs text-amber-100 mt-0.5 leading-snug">
+          <div className="liquid-banner-orange p-4 text-white shadow-xl backdrop-blur-md opacity-95 group cursor-pointer transition-all duration-300 hover:scale-[1.01]">
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="h-12 w-12 rounded-2xl bg-white/20 border border-white/40 flex items-center justify-center shrink-0 shadow-inner">
+                <Bus size={28} className="text-white drop-shadow" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-extrabold text-sm sm:text-base tracking-wide drop-shadow-sm">Waiting for bus service…</p>
+                <p className="text-xs text-amber-50 mt-0.5 leading-snug font-medium">
                   {myStop?.stationName
                     ? `Your stop: ${myStop.stationName} · Bus hasn't started yet`
                     : "Your bus hasn't started the route yet"}
@@ -960,21 +962,21 @@ Roll No.: ${roll}`;
         <div className="flex items-center gap-2 w-full">
           <button
             onClick={() => setEditProfileOpen(true)}
-            className="flex-1 border border-white/60 dark:border-white/10 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-card/60 px-3.5 py-3 flex items-center gap-3 hover:shadow-lg transition-all duration-300 shadow-md text-left min-w-0 backdrop-blur-md"
+            className="flex-1 liquid-glass-card liquid-glass-card-hover border border-white/80 dark:border-white/10 rounded-3xl bg-white/75 dark:bg-slate-900/75 px-4 py-3.5 flex items-center gap-3.5 hover:shadow-xl hover:scale-[1.01] transition-all duration-300 shadow-md text-left min-w-0 backdrop-blur-xl relative overflow-hidden"
           >
             {/* Avatar */}
-            <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-amber-400 bg-muted shrink-0 flex items-center justify-center shadow-sm">
+            <div className="h-11 w-11 rounded-2xl overflow-hidden border-2 border-amber-400 bg-muted shrink-0 flex items-center justify-center shadow-md ring-2 ring-amber-400/20">
               {localPhotoUrl || me?.photoUrl
                 ? <img src={localPhotoUrl || me?.photoUrl!} alt={user.name} className="h-full w-full object-cover" />
-                : <User size={18} className="text-muted-foreground" />}
+                : <User size={20} className="text-muted-foreground" />}
             </div>
             {/* Name + meta */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-semibold text-foreground">
+                <span className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-white">
                   {user.title ? `${user.title} ` : ""}{user.name}
                 </span>
-                <span className="rounded-full bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase shadow-xs">
+                <span className="rounded-full bg-amber-500/15 dark:bg-amber-950/40 border border-amber-400 dark:border-amber-700 px-2.5 py-0.5 text-[10px] font-black text-amber-700 dark:text-amber-300 uppercase shadow-xs">
                   {user.role}
                 </span>
               </div>
@@ -982,8 +984,8 @@ Roll No.: ${roll}`;
               {(() => {
                 const station = routeStations.find(rs => String(rs.stationId) === selectedStationId);
                 return station?.stationName ? (
-                  <p className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
-                    <MapPin size={9} className="shrink-0 text-amber-500" />
+                  <p className="flex items-center gap-1 mt-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    <MapPin size={11} className="shrink-0 text-amber-500" />
                     {station.stationName}
                   </p>
                 ) : null;
@@ -1003,30 +1005,30 @@ Roll No.: ${roll}`;
             ? haversineKm(driverLoc.lat, driverLoc.lng, schoolStation.lat, schoolStation.lng)
             : null;
           return (
-            <div className="rounded-2xl border border-amber-300/80 dark:border-amber-700/60 bg-gradient-to-b from-amber-50/90 to-amber-100/40 dark:from-amber-950/40 dark:to-slate-900/40 backdrop-blur-md px-4 py-3.5 shadow-lg relative overflow-hidden">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse shrink-0" />
-                <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Live Bus Distance</p>
+            <div className="liquid-glass-card rounded-3xl border border-amber-300/80 dark:border-amber-700/60 bg-gradient-to-b from-amber-50/90 to-amber-100/40 dark:from-amber-950/40 dark:to-slate-900/40 backdrop-blur-xl px-5 py-4 shadow-xl relative overflow-hidden">
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse shrink-0 shadow-xs shadow-green-500" />
+                <p className="text-xs font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">Live Bus Distance</p>
               </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="rounded-xl bg-white/80 dark:bg-amber-900/20 border border-white/60 dark:border-amber-700/40 px-3 py-2.5 text-center shadow-xs backdrop-blur-sm">
-                  <p className="text-[10px] text-muted-foreground font-medium mb-0.5">🚏 Your Stop</p>
-                  <p className="text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-white/85 dark:bg-amber-900/20 border border-white/80 dark:border-amber-700/40 px-3.5 py-3 text-center shadow-md backdrop-blur-sm">
+                  <p className="text-[10px] text-muted-foreground font-semibold mb-0.5">🚏 Your Stop</p>
+                  <p className="text-xl font-black text-amber-600 dark:text-amber-400 leading-tight">
                     {distToMyStopKm != null ? (
                       <span className="flex flex-col items-center">
                         <span>{distToMyStopKm.toFixed(1)} km</span>
-                        <span className="text-xs text-amber-600/80">(~{Math.max(1, Math.round((distToMyStopKm / 25) * 60))} min)</span>
+                        <span className="text-xs text-amber-600/80 font-bold">(~{Math.max(1, Math.round((distToMyStopKm / 25) * 60))} min)</span>
                       </span>
                     ) : "—"}
                   </p>
-                  <p className="text-[9px] text-muted-foreground truncate">{myStop?.stationName ?? "Not set"}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium truncate mt-0.5">{myStop?.stationName ?? "Not set"}</p>
                 </div>
-                <div className="rounded-xl bg-white/80 dark:bg-amber-900/20 border border-white/60 dark:border-amber-700/40 px-3 py-2.5 text-center shadow-xs backdrop-blur-sm">
-                  <p className="text-[10px] text-muted-foreground font-medium mb-0.5">🏫 School</p>
-                  <p className="text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight">
+                <div className="rounded-2xl bg-white/85 dark:bg-amber-900/20 border border-white/80 dark:border-amber-700/40 px-3.5 py-3 text-center shadow-md backdrop-blur-sm">
+                  <p className="text-[10px] text-muted-foreground font-semibold mb-0.5">🏫 School</p>
+                  <p className="text-xl font-black text-amber-600 dark:text-amber-400 leading-tight">
                     {distToSchoolKm != null ? `${distToSchoolKm.toFixed(1)} km` : "—"}
                   </p>
-                  <p className="text-[9px] text-muted-foreground truncate">{schoolStation?.stationName ?? "Last stop"}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium truncate mt-0.5">{schoolStation?.stationName ?? "Last stop"}</p>
                 </div>
               </div>
             </div>
@@ -1035,25 +1037,25 @@ Roll No.: ${roll}`;
       )}
 
       {/* Riding Today / Leave Status */}
-      <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-card/80 backdrop-blur-md p-4 space-y-3 shadow-lg relative overflow-hidden">
+      <div className="liquid-glass-card rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 space-y-3.5 shadow-xl relative overflow-hidden">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-foreground">{t.todaysStatus}</p>
+          <p className="text-sm font-extrabold text-slate-800 dark:text-white">{t.todaysStatus}</p>
           {(isFreezeActive || tripCompleted) && (
             <span className="flex items-center gap-1 rounded-full bg-sky-950/40 border border-sky-500/40 px-2.5 py-0.5 text-[10px] font-bold text-sky-400 shadow-xs">
               <Lock size={10} /> 4h Freeze Active
             </span>
           )}
         </div>
-        <div className={`grid grid-cols-2 gap-2.5 ${(isFreezeActive || tripCompleted) ? "opacity-50 pointer-events-none select-none" : ""}`}>
+        <div className={`grid grid-cols-2 gap-3 ${(isFreezeActive || tripCompleted) ? "opacity-50 pointer-events-none select-none" : ""}`}>
           <button
             onClick={handleLiveToday}
             disabled={isBoarded || onLeave || isFreezeActive || tripCompleted}
-            className={`rounded-2xl py-3 px-4 text-sm font-bold transition-all transform active:scale-95 shadow-md ${
+            className={`rounded-2xl py-3.5 px-4 text-sm font-black transition-all transform active:scale-95 shadow-lg relative overflow-hidden ${
               isBoarded || isFreezeActive || tripCompleted
                 ? "bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed"
                 : liveToday && !onLeave
-                  ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-green-600/30 border border-white/40 shadow-lg"
-                  : "bg-muted/80 hover:bg-muted text-muted-foreground border border-border"
+                  ? "liquid-btn-green-active shadow-emerald-500/35"
+                  : "liquid-btn-glass text-slate-700 dark:text-slate-200"
             }`}
           >
             {liveToday && !onLeave && !isBoarded ? t.ridingToday : t.markLive}
@@ -1061,12 +1063,12 @@ Roll No.: ${roll}`;
           <button
             onClick={handleLeaveClick}
             disabled={isBoarded || isFreezeActive || tripCompleted}
-            className={`rounded-2xl py-3 px-4 text-sm font-bold transition-all transform active:scale-95 select-none shadow-md ${
+            className={`rounded-2xl py-3.5 px-4 text-sm font-black transition-all transform active:scale-95 select-none shadow-lg relative overflow-hidden ${
               isBoarded || isFreezeActive || tripCompleted
                 ? "bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed"
                 : onLeave
-                  ? "bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-red-600/30 border border-white/40 shadow-lg"
-                  : "bg-muted/80 hover:bg-muted text-muted-foreground border border-border"
+                  ? "liquid-btn-rose-active shadow-rose-500/35"
+                  : "liquid-btn-glass text-slate-700 dark:text-slate-200"
             }`}
           >
             {isBoarded ? (
@@ -1079,19 +1081,19 @@ Roll No.: ${roll}`;
           </button>
         </div>
         {(isFreezeActive || tripCompleted) ? (
-          <div className="flex items-center gap-2 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50/90 dark:bg-sky-950/40 px-3.5 py-2.5 shadow-xs">
+          <div className="flex items-center gap-2 rounded-2xl border border-sky-200 dark:border-sky-800 bg-sky-50/90 dark:bg-sky-950/40 px-3.5 py-2.5 shadow-xs">
             <Lock size={12} className="shrink-0 text-sky-600 dark:text-sky-400" />
             <p className="text-xs text-sky-700 dark:text-sky-400 font-medium">
               Status updates frozen after journey completion. Unfreezes when driver starts next run.
             </p>
           </div>
         ) : isBoarded ? (
-          <div className="flex items-center gap-2 rounded-xl border border-green-200 dark:border-green-800 bg-green-50/90 dark:bg-green-950/40 px-3.5 py-2.5 shadow-xs">
+          <div className="flex items-center gap-2 rounded-2xl border border-green-200 dark:border-green-800 bg-green-50/90 dark:bg-green-950/40 px-3.5 py-2.5 shadow-xs">
             <Lock size={12} className="shrink-0 text-green-600 dark:text-green-400" />
             <p className="text-xs text-green-700 dark:text-green-400 font-medium">{t.actionsLocked}</p>
           </div>
         ) : sentMsg ? (
-          <div className="rounded-xl dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-3.5 py-2.5 bg-background text-xs font-extrabold text-foreground shadow-xs">
+          <div className="rounded-2xl dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-3.5 py-2.5 bg-background text-xs font-extrabold text-foreground shadow-xs">
             Driver notified: <span className="font-semibold text-green-600 dark:text-green-400">{onLeave ? "Not Riding Today" : "Coming to School Today"}</span>
           </div>
         ) : null}
@@ -1380,14 +1382,14 @@ Roll No.: ${roll}`;
                     key={msg.value}
                     onClick={() => handleQuickMessage(msg.value)}
                     disabled={isBoarded || isFreezeActive || tripCompleted}
-                    className={`rounded-2xl border px-3.5 py-3 text-xs font-semibold text-left transition-all transform active:scale-95 shadow-md relative overflow-hidden ${
+                    className={`rounded-2xl px-3.5 py-3 text-xs font-semibold text-left transition-all transform active:scale-95 shadow-md relative overflow-hidden ${
                       isActive
-                        ? "border-amber-300 bg-gradient-to-br from-[#FFF078] to-[#FFD54F] text-slate-900 shadow-amber-500/20 font-bold border-white/60"
-                        : "border-amber-500/30 bg-amber-50/60 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300 hover:bg-amber-100/80 hover:border-amber-400 backdrop-blur-sm"
+                        ? "liquid-btn-amber-msg-active font-bold border-white/80"
+                        : "liquid-btn-amber-msg font-medium hover:border-amber-300"
                     }`}
                   >
-                    <span className="flex items-center gap-1.5">
-                      <msg.Icon size={13} className="shrink-0" />
+                    <span className="flex items-center gap-1.5 relative z-10">
+                      <msg.Icon size={14} className="shrink-0" />
                       {msg.label}
                     </span>
                   </button>
@@ -1542,7 +1544,7 @@ Roll No.: ${roll}`;
               <button
                 onClick={handleSaveTransport}
                 disabled={!selectedRouteId || !selectedStationId || transportSaving}
-                className="flex-1 rounded-2xl py-3 text-xs font-bold text-slate-900 hover:brightness-105 disabled:opacity-50 transition-all bg-gradient-to-r from-[#FFF078] via-[#FFE240] to-[#FFD54F] shadow-lg shadow-amber-500/20 border border-white/40 active:scale-98"
+                className="flex-1 rounded-2xl py-3 text-xs font-bold text-slate-900 disabled:opacity-50 transition-all liquid-btn-amber-msg-active active:scale-98 shadow-md"
               >
                 {transportSaving ? "Saving…" : "Save Transport Config"}
               </button>
@@ -1583,24 +1585,24 @@ Roll No.: ${roll}`;
 
       {/* ── Direct Message to School Admin Section (Bottom) ── */}
       {!(isFreezeActive || tripCompleted) && (
-        <div className="rounded-2xl border border-slate-700/80 bg-gradient-to-br from-slate-800 to-slate-900 p-4 space-y-2.5 shadow-xl relative overflow-hidden backdrop-blur-md">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-blue-400">
-              <MessageSquare size={14} />
-              <p className="text-xs font-bold text-white">Send Message to School Admin</p>
+        <div className="liquid-glass-card rounded-2xl p-4 space-y-2.5 shadow-xl relative overflow-hidden backdrop-blur-md">
+          <div className="flex items-center justify-between relative z-10">
+            <div className="flex items-center gap-2 text-blue-500 dark:text-blue-400">
+              <MessageSquare size={15} />
+              <p className="text-xs font-bold text-slate-800 dark:text-white">Send Message to School Admin</p>
             </div>
-            <span className="rounded-full bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-0.5 text-[9px] font-bold text-emerald-400 shadow-xs">
+            <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 shadow-xs">
               ✓ Active & Available
             </span>
           </div>
-          <p className="text-[11px] text-slate-300 font-medium leading-relaxed">
+          <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed relative z-10">
             Need help or have an inquiry? Send a direct message to school administration.
           </p>
           <button
             onClick={openAdminMsgModal}
-            className="w-full flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs py-3 transition-all shadow-lg shadow-blue-600/25 border border-white/20 active:scale-98"
+            className="w-full flex items-center justify-center gap-1.5 rounded-2xl liquid-btn-blue-admin text-white font-bold text-xs py-3.5 transition-all shadow-lg active:scale-98 relative z-10"
           >
-            <Send size={12} />
+            <Send size={13} />
             Message Admin / प्रशासनलाई सन्देश पठाउनुहोस्
           </button>
         </div>
