@@ -6079,6 +6079,7 @@ export default function AdminPortal({
   const { data: drivers } = useListDrivers();
   const { data: vehicles } = useListVehicles();
   const { data: adminRoutes } = useListRoutes();
+  const liveLocations = useLiveLocations();
   const queryClient = useQueryClient();
 
   const [localTenant, setLocalTenant] = useState<any | null>(tenant || user?.tenant || null);
