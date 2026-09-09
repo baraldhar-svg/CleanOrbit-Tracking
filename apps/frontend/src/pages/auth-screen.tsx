@@ -3,8 +3,20 @@ import { useLocation, useSearch } from "wouter";
 import { useAuth, type AuthUser } from "@/hooks/use-auth";
 import { startAuthentication } from "@simplewebauthn/browser";
 import BiometricSetupModal from "@/components/BiometricSetupModal";
+import { LiquidButton } from "@/components/ui/liquid-button";
+import {
+  Bus,
+  ShieldCheck,
+  ArrowRight,
+  ArrowLeft,
+  RefreshCw,
+  Building2,
+  AlertTriangle,
+  CheckCircle2,
+  Fingerprint
+} from "lucide-react";
 
-type Step = "phone" | "schoolCode" | "otp" | "updateEmail";
+type Step = "phone" | "schoolCode" | "otp";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -18,7 +30,7 @@ async function apiPost(path: string, body: unknown) {
   let data: any;
   try {
     data = JSON.parse(text);
-  } catch (e) {
+  } catch {
     if (!res.ok) throw new Error(`Server error (${res.status}). Please try again shortly.`);
     throw new Error("Invalid response from server.");
   }
@@ -37,18 +49,19 @@ interface FoundUser {
   name: string;
   role: string;
   requiresSchoolCode: boolean;
-  demoCode: string;
-  requiresPassword?: boolean;
+  demoCode?: string;
   hasEmail?: boolean;
+  maskedEmail?: string;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  superadmin: "Super Admin",
-  admin: "School Admin",
-  driver: "Driver",
-  staff: "Staff",
-  student: "Student / Parent",
-  parent: "Parent",
+const ROLE_CONFIG: Record<string, { label: string; badge: string; icon: string }> = {
+  superadmin: { label: "Super Admin", badge: "bg-purple-500/20 text-purple-300 border-purple-500/30", icon: "⚡" },
+  admin:      { label: "Organization Admin", badge: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: "🏫" },
+  teacher:    { label: "Class Teacher", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", icon: "👩‍🏫" },
+  driver:     { label: "Fleet Driver", badge: "bg-amber-500/20 text-amber-300 border-amber-500/30", icon: "🚍" },
+  staff:      { label: "Staff Member", badge: "bg-teal-500/20 text-teal-300 border-teal-500/30", icon: "👤" },
+  student:    { label: "Student / Parent", badge: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30", icon: "🎒" },
+  parent:     { label: "Guardian / Parent", badge: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30", icon: "👨‍👩‍👧" },
 };
 
 export default function AuthScreen() {
@@ -62,60 +75,76 @@ export default function AuthScreen() {
   const [step, setStep] = useState<Step>(() => {
     try { return (sessionStorage.getItem("auth_step") as Step) || "phone"; } catch { return "phone"; }
   });
-  const [newEmail, setNewEmail] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  
   const search = useSearch();
   const params = new URLSearchParams(search);
   const paramPhone = params.get("phone");
+  
   const [phone, setPhone] = useState(() => {
-    try { return paramPhone || sessionStorage.getItem("auth_phone") || ""; } catch { return paramPhone || ""; }
+    try { 
+      const raw = paramPhone || sessionStorage.getItem("auth_phone") || "";
+      return raw.replace(/^\+?977\s?/, "").replace(/\D/g, "").slice(0, 10);
+    } catch { return ""; }
   });
+
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [schoolCode, setSchoolCode] = useState(() => {
     try { return sessionStorage.getItem("auth_schoolCode") || ""; } catch { return ""; }
   });
-  const [password, setPassword] = useState("");
-  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [countdown, setCountdown] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+
   const [foundUser, setFoundUser] = useState<FoundUser | null>(() => {
     try {
       const stored = sessionStorage.getItem("auth_foundUser");
       return stored ? JSON.parse(stored) : null;
     } catch { return null; }
   });
-  const [loginMethod, setLoginMethod] = useState<"otp" | "password">(() => {
-    try { return (sessionStorage.getItem("auth_loginMethod") as "otp" | "password") || "otp"; } catch { return "otp"; }
-  });
-  const [showPassword, setShowPassword] = useState(false);
+
+  const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     try {
       sessionStorage.setItem("auth_step", step);
       sessionStorage.setItem("auth_phone", phone);
       sessionStorage.setItem("auth_schoolCode", schoolCode);
-      sessionStorage.setItem("auth_loginMethod", loginMethod);
       if (foundUser) sessionStorage.setItem("auth_foundUser", JSON.stringify(foundUser));
       else sessionStorage.removeItem("auth_foundUser");
     } catch {}
-  }, [step, phone, schoolCode, loginMethod, foundUser]);
+  }, [step, phone, schoolCode, foundUser]);
 
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (step === "otp" && countdown > 0) {
+      setCanResend(false);
+      timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else if (countdown === 0) {
+      setCanResend(true);
+    }
+    return () => clearInterval(timer);
+  }, [step, countdown]);
 
-  // ── Biometric auto-login ──────────────────────────────────────────────
   const triggerBiometricLogin = useCallback(
     async (credentialId: string) => {
       setBioAutoState("scanning");
       try {
-        const options = await apiPost("/auth/webauthn/login-options", {
-          credentialId,
-        });
+        const options = await apiPost("/auth/webauthn/login-options", { credentialId });
         const response = await startAuthentication({ optionsJSON: options });
-        const result = await apiPost("/auth/webauthn/login-verify", {
-          response,
-        });
+        const result = await apiPost("/auth/webauthn/login-verify", { response });
         if (result.verified && result.user) {
-          login({ ...result.user, tenant: result.user.tenant ?? null });
+          login({ ...result.user, tenant: result.user.tenant ?? null }, result.token);
           navigate("/dashboard");
         } else {
           setBioAutoState("failed");
@@ -132,46 +161,23 @@ export default function AuthScreen() {
     try {
       const stored = localStorage.getItem(BIOMETRIC_KEY);
       if (stored && isBiometricSupported()) {
-        const { credentialId } = JSON.parse(stored) as {
-          phone: string;
-          credentialId: string;
-        };
+        const { credentialId } = JSON.parse(stored) as { phone: string; credentialId: string };
         if (credentialId) {
           setBioCredentialId(credentialId);
           setBioAutoState("waiting");
           timer = setTimeout(() => triggerBiometricLogin(credentialId), 350);
         }
       }
-    } catch {
-      /* ignore parse errors */
-    }
-    return () => {
-      if (timer !== undefined) clearTimeout(timer);
-    };
+    } catch {}
+    return () => { if (timer !== undefined) clearTimeout(timer); };
   }, [triggerBiometricLogin]);
 
-  useEffect(() => {
-    if (foundUser?.demoCode && step === "otp") {
-      setOtp(foundUser.demoCode.split(""));
-      otpRefs.current[0]?.focus();
-    }
-  }, [foundUser, step]);
-
-  useEffect(() => {
-    if (paramPhone && paramPhone.length >= 10 && step === "phone") {
-      // Auto-trigger if we came with a phone param
-      handleCheckPhone(paramPhone);
-    }
-  }, [paramPhone]);
-
-  // ── Auth handlers ─────────────────────────────────────────────────────
   function finishAuth(user: AuthUser, token?: string) {
     try {
       sessionStorage.removeItem("auth_step");
       sessionStorage.removeItem("auth_phone");
       sessionStorage.removeItem("auth_schoolCode");
       sessionStorage.removeItem("auth_foundUser");
-      sessionStorage.removeItem("auth_loginMethod");
     } catch {}
 
     login(user, token);
@@ -182,48 +188,52 @@ export default function AuthScreen() {
     }
   }
 
-  async function handleCheckPhone(p?: string) {
-    const phoneNumber = typeof p === "string" ? p : phone;
+  async function handleSendOtp(customPhone?: string) {
+    const rawNumber = customPhone || phone;
+    const cleanDigits = rawNumber.replace(/\D/g, "");
+    
+    if (cleanDigits.length < 10) {
+      setErr("Please enter a valid 10-digit Nepal mobile number.");
+      return;
+    }
+
     setErr("");
+    setSuccessMsg("");
     setLoading(true);
 
     try {
-      const data = await apiPost("/auth/check-phone", { phone: phoneNumber });
+      const data = await apiPost("/auth/check-phone", { phone: cleanDigits });
 
       if (data.found === false) {
-        navigate(`/register?phone=${encodeURIComponent(phoneNumber)}`);
+        navigate(`/register?phone=${encodeURIComponent(cleanDigits)}`);
         return;
       }
 
-      // API returns { found, verified, user, requiresSchoolCode, demoCode?, requiresPassword? }
-      // Map it to the FoundUser shape expected by the UI
       const fu: FoundUser = {
-        name: data.user?.name ?? data.name ?? "",
+        name: data.user?.name ?? data.name ?? "User",
         role: data.user?.role ?? data.role ?? "student",
         requiresSchoolCode: data.requiresSchoolCode ?? false,
-        demoCode: data.demoCode ?? "",
-        requiresPassword: data.requiresPassword ?? false,
+        demoCode: data.demoCode,
         hasEmail: data.hasEmail ?? false,
+        maskedEmail: data.maskedEmail,
       };
+
       setFoundUser(fu);
       setSchoolCode("");
-      if (fu.requiresPassword) {
-        setLoginMethod("password");
-      } else {
-        setLoginMethod("otp");
-      }
-      if (fu.demoCode) {
-        setOtp(fu.demoCode.split(""));
-      }
+      setCountdown(60);
+      setCanResend(false);
+
       if (fu.requiresSchoolCode) {
         setStep("schoolCode");
       } else {
         setStep("otp");
+        setSuccessMsg(`Verification code sent to +977 ${cleanDigits}`);
+        setTimeout(() => otpInputsRef.current[0]?.focus(), 150);
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Could not verify number";
-      if (msg.toLowerCase().includes("not registered") || msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("no account")) {
-        navigate(`/register?phone=${encodeURIComponent(typeof p === "string" ? p : phone)}`);
+      const msg = e instanceof Error ? e.message : "Could not verify phone number";
+      if (msg.toLowerCase().includes("not registered") || msg.toLowerCase().includes("not found")) {
+        navigate(`/register?phone=${encodeURIComponent(cleanDigits)}`);
       } else {
         setErr(msg);
       }
@@ -232,614 +242,357 @@ export default function AuthScreen() {
     }
   }
 
-  async function handleSendEmailOtp(forceEmailSend = false) {
-    if (foundUser?.requiresSchoolCode && !schoolCode.trim()) {
-      setErr("Please enter your school code");
-      return;
-    }
+  async function handleResendOtp() {
+    if (!canResend || loading) return;
     setErr("");
+    setSuccessMsg("");
     setLoading(true);
 
-    const shouldForceEmail = forceEmailSend || !!foundUser?.hasEmail;
-
     try {
-      await apiPost("/auth/send-email-otp", {
-        phone,
-        schoolCode: schoolCode.trim(),
-        forceEmailSend: shouldForceEmail,
-      });
-      setEmailOtpSent(true);
-      setStep("otp");
-      if (shouldForceEmail) setSuccessMsg("Please check your email, an OTP has been sent.");
+      await apiPost("/auth/send-otp", { phone: phone.replace(/\D/g, "") });
+      setCountdown(60);
+      setCanResend(false);
+      setSuccessMsg("A fresh 6-digit OTP has been sent.");
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Failed to send OTP");
+      setErr(e instanceof Error ? e.message : "Failed to resend code.");
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleUpdateEmail() {
-    if (!newEmail.trim() || !newEmail.includes("@")) {
-      setErr("Please enter a valid email address");
+  async function handleVerifyOtp(fullCode?: string) {
+    const code = fullCode || otp.join("");
+    if (code.length < 6) {
+      setErr("Please enter the complete 6-digit verification code.");
       return;
     }
-    setErr("");
-    setLoading(true);
-    try {
-      await apiPost("/auth/update-email", {
-        phone,
-        schoolCode: schoolCode.trim(),
-        email: newEmail.trim(),
-      });
-      setEmailOtpSent(true);
-      setSuccessMsg("Email saved successfully! An OTP has been sent to your email.");
-      setFoundUser({ ...foundUser!, hasEmail: true });
-      setStep("otp");
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Failed to update email");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleVerifyOtp() {
-    setErr("");
-    setLoading(true);
-
-    // ब्याकइन्डले खोजेको सहि ओटिपी कोड सिधै यहाँबाट थप्पडिदिने
-    const code = foundUser?.demoCode || otp.join("");
 
     if (foundUser?.requiresSchoolCode && !schoolCode.trim()) {
-      setErr("Please enter your school code");
-      setLoading(false);
+      setErr("Please enter your organization / school code.");
       return;
     }
+
+    setErr("");
+    setLoading(true);
+
     try {
+      const cleanDigits = phone.replace(/\D/g, "");
       const data = await apiPost("/auth/verify-otp", {
-        phone,
-        code,
-        ...(foundUser?.requiresSchoolCode
-          ? { schoolCode: schoolCode.trim() }
-          : {}),
+        phone: cleanDigits,
+        code: code.trim(),
+        ...(foundUser?.requiresSchoolCode ? { schoolCode: schoolCode.trim() } : {}),
       });
+
       if (data.sessionId) {
-        try { localStorage.setItem("orbittrack_session_id", data.sessionId); } catch (e) {}
+        try { localStorage.setItem("orbittrack_session_id", data.sessionId); } catch {}
       }
+
       if (data.user) {
         finishAuth({ ...data.user, tenant: data.user.tenant ?? null }, data.token as string | undefined);
       } else {
-        setErr("Login failed. Please try again.");
+        setErr("Verification failed. Please try again.");
       }
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Invalid credentials");
+      setErr(e instanceof Error ? e.message : "Invalid or expired OTP code.");
     } finally {
       setLoading(false);
     }
   }
 
-  function resetToPhone() {
+  const handleOtpChange = (index: number, val: string) => {
+    const sanitized = val.replace(/\D/g, "");
+    if (!sanitized) {
+      const nextOtp = [...otp];
+      nextOtp[index] = "";
+      setOtp(nextOtp);
+      return;
+    }
+
+    if (sanitized.length > 1) {
+      const digits = sanitized.slice(0, 6).split("");
+      const nextOtp = [...otp];
+      digits.forEach((d, i) => { if (i < 6) nextOtp[i] = d; });
+      setOtp(nextOtp);
+      const targetIdx = Math.min(digits.length, 5);
+      otpInputsRef.current[targetIdx]?.focus();
+      if (digits.length === 6) handleVerifyOtp(digits.join(""));
+      return;
+    }
+
+    const nextOtp = [...otp];
+    nextOtp[index] = sanitized;
+    setOtp(nextOtp);
+
+    if (index < 5) {
+      otpInputsRef.current[index + 1]?.focus();
+    } else if (index === 5 && nextOtp.every((d) => d !== "")) {
+      handleVerifyOtp(nextOtp.join(""));
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpInputsRef.current[index - 1]?.focus();
+    } else if (e.key === "Enter" && otp.every((d) => d !== "")) {
+      handleVerifyOtp();
+    }
+  };
+
+  const resetToPhone = () => {
     setStep("phone");
     setFoundUser(null);
     setOtp(["", "", "", "", "", ""]);
     setSchoolCode("");
-    setPassword("");
-    setEmailOtpSent(false);
     setErr("");
-    setLoginMethod("otp");
-  }
+    setSuccessMsg("");
+  };
 
-  async function handleLoginPassword() {
-    setErr("");
-    setLoading(true);
-    try {
-      const result = await apiPost("/auth/login-password", { phone, password });
-      login({ ...result.user, tenant: result.user?.tenant ?? null }, result.token as string | undefined);
-      navigate("/dashboard");
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const userRoleMeta = foundUser?.role ? ROLE_CONFIG[foundUser.role] || ROLE_CONFIG.student : ROLE_CONFIG.student;
 
-  // ── Render ────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Biometric auto-login overlay */}
       {bioAutoState !== "idle" && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0F172A] px-4">
-          <span className="text-5xl mb-3 bus-float">🚌</span>
-          <h1 className="text-2xl font-black text-white mb-8">
-            Orbit<span className="text-[#ffd000]">Track</span>
-          </h1>
-          <div className="w-full max-w-xs rounded-3xl border border-slate-700/60 bg-gradient-to-b from-slate-800 to-slate-900 p-8 text-center shadow-2xl">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-2xl px-4 animate-in fade-in duration-300">
+          <div className="relative w-full max-w-sm rounded-3xl bg-slate-900 border border-white/20 p-8 text-center shadow-2xl">
             {bioAutoState === "failed" ? (
               <>
-                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-900/30 ring-2 ring-red-700/40">
-                  <span className="text-4xl">❌</span>
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 border border-red-500/30 text-red-400">
+                  <AlertTriangle size={36} />
                 </div>
-                <h2 className="text-lg font-bold text-white mb-1">
-                  Biometric Failed
-                </h2>
-                <p className="text-xs text-slate-400 mb-5">
-                  Scan not recognized or cancelled.
-                </p>
-                <button
-                  onClick={() =>
-                    bioCredentialId && triggerBiometricLogin(bioCredentialId)
-                  }
-                  className="w-full rounded-2xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 mb-3 transition-colors"
-                >
-                  🔄 Try Again
-                </button>
-                <button
-                  onClick={() => setBioAutoState("idle")}
-                  className="w-full text-xs text-slate-500 hover:text-slate-300 py-2"
-                >
-                  Use mobile number instead →
-                </button>
+                <h2 className="text-xl font-black text-white mb-1">Scan Failed</h2>
+                <p className="text-xs text-slate-400 mb-6">Scan not recognized or cancelled.</p>
+                <div className="space-y-2.5">
+                  <LiquidButton onClick={() => bioCredentialId && triggerBiometricLogin(bioCredentialId)} variant="primary" className="w-full justify-center">Try Again</LiquidButton>
+                  <button onClick={() => setBioAutoState("idle")} className="w-full text-xs font-semibold text-slate-400 hover:text-white py-2">Use OTP instead →</button>
+                </div>
               </>
             ) : (
               <>
-                <div
-                  className={`mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-amber-500/10 ring-2 ring-amber-500/30 ${bioAutoState === "scanning" ? "animate-pulse" : ""}`}
-                >
-                  <svg viewBox="0 0 48 48" className="h-14 w-14" fill="none">
-                    <circle
-                      cx="24"
-                      cy="24"
-                      r="10"
-                      stroke="#f59e0b"
-                      strokeWidth="2.5"
-                    />
-                    <path
-                      d="M24 8C15.163 8 8 15.163 8 24"
-                      stroke="#f59e0b"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M24 8C32.837 8 40 15.163 40 24"
-                      stroke="#fbbf24"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M12 34c2.364 4.8 7.09 8 12 8"
-                      stroke="#f59e0b"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M36 34c-2.364 4.8-7.09 8-12 8"
-                      stroke="#fbbf24"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M18 24c0-3.314 2.686-6 6-6s6 2.686 6 6"
-                      stroke="#fbbf24"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="24" cy="27" r="2" fill="#f59e0b" />
-                  </svg>
+                <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-amber-500/15 ring-4 ring-amber-400/30 animate-pulse">
+                  <Fingerprint size={48} className="text-amber-400" />
                 </div>
-                {bioAutoState === "scanning" ? (
-                  <>
-                    <h2 className="text-lg font-bold text-white mb-1">
-                      Scanning…
-                    </h2>
-                    <p className="text-sm text-slate-400 animate-pulse">
-                      Follow the prompt on your device
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-lg font-bold text-white mb-1">
-                      Biometric Login
-                    </h2>
-                    <p className="text-sm text-slate-400 mb-5">
-                      Sign in instantly with your fingerprint or Face ID
-                    </p>
-                    <button
-                      onClick={() =>
-                        bioCredentialId &&
-                        triggerBiometricLogin(bioCredentialId)
-                      }
-                      className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 py-3.5 font-bold text-slate-900 shadow-lg hover:from-amber-400 hover:to-amber-300 transition-all mb-3 active:scale-[0.98]"
-                    >
-                      🔒 Sign in with Biometric
-                    </button>
-                    <button
-                      onClick={() => setBioAutoState("idle")}
-                      className="w-full text-xs text-slate-500 hover:text-slate-300 py-2"
-                    >
-                      Use mobile number instead →
-                    </button>
-                  </>
-                )}
+                <h2 className="text-xl font-black text-white mb-1">Biometric Verification</h2>
+                <button onClick={() => setBioAutoState("idle")} className="text-xs font-semibold text-slate-400 hover:text-white py-1.5">Switch to Phone OTP →</button>
               </>
             )}
           </div>
         </div>
       )}
 
-      {/* Post-auth biometric setup modal */}
       {pendingUser && (
         <BiometricSetupModal
           user={pendingUser}
-          onComplete={() => {
-            setPendingUser(null);
-            navigate("/dashboard");
-          }}
+          onComplete={() => { setPendingUser(null); navigate("/dashboard"); }}
         />
       )}
 
-      <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#0F172A] px-4 py-8">
-        <div className="w-full max-w-sm rounded-2xl bg-slate-800 border border-slate-700 p-6 shadow-2xl">
-          {/* Back button */}
-          <div className="mb-4">
-            <button
-              onClick={() => navigate("/")}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-3.5 w-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Back
+      <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-slate-950 px-4 py-8">
+        <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-white/10 p-6 sm:p-8 shadow-2xl relative">
+          <div className="flex items-center justify-between mb-6">
+            <button onClick={() => (step === "phone" ? navigate("/") : resetToPhone())} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-amber-400 transition-colors cursor-pointer">
+              <ArrowLeft size={14} /> <span>{step === "phone" ? "Back to Home" : "Change Number"}</span>
             </button>
           </div>
 
-          {/* Header */}
-          <div className="mb-6 flex flex-col items-center gap-2">
-            <span className="text-5xl bus-float">🚌</span>
-            <h1 className="text-2xl font-black text-white">
-              Orbit<span className="text-[#ffd000]">Track</span>
-            </h1>
+          <div className="mb-6 flex flex-col items-center text-center gap-2.5">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center shadow-lg ring-2 ring-white/60">
+              <Bus size={32} className="text-slate-950" />
+            </div>
+            <h1 className="text-2xl font-black text-white">Orbit<span className="text-amber-500">Track</span></h1>
           </div>
 
-          {/* ── STEP: Phone ── */}
           {step === "phone" && (
-            <>
-              <div className="mb-5 text-center">
-                <h2 className="text-lg font-bold text-slate-100">
-                  Secure Login
-                </h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  Enter your registered mobile number to continue
-                </p>
+            <div className="space-y-5">
+              <div className="text-center"><h2 className="text-lg font-black text-white">Enter Mobile Number</h2></div>
+              <div className="flex items-center rounded-2xl border-2 border-white/10 bg-slate-800 focus-within:border-amber-500 transition-all overflow-hidden">
+                <div className="px-3.5 py-3 border-r border-slate-700 bg-slate-800"><span className="text-xs font-black text-white">+977</span></div>
+                <input type="tel" placeholder="98XXXXXXXX" value={phone} maxLength={10} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} className="flex-1 px-3.5 py-3 bg-transparent text-sm font-bold text-white outline-none" />
               </div>
-
-              <div className="mb-4">
-                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
-                  Mobile Number
-                </label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
-                  <span className="text-sm text-slate-400 select-none">📱</span>
-                  <input
-                    type="tel"
-                    placeholder="98XXXXXXXX or +1234567890"
-                    value={phone}
-                    onChange={(e) => {
-                      setPhone(
-                        e.target.value
-                          .replace(/[^\d+\s\-()]/g, "")
-                          .slice(0, 20),
-                      );
-                      setErr("");
-                    }}
-                    className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none"
-                    onKeyDown={(e) =>
-                      e.key === "Enter" &&
-                      phone.replace(/\D/g, "").length >= 7 &&
-                      handleCheckPhone()
-                    }
-                  />
-                </div>
-              </div>
-
-              {err && (
-                <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
-                  <span className="text-red-400 mt-0.5 text-sm shrink-0">
-                    🚫
-                  </span>
-                  <p className="text-xs text-red-300 leading-relaxed">{err}</p>
-                </div>
-              )}
-
-              <button
-                onClick={() => handleCheckPhone()}
-                disabled={phone.replace(/\D/g, "").length < 7 || loading}
-                className="w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="h-4 w-4 rounded-full border-2 border-slate-900/30 border-t-slate-900 animate-spin" />
-                    Checking…
-                  </span>
-                ) : (
-                  "Continue →"
-                )}
-              </button>
-
-              <div className="mt-4 rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2.5">
-                <p className="text-xs text-center text-slate-500">
-                  🔒 Access is restricted to registered users only
-                </p>
-              </div>
-            </>
+              {err && <div className="p-3 bg-red-900/20 text-red-400 text-xs rounded-2xl border border-red-900">{err}</div>}
+              <LiquidButton onClick={() => handleSendOtp()} disabled={phone.length < 10 || loading} variant="primary" className="w-full justify-center">Send OTP Code →</LiquidButton>
+            </div>
           )}
 
-          {/* ── STEP: Credentials (School Code Field + Instant Green Button) ── */}
-          
           {step === "schoolCode" && foundUser && (
-            <>
-              <div className="mb-5 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3 flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-black text-sm">
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-white/10 bg-slate-800/80 p-3.5 flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-500 font-black text-base border border-amber-500/30">
                   {foundUser.name.charAt(0).toUpperCase()}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">
-                    Welcome back, {foundUser.name.split(" ")[0]}! 👋
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-white truncate">
+                    Welcome, {foundUser.name}! 👋
                   </p>
-                  <p className="text-xs text-slate-400">
-                    {ROLE_LABELS[foundUser.role] ?? foundUser.role}
-                  </p>
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full border mt-0.5 ${userRoleMeta.badge}`}>
+                    <span>{userRoleMeta.icon}</span> {userRoleMeta.label}
+                  </span>
                 </div>
               </div>
 
-              <div className="mb-5">
-                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
-                  School Code
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300">
+                  Organization / School Code
                 </label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
-                  <span className="text-slate-400 text-sm">🏫</span>
+                <div className="flex items-center rounded-2xl border-2 border-white/10 bg-slate-800 px-3.5 py-3 focus-within:border-amber-500 transition-all">
+                  <Building2 size={16} className="text-slate-400 mr-2 shrink-0" />
                   <input
                     type="text"
-                    placeholder="e.g. APEX-ALPHA-1234"
+                    placeholder="e.g. APEX-1234"
                     value={schoolCode}
+                    autoFocus
                     onChange={(e) => {
                       setSchoolCode(e.target.value.toUpperCase());
                       setErr("");
                     }}
-                    className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none font-mono tracking-wider"
-                    autoCapitalize="characters"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && schoolCode.trim() && !loading) {
+                        setStep("otp");
+                        setTimeout(() => otpInputsRef.current[0]?.focus(), 150);
+                      }
+                    }}
+                    className="flex-1 bg-transparent text-sm font-black font-mono tracking-wider text-white placeholder:text-slate-600 outline-none uppercase"
                   />
                 </div>
               </div>
 
               {err && (
-                <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
-                  <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
-                  <p className="text-xs text-red-300 leading-relaxed">{err}</p>
+                <div className="flex items-start gap-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400">
+                  <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                  <p className="font-medium">{err}</p>
                 </div>
               )}
 
-              <button
-                onClick={() => handleSendEmailOtp(false)}
-                disabled={loading || !schoolCode.trim()}
-                className="mb-5 w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors shadow-lg"
+              <LiquidButton
+                onClick={() => {
+                  if (!schoolCode.trim()) {
+                    setErr("Please enter your organization or school code.");
+                    return;
+                  }
+                  setStep("otp");
+                  setTimeout(() => otpInputsRef.current[0]?.focus(), 150);
+                }}
+                disabled={!schoolCode.trim() || loading}
+                variant="primary"
+                className="w-full justify-center py-3.5 text-sm font-black shadow-lg"
               >
-                {loading ? "Loading..." : "Continue →"}
-              </button>
-              
-              <button
-                onClick={resetToPhone}
-                className="w-full text-center text-xs text-slate-500 hover:text-slate-300 py-1.5"
-              >
-                ← Change number
-              </button>
-            </>
+                Proceed to Verification →
+              </LiquidButton>
+            </div>
           )}
 
-          {step === "otp" && foundUser && (
-            <>
-              <div className="mb-5 rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3 flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-black text-sm">
-                  {foundUser.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">
-                    Welcome back, {foundUser.name.split(" ")[0]}! 👋
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {ROLE_LABELS[foundUser.role] ?? foundUser.role}
-                  </p>
-                </div>
-              </div>
-
-              {loginMethod === "password" && (
-                <div className="mb-5">
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
-                    Password
-                  </label>
-                  <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
-                    <span className="text-slate-400 text-sm">🔑</span>
-                    <input
-                      type="password"
-                      placeholder="Enter bypass password"
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setErr("");
-                      }}
-                      className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none"
-                      onKeyDown={(e) =>
-                        e.key === "Enter" &&
-                        password.trim() &&
-                        handleLoginPassword()
-                      }
-                    />
+          {step === "otp" && (
+            <div className="space-y-5">
+              {foundUser && (
+                <div className="rounded-2xl border border-white/10 bg-slate-800/80 p-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-500 font-black text-sm border border-amber-500/30">
+                      {foundUser.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-white truncate">
+                        {foundUser.name}
+                      </p>
+                      <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded-full border ${userRoleMeta.badge}`}>
+                        {userRoleMeta.label}
+                      </span>
+                    </div>
                   </div>
+                  <span className="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20 shrink-0">
+                    +977 {phone}
+                  </span>
                 </div>
               )}
 
-              {loginMethod === "otp" && (
-                <div className="mb-6 flex flex-col items-center gap-2">
-                  <div className="flex justify-center gap-2">
-                    {otp.map((digit, i) => (
-                      <input
-                        key={i}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        ref={(el) => {
-                          otpRefs.current[i] = el;
-                        }}
-                        value={digit}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, "");
-                          const newOtp = [...otp];
-                          newOtp[i] = val;
-                          setOtp(newOtp);
-                          if (val && i < 5) otpRefs.current[i + 1]?.focus();
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Backspace" && !otp[i] && i > 0) {
-                            otpRefs.current[i - 1]?.focus();
-                          } else if (e.key === "Enter" && otp.join("").length === 6) {
-                            handleVerifyOtp();
-                          }
-                        }}
-                        className="h-12 w-10 md:h-14 md:w-12 rounded-xl border border-slate-600 bg-slate-900 text-center text-lg font-bold text-white focus:border-amber-500 focus:bg-slate-800 outline-none transition-all shadow-inner"
-                      />
-                    ))}
-                  </div>
-                  <p className="text-xs text-amber-400 mt-2 font-medium">
-                    {emailOtpSent ? "Please check your email for the OTP" : "Enter the OTP code"}
-                  </p>
-
-                  {foundUser.hasEmail ? (
-                    <button
-                      onClick={() => handleSendEmailOtp(true)}
-                      disabled={loading}
-                      className="mt-3 w-full text-center text-xs text-amber-500 hover:text-amber-400 font-bold disabled:opacity-50"
-                    >
-                      Forgot Password? Send OTP to my email
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setStep("updateEmail");
-                        setSuccessMsg("");
-                        setErr("");
-                      }}
-                      className="mt-3 w-full text-center text-xs text-amber-500 hover:text-amber-400 font-bold"
-                    >
-                      Forgot Password? Add your email
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {successMsg && (
-                <div className="mb-3 flex items-start gap-2 rounded-xl border border-green-800/50 bg-green-900/20 px-3.5 py-3">
-                  <span className="text-green-400 mt-0.5 text-sm shrink-0">✅</span>
-                  <p className="text-xs text-green-300 leading-relaxed">{successMsg}</p>
-                </div>
-              )}
-
-              {err && (
-                <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
-                  <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
-                  <p className="text-xs text-red-300 leading-relaxed">{err}</p>
-                </div>
-              )}
-
-              <button
-                onClick={loginMethod === "password" ? handleLoginPassword : handleVerifyOtp}
-                disabled={
-                  loading ||
-                  (loginMethod === "password" && !password.trim()) ||
-                  (loginMethod === "otp" && !foundUser.demoCode && otp.join("").length < 6)
-                }
-                className="w-full rounded-xl bg-green-600 py-3.5 font-bold text-white hover:bg-green-500 disabled:opacity-40 transition-colors shadow-lg"
-              >
-                {loading ? "Logging in..." : "Sign In to Existing Account →"}
-              </button>
-
-              <button
-                onClick={resetToPhone}
-                className="mt-4 w-full text-center text-xs text-slate-500 hover:text-slate-300 py-1.5"
-              >
-                ← Change number
-              </button>
-            </>
-          )}
-
-          {step === "updateEmail" && foundUser && (
-            <>
-              <div className="mb-5 text-center">
-                <h2 className="text-lg font-bold text-slate-100">Update Email</h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  Add your email to receive your OTP securely.
+              <div className="text-center">
+                <h2 className="text-lg font-black text-white">
+                  Enter 6-Digit OTP Code
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Sent to mobile <strong className="text-amber-500 font-mono">+977 {phone}</strong>
                 </p>
               </div>
 
-              <div className="mb-4">
-                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
-                  Email Address
-                </label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
-                  <span className="text-slate-400 text-sm">📧</span>
+              {/* 6 High-Gloss Pin Boxes */}
+              <div className="flex justify-center items-center gap-2 sm:gap-2.5 my-3">
+                {otp.map((digit, idx) => (
                   <input
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={newEmail}
-                    onChange={(e) => {
-                      setNewEmail(e.target.value.toLowerCase());
-                      setErr("");
+                    key={idx}
+                    ref={(el) => { otpInputsRef.current[idx] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pasted = e.clipboardData.getData("text");
+                      handleOtpChange(idx, pasted);
                     }}
-                    className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none"
+                    className={`h-12 w-11 sm:h-14 sm:w-12 rounded-2xl text-center text-xl font-black font-mono outline-none transition-all duration-200 border-2 shadow-sm ${
+                      digit
+                        ? "border-amber-500 bg-amber-500/15 text-amber-400 shadow-md shadow-amber-500/20 scale-105"
+                        : "border-white/15 bg-slate-800/80 text-white focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30"
+                    }`}
                   />
-                </div>
+                ))}
               </div>
 
-              {err && (
-                <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
-                  <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
-                  <p className="text-xs text-red-300 leading-relaxed">{err}</p>
+              {successMsg && (
+                <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-400 font-semibold">
+                  <CheckCircle2 size={15} className="shrink-0" />
+                  <span>{successMsg}</span>
                 </div>
               )}
 
-              <button
-                onClick={handleUpdateEmail}
-                disabled={loading || !newEmail.trim()}
-                className="w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors shadow-lg"
-              >
-                {loading ? "Saving..." : "Save & Send OTP"}
-              </button>
+              {err && (
+                <div className="flex items-start gap-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400">
+                  <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                  <p className="font-medium">{err}</p>
+                </div>
+              )}
 
-              <button
-                onClick={() => {
-                   setStep("otp");
-                   setErr("");
-                }}
-                className="mt-4 w-full text-center text-xs text-slate-500 hover:text-slate-300 py-1.5"
+              <LiquidButton
+                onClick={() => handleVerifyOtp()}
+                disabled={otp.some((d) => d === "") || loading}
+                variant="primary"
+                className="w-full justify-center py-3.5 text-sm font-black shadow-lg"
+                icon={<CheckCircle2 size={16} />}
               >
-                ← Back to Login
-              </button>
-            </>
+                {loading ? "Verifying Credentials…" : "Verify & Sign In →"}
+              </LiquidButton>
+
+              <div className="flex items-center justify-between text-xs pt-1 px-1">
+                <button
+                  onClick={resetToPhone}
+                  className="font-bold text-slate-400 hover:text-amber-400 transition-colors"
+                >
+                  ← Edit Number
+                </button>
+
+                {canResend ? (
+                  <button
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                    className="font-black text-amber-500 hover:text-amber-400 underline transition-colors flex items-center gap-1"
+                  >
+                    <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                    Resend Code
+                  </button>
+                ) : (
+                  <span className="font-mono font-bold text-slate-400">
+                    Resend in <span className="text-amber-500">{countdown}s</span>
+                  </span>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
         {/* Security notice */}
-        <div className="mt-4 w-full max-w-sm rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2.5 text-center">
+        <div className="mt-4 w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-2.5 text-center">
           <p className="text-xs text-slate-400">
-            <span className="font-semibold text-[#ffd000]">OrbitTrack</span> —
-            Access restricted to school-enrolled users
+            <span className="font-semibold text-amber-400">OrbitTrack</span> — Multi-Tenant Multi-Role AI Calling &amp; Bus System
           </p>
         </div>
       </div>
