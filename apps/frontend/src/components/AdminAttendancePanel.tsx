@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/components/VehicleLiveMap";
 import * as XLSX from "xlsx";
+import LiquidButton from "@/components/ui/liquid-button";
 import {
   Calendar,
   Download,
@@ -391,46 +392,49 @@ export default function AdminAttendancePanel({ onEditStudent }: { onEditStudent?
               className="pl-9 pr-3 py-2 rounded-xl border border-border bg-background text-xs text-foreground outline-none focus:border-amber-500"
             />
           </div>
-          
           {/* Export Excel Button */}
-          <button
+          <LiquidButton
             onClick={handleExportExcel}
-            className="flex items-center gap-1.5 rounded-xl border border-border bg-background px-3.5 py-2 text-xs font-bold text-foreground hover:bg-muted transition-colors cursor-pointer"
+            variant="emerald"
+            size="sm"
+            shape="curved"
+            icon={<Download size={14} />}
           >
-            <Download size={14} />
             Excel
-          </button>
+          </LiquidButton>
           
           {/* Export PDF / Print Button */}
-          <button
+          <LiquidButton
             onClick={handleExportPDF}
-            className="flex items-center gap-1.5 rounded-xl border border-border bg-background px-3.5 py-2 text-xs font-bold text-foreground hover:bg-muted transition-colors cursor-pointer"
+            variant="blue"
+            size="sm"
+            shape="curved"
+            icon={<Printer size={14} />}
           >
-            <Printer size={14} />
             PDF Report
-          </button>
+          </LiquidButton>
         </div>
       </div>
 
       {/* Summary Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+        <div className="liquid-glass-card p-4 rounded-2xl shadow-sm">
           <div className="text-lg font-black text-foreground">{stats.total}</div>
           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">Total Registered</div>
         </div>
-        <div className="bg-card border border-border p-4 rounded-xl border-l-2 border-l-emerald-500 shadow-sm">
+        <div className="liquid-glass-card p-4 rounded-2xl border-l-4 border-l-emerald-500 shadow-sm">
           <div className="text-lg font-black text-emerald-600 dark:text-emerald-400">{stats.present}</div>
           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">Present Today</div>
         </div>
-        <div className="bg-card border border-border p-4 rounded-xl border-l-2 border-l-rose-500 shadow-sm">
+        <div className="liquid-glass-card p-4 rounded-2xl border-l-4 border-l-rose-500 shadow-sm">
           <div className="text-lg font-black text-rose-600 dark:text-rose-400">{stats.absent}</div>
           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">Absent Today</div>
         </div>
-        <div className="bg-card border border-border p-4 rounded-xl border-l-2 border-l-amber-500 shadow-sm">
+        <div className="liquid-glass-card p-4 rounded-2xl border-l-4 border-l-amber-500 shadow-sm">
           <div className="text-lg font-black text-amber-600 dark:text-amber-500">{stats.pending}</div>
           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">Pending Status</div>
         </div>
-        <div className="bg-card border border-border p-4 rounded-xl border-l-2 border-l-blue-500 shadow-sm">
+        <div className="liquid-glass-card p-4 rounded-2xl border-l-4 border-l-blue-500 shadow-sm">
           <div className="text-lg font-black text-blue-600 dark:text-blue-400">{stats.percentage}%</div>
           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5 font-semibold">Attendance Rate</div>
         </div>
@@ -467,15 +471,15 @@ export default function AdminAttendancePanel({ onEditStudent }: { onEditStudent?
             const isExpanded = expandedClasses[key] !== false;
 
             return (
-              <div key={key} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div key={key} className="liquid-glass-card rounded-2xl overflow-hidden shadow-sm">
                 
                 {/* Collapsible Header */}
                 <button
                   onClick={() => toggleExpand(key)}
-                  className="w-full flex items-center justify-between p-4 bg-muted/30 border-b border-border hover:bg-muted/50 transition-colors text-left"
+                  className="w-full flex items-center justify-between p-4 bg-muted/20 border-b border-border hover:bg-muted/40 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-background text-amber-600 dark:text-amber-500 font-bold border border-border text-sm">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/30 text-sm shadow-xs">
                       {group.className[0]}
                     </span>
                     <div>
@@ -498,8 +502,8 @@ export default function AdminAttendancePanel({ onEditStudent }: { onEditStudent?
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       
                       {/* Left: Present Students Table */}
-                      <div className="border border-border rounded-xl overflow-hidden bg-background">
-                        <div className="p-3 bg-emerald-500/10 dark:bg-emerald-500/20 border-b border-border flex items-center gap-2">
+                      <div className="border border-emerald-500/30 rounded-xl overflow-hidden bg-card/60 backdrop-blur-sm shadow-xs">
+                        <div className="p-3 bg-emerald-500/15 border-b border-emerald-500/20 flex items-center gap-2">
                           <CheckCircle size={15} className="text-emerald-600 dark:text-emerald-400" />
                           <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                             Present Students ({group.present.length})
@@ -510,11 +514,11 @@ export default function AdminAttendancePanel({ onEditStudent }: { onEditStudent?
                             No students marked present.
                           </div>
                         ) : (
-                          <div className="divide-y divide-border">
+                          <div className="divide-y divide-border/60">
                             {group.present.map((student) => (
                               <div 
                                 key={student.studentId} 
-                                className="p-3 flex items-center justify-between text-xs hover:bg-muted/20 transition-colors cursor-pointer"
+                                className="p-3 flex items-center justify-between text-xs hover:bg-emerald-500/5 transition-colors cursor-pointer"
                                 onClick={() => onEditStudent?.({ fullName: student.fullName, className: student.className, section: student.section })}
                               >
                                 <span className="font-semibold text-foreground">{student.fullName}</span>
@@ -529,8 +533,8 @@ export default function AdminAttendancePanel({ onEditStudent }: { onEditStudent?
                       </div>
 
                       {/* Right: Absent Students Table */}
-                      <div className="border border-border rounded-xl overflow-hidden bg-background">
-                        <div className="p-3 bg-rose-500/10 dark:bg-rose-500/20 border-b border-border flex items-center gap-2">
+                      <div className="border border-rose-500/30 rounded-xl overflow-hidden bg-card/60 backdrop-blur-sm shadow-xs">
+                        <div className="p-3 bg-rose-500/15 border-b border-rose-500/20 flex items-center gap-2">
                           <XCircle size={15} className="text-rose-600 dark:text-rose-400" />
                           <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                             Absent Students ({group.absent.length})
@@ -541,11 +545,11 @@ export default function AdminAttendancePanel({ onEditStudent }: { onEditStudent?
                             No students marked absent.
                           </div>
                         ) : (
-                          <div className="divide-y divide-border">
+                          <div className="divide-y divide-border/60">
                             {group.absent.map((student) => (
                               <div 
                                 key={student.studentId} 
-                                className="p-3 flex items-center justify-between text-xs hover:bg-muted/20 transition-colors cursor-pointer"
+                                className="p-3 flex items-center justify-between text-xs hover:bg-rose-500/5 transition-colors cursor-pointer"
                                 onClick={() => onEditStudent?.({ fullName: student.fullName, className: student.className, section: student.section })}
                               >
                                 <span className="font-semibold text-rose-600 dark:text-rose-400">{student.fullName}</span>
@@ -563,8 +567,8 @@ export default function AdminAttendancePanel({ onEditStudent }: { onEditStudent?
 
                     {/* Pending Students list (below if any exist) */}
                     {group.pending.length > 0 && (
-                      <div className="border border-border rounded-xl overflow-hidden bg-background">
-                        <div className="p-2.5 bg-amber-500/10 dark:bg-amber-500/20 border-b border-border flex items-center gap-2">
+                      <div className="border border-amber-500/30 rounded-xl overflow-hidden bg-card/60 backdrop-blur-sm shadow-xs">
+                        <div className="p-2.5 bg-amber-500/15 border-b border-amber-500/20 flex items-center gap-2">
                           <AlertCircle size={14} className="text-amber-600 dark:text-amber-400" />
                           <h4 className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                             Pending Registration Status ({group.pending.length})

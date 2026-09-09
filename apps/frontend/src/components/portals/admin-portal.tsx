@@ -524,39 +524,62 @@ function VehicleServiceTabs({ vehicles, routes, stations }: { vehicles: any[] | 
     <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
       <div className="flex items-center justify-between gap-2 px-3 pt-3">
         <span className="text-sm font-bold text-primary">Vehicle Service</span>
-        <button
+        <LiquidButton
+          size="xs"
+          variant="amber"
+          shape="curved"
           onClick={() => setAddVehicleOpen(true)}
-          className="flex items-center gap-1 bg-amber-500 text-slate-900 text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-amber-400"
+          icon={<Plus size={12} />}
         >
-          <Plus size={12} /> Add New
-        </button>
+          Add New
+        </LiquidButton>
       </div>
       <AddVehicleDialog open={addVehicleOpen} onOpenChange={setAddVehicleOpen} />
-      <div className="flex border-b border-border bg-muted/20 p-1 gap-1 text-xs font-semibold mt-3">
-        <button
+      <div className="flex border-b border-border bg-muted/20 p-1.5 gap-1.5 text-xs font-semibold mt-3 rounded-2xl">
+        <LiquidButton
+          active={subTab === "fuel"}
+          variant="amber"
+          shape="curved"
+          size="sm"
+          className="flex-1"
           onClick={() => setSubTab("fuel")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg transition-colors ${subTab === "fuel" ? "bg-amber-500 text-slate-900 font-bold" : "text-muted-foreground"}`}
+          icon={<Droplets size={13} />}
         >
-          <Droplets size={13} /> Fuel Logs
-        </button>
-        <button
+          Fuel Logs
+        </LiquidButton>
+        <LiquidButton
+          active={subTab === "service"}
+          variant="amber"
+          shape="curved"
+          size="sm"
+          className="flex-1"
           onClick={() => setSubTab("service")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg transition-colors ${subTab === "service" ? "bg-amber-500 text-slate-900 font-bold" : "text-muted-foreground"}`}
+          icon={<Wrench size={13} />}
         >
-          <Wrench size={13} /> Service Records
-        </button>
-        <button
+          Service Records
+        </LiquidButton>
+        <LiquidButton
+          active={subTab === "docs"}
+          variant="amber"
+          shape="curved"
+          size="sm"
+          className="flex-1"
           onClick={() => setSubTab("docs")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg transition-colors ${subTab === "docs" ? "bg-amber-500 text-slate-900 font-bold" : "text-muted-foreground"}`}
+          icon={<FileText size={13} />}
         >
-          <FileText size={13} /> Documents
-        </button>
-        <button
+          Documents
+        </LiquidButton>
+        <LiquidButton
+          active={subTab === "buses"}
+          variant="amber"
+          shape="curved"
+          size="sm"
+          className="flex-1"
           onClick={() => setSubTab("buses")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg transition-colors ${subTab === "buses" ? "bg-amber-500 text-slate-900 font-bold" : "text-muted-foreground"}`}
+          icon={<Bus size={13} />}
         >
-          <Bus size={13} /> Buses
-        </button>
+          Buses
+        </LiquidButton>
       </div>
       <div className="p-4">
         {loading && (
@@ -1472,30 +1495,42 @@ function InternalAppNotificationsPanel() {
   const olderMessages = history.slice(1);
 
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+    <div className="liquid-glass-card rounded-2xl shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-border font-bold text-sm text-primary flex items-center gap-2">
         <Bell size={15} className="text-amber-500 animate-bounce" />{" "}
         <span>OrbitTrack Internal App Broadcaster</span>
       </div>
-      <div className="flex bg-muted/40 p-1 text-xs font-semibold gap-1">
-        <button
+      <div className="flex bg-muted/30 p-1.5 text-xs font-semibold gap-1.5 rounded-2xl m-2">
+        <LiquidButton
+          active={activeSubTab === "students"}
+          variant="amber"
+          shape="curved"
+          size="sm"
+          className="flex-1 font-bold"
           onClick={() => setActiveSubTab("students")}
-          className={`flex-1 py-1.5 rounded-lg transition-colors ${activeSubTab === "students" ? "bg-amber-500 text-slate-900 font-bold shadow" : "text-muted-foreground"}`}
         >
           Students/Parents
-        </button>
-        <button
+        </LiquidButton>
+        <LiquidButton
+          active={activeSubTab === "staff"}
+          variant="amber"
+          shape="curved"
+          size="sm"
+          className="flex-1 font-bold"
           onClick={() => setActiveSubTab("staff")}
-          className={`flex-1 py-1.5 rounded-lg transition-colors ${activeSubTab === "staff" ? "bg-amber-500 text-slate-900 font-bold shadow" : "text-muted-foreground"}`}
         >
           Staff
-        </button>
-        <button
+        </LiquidButton>
+        <LiquidButton
+          active={activeSubTab === "drivers"}
+          variant="amber"
+          shape="curved"
+          size="sm"
+          className="flex-1 font-bold"
           onClick={() => setActiveSubTab("drivers")}
-          className={`flex-1 py-1.5 rounded-lg transition-colors ${activeSubTab === "drivers" ? "bg-amber-500 text-slate-900 font-bold shadow" : "text-muted-foreground"}`}
         >
           Drivers
-        </button>
+        </LiquidButton>
       </div>
       <div className="p-4 space-y-3">
         {activeSubTab === "students" && (
@@ -1522,13 +1557,15 @@ function InternalAppNotificationsPanel() {
                   placeholder="e.g., Staff Bus, PlayGroup"
                   className="flex-1 border rounded-lg p-1.5 text-xs bg-background outline-none"
                 />
-                <button
+                <LiquidButton
                   type="button"
+                  variant="amber"
+                  size="xs"
+                  shape="curved"
                   onClick={handleAddCustomClass}
-                  className="bg-amber-500 text-slate-900 text-xs px-3 font-bold rounded-lg"
                 >
                   Add
-                </button>
+                </LiquidButton>
               </div>
             )}
             <select
@@ -1557,13 +1594,16 @@ function InternalAppNotificationsPanel() {
             className="w-full border rounded-xl p-2.5 text-xs bg-muted/20 outline-none resize-none text-foreground placeholder:text-muted-foreground"
           />
         </div>
-        <button
+        <LiquidButton
           onClick={handleAppBroadcast}
           disabled={sending || !customMessage.trim()}
-          className="w-full bg-amber-500 text-slate-900 font-bold text-xs py-2.5 rounded-xl hover:bg-amber-400 transition-colors disabled:opacity-40"
+          size="md"
+          variant="amber"
+          shape="curved"
+          className="w-full font-bold shadow-amber-500/25 py-3 text-slate-900"
         >
           {sending ? "Transmitting..." : `🚀 Send Internal Notification Alert`}
-        </button>
+        </LiquidButton>
         <div className="pt-2">
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">
             Recent Broadcast Feed
@@ -1734,21 +1774,23 @@ function SmartStationManager({
     }
   }
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <div className="liquid-glass-card rounded-2xl p-4 shadow-sm">
       <h2 className="font-bold text-sm text-primary mb-3">Geofence Stations</h2>
       <div className="flex gap-2">
         <input
           value={pendingName}
           onChange={(e) => setPendingName(e.target.value)}
           placeholder="New Station Name"
-          className="flex-1 border p-2 text-xs rounded-xl"
+          className="flex-1 border p-2 text-xs rounded-xl bg-background/80"
         />
-        <button
+        <LiquidButton
           onClick={handleSave}
-          className="bg-amber-500 text-xs px-4 py-2 font-bold rounded-xl text-slate-900"
+          size="sm"
+          variant="amber"
+          shape="curved"
         >
-          Add
-        </button>
+          Add Station
+        </LiquidButton>
       </div>
     </div>
   );
@@ -2368,7 +2410,7 @@ function NotificationLogPanel({
                         <div className="flex items-center justify-between pt-1">
                           <div>
                             {row.status !== "approved" && (
-                              <button
+                              <LiquidButton
                                 onClick={async () => {
                                   const res = await fetch(`/api/notifications/${row.id}/approve`, {
                                     method: "PATCH",
@@ -2378,10 +2420,13 @@ function NotificationLogPanel({
                                     queryClient.invalidateQueries({ queryKey: ["notifications"] });
                                   }
                                 }}
-                                className="rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 transition-all shadow-sm flex items-center gap-1"
+                                variant="emerald"
+                                size="xs"
+                                shape="curved"
+                                icon={<CheckCircle size={13} />}
                               >
-                                <CheckCircle size={13} /> Approve Application ✓
-                              </button>
+                                Approve Application ✓
+                              </LiquidButton>
                             )}
                             {row.status === "approved" && (
                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
@@ -2495,7 +2540,7 @@ function NotificationLogPanel({
             <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
               <div>
                 {selectedNotif.status !== "approved" && (
-                  <button
+                  <LiquidButton
                     onClick={async () => {
                       const res = await fetch(`/api/notifications/${selectedNotif.id}/approve`, {
                         method: "PATCH",
@@ -2506,11 +2551,13 @@ function NotificationLogPanel({
                         setSelectedNotif((prev) => prev ? { ...prev, status: "approved", approvedAt: new Date().toISOString() } : null);
                       }
                     }}
-                    className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 transition-all shadow-md flex items-center gap-1.5"
+                    variant="emerald"
+                    size="sm"
+                    shape="curved"
+                    icon={<CheckCircle size={14} />}
                   >
-                    <CheckCircle size={14} />
                     Approve Application ✓ (स्वीकृत गर्नुहोस्)
-                  </button>
+                  </LiquidButton>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -2667,17 +2714,20 @@ function ImportStudentsExcelButton({ onSuccess }: { onSuccess: () => void }) {
         ref={fileInputRef}
         onChange={handleFileChange}
       />
-      <div className="flex items-center gap-1">
-        <button
+      <div className="flex items-center gap-1.5">
+        <LiquidButton
           onClick={() => fileInputRef.current?.click()}
           disabled={importing}
-          className="flex items-center gap-1 bg-green-600 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-green-500 disabled:opacity-50"
+          size="xs"
+          variant="emerald"
+          shape="curved"
+          icon={<Upload size={12} />}
         >
-          <Upload size={12} /> {importing ? "Importing..." : "Import Excel"}
-        </button>
+          {importing ? "Importing..." : "Import Excel"}
+        </LiquidButton>
         <button
           onClick={() => setInfoOpen(true)}
-          className="flex items-center justify-center w-7 h-7 rounded-full text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+          className="flex items-center justify-center w-7 h-7 rounded-full text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 transition-colors"
           title="View Excel Format Instructions"
         >
           <span className="font-bold text-sm">?</span>
@@ -3989,12 +4039,15 @@ function StudentsPanel() {
         </span>
         <div className="flex items-center gap-2">
           <ImportStudentsExcelButton onSuccess={() => queryClient.invalidateQueries({ queryKey: getListPassengersQueryKey() })} />
-          <button
+          <LiquidButton
+            size="xs"
+            variant="amber"
+            shape="curved"
             onClick={() => setAddOpen(true)}
-            className="flex items-center gap-1 bg-amber-500 text-slate-900 text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-amber-400"
+            icon={<Plus size={12} />}
           >
-            <Plus size={12} /> Add New
-          </button>
+            Add New
+          </LiquidButton>
         </div>
       </div>
       <AddPersonDialog open={addOpen} onOpenChange={setAddOpen} role="student" />
@@ -4146,12 +4199,15 @@ function DriverPanel() {
         <span className="flex items-center gap-2">
           <Bus size={15} className="text-amber-500" /> Drivers Directory
         </span>
-        <button
+        <LiquidButton
+          size="xs"
+          variant="amber"
+          shape="curved"
           onClick={() => setAddOpen(true)}
-          className="flex items-center gap-1 bg-amber-500 text-slate-900 text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-amber-400"
+          icon={<Plus size={12} />}
         >
-          <Plus size={12} /> Add New
-        </button>
+          Add New
+        </LiquidButton>
       </div>
       <AddDriverDialog open={addOpen} onOpenChange={setAddOpen} />
       <EditDriverDialog
@@ -4288,12 +4344,15 @@ function AdminsPanel() {
         <span className="flex items-center gap-2">
           <Shield size={15} className="text-amber-500" /> Admins Directory
         </span>
-        <button
+        <LiquidButton
+          size="xs"
+          variant="amber"
+          shape="curved"
           onClick={() => setAddOpen(true)}
-          className="flex items-center gap-1 bg-amber-500 text-slate-900 text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-amber-400"
+          icon={<Plus size={12} />}
         >
-          <Plus size={12} /> Add New Admin
-        </button>
+          Add New Admin
+        </LiquidButton>
       </div>
       <AddAdminDialog open={addOpen} onOpenChange={setAddOpen} onSuccess={refetch} />
       <EditPersonDialog
@@ -4389,12 +4448,15 @@ function StaffPanel() {
         <span className="flex items-center gap-2">
           <User size={15} className="text-amber-500" /> Staff Directory
         </span>
-        <button
+        <LiquidButton
+          size="xs"
+          variant="amber"
+          shape="curved"
           onClick={() => setAddOpen(true)}
-          className="flex items-center gap-1 bg-amber-500 text-slate-900 text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-amber-400"
+          icon={<Plus size={12} />}
         >
-          <Plus size={12} /> Add New
-        </button>
+          Add New
+        </LiquidButton>
       </div>
       <AddPersonDialog open={addOpen} onOpenChange={setAddOpen} role="staff" />
       <EditPersonDialog
@@ -4891,12 +4953,15 @@ function RoutePanel() {
         <span className="flex items-center gap-2">
           <Route size={15} className="text-amber-500" /> Routes Directory
         </span>
-        <button
+        <LiquidButton
+          size="xs"
+          variant="amber"
+          shape="curved"
           onClick={() => setAddOpen(true)}
-          className="flex items-center gap-1 bg-amber-500 text-slate-900 text-[11px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-amber-400"
+          icon={<Plus size={12} />}
         >
-          <Plus size={12} /> Add New
-        </button>
+          Add New
+        </LiquidButton>
       </div>
       <AddRouteDialog open={addOpen} onOpenChange={setAddOpen} />
       <EditRouteDialog
