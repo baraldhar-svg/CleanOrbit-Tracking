@@ -17,6 +17,10 @@ export default function AppFooter({ variant = "light" }: { variant?: "light" | "
             Terms of Service
           </a>
           <span className={`mx-1 ${dark ? "text-slate-600" : "text-border"}`}>|</span>
+          <a href="/delete-account" target="_blank" rel="noopener noreferrer" className={`underline-offset-2 hover:underline transition-colors ${dark ? "text-slate-400 hover:text-amber-400" : "text-muted-foreground hover:text-primary"}`}>
+            Delete Account
+          </a>
+          <span className={`mx-1 ${dark ? "text-slate-600" : "text-border"}`}>|</span>
           <a
             href="https://wa.me/9779747468885"
             target="_blank"

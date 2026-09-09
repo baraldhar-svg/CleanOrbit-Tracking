@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useListAnnouncements, useGetTripTimeline, getGetTripTimelineQueryKey, useListCalendarEvents, useListRoutes, useListTripHistory, useListPassengers, getTenantId, TimelineEvent } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { PhotoPicker } from "@/components/photo-picker";
+import { LiquidButton } from "@/components/ui/liquid-button";
 import { Bus, Lock, Unlock, MapPin, Navigation, ChevronDown, CheckCircle, Star, Clock, History as HistoryIcon, X, User } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -252,43 +253,37 @@ export default function ParentPortal() {
       : "bg-green-100 dark:bg-green-950/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400";
 
   return (
-    <div className="mx-auto w-full max-w-[480px] bg-card p-4 shadow-md sm:my-8 sm:rounded-xl space-y-5">
+    <div className="mx-auto w-full max-w-[540px] liquid-glass-card p-4 sm:p-6 shadow-xl sm:my-6 rounded-3xl space-y-5 border border-white/80 dark:border-white/10">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-primary flex items-center gap-2">
-          <Bus size={20} className="text-[#FFF078]" />OrbitTrack
+        <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <Bus size={22} className="text-amber-500" /> Orbit<span className="text-amber-500">Track</span>
         </h1>
-        <span className="rounded-full bg-amber-100 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">Parent</span>
+        <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+          Parent Portal
+        </span>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex rounded-xl border border-border overflow-hidden bg-muted/30">
-        <button
+      {/* 3D Liquid Tab bar */}
+      <div className="liquid-glass-dock rounded-full p-1.5 flex gap-2 border border-white/80 dark:border-white/10 shadow-md">
+        <LiquidButton
+          active={activeTab === "tracking"}
           onClick={() => setActiveTab("tracking")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition-colors ${
-            activeTab === "tracking"
-              ? "bg-amber-500 text-white"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          icon={<MapPin size={14} />}
+          size="sm"
+          className="flex-1"
         >
-          <MapPin size={12} />Live Tracking
-        </button>
-        <button
+          Live Tracking
+        </LiquidButton>
+        <LiquidButton
+          active={activeTab === "history"}
           onClick={() => setActiveTab("history")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition-colors ${
-            activeTab === "history"
-              ? "bg-amber-500 text-white"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          icon={<HistoryIcon size={14} />}
+          badge={tripHistory && tripHistory.length > 0 ? tripHistory.length : undefined}
+          size="sm"
+          className="flex-1"
         >
-          <HistoryIcon size={12} />Trip History
-          {tripHistory && tripHistory.length > 0 && (
-            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
-              activeTab === "history" ? "bg-white/20 text-white" : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400"
-            }`}>
-              {tripHistory.length}
-            </span>
-          )}
-        </button>
+          Trip History
+        </LiquidButton>
       </div>
 
       {/* Child Profile Modal */}

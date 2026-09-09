@@ -558,18 +558,18 @@ function SchoolCodeWidget({ code }: { code: string }) {
     setTimeout(() => setCopied(false), 2500);
   };
   return (
-    <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5">
+    <div className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 px-3 py-1 shadow-xs backdrop-blur-md">
       <div className="hidden sm:block">
-        <p className="text-[9px] font-bold text-[#FFF078] uppercase tracking-wide leading-none mb-0.5">School Code</p>
-        <p className="text-xs font-black text-foreground font-mono tracking-wider leading-none">{code}</p>
+        <p className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider leading-none mb-0.5">School Code</p>
+        <p className="text-xs font-black text-slate-800 dark:text-slate-100 font-mono tracking-wider leading-none">{code}</p>
       </div>
-      <p className="block sm:hidden text-xs font-black text-foreground font-mono tracking-wider">{code}</p>
+      <p className="block sm:hidden text-xs font-black text-slate-800 dark:text-slate-100 font-mono tracking-wider">{code}</p>
       <button
         onClick={handleCopy}
         title="Copy school code"
-        className="ml-1 rounded-md p-1 hover:bg-amber-500/20 transition-colors text-[#FFF078]"
+        className="ml-0.5 rounded-full p-1 hover:bg-amber-500/20 transition-colors text-amber-600 dark:text-amber-400 active:scale-95"
       >
-        {copied ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+        {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
       </button>
     </div>
   );
@@ -593,85 +593,85 @@ function ensureExternalLink(url: string): string {
 }
 
 function SchoolBanner({ tenant }: { tenant: TenantInfo }) {
-  const fallbackGradient = "bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-[#1e1e2d]";
+  const fallbackGradient = "bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a]";
   
   return (
-    <div className="mx-4 mt-3 mb-1 rounded-xl overflow-hidden border border-amber-500/30 dark:border-amber-600/20 shadow-lg shadow-slate-900/20 ring-1 ring-[#0F172A]/10 dark:ring-[#D97706]/10">
+    <div className="mx-4 mt-3 mb-1 rounded-2xl overflow-hidden border border-white/80 dark:border-white/10 shadow-xl shadow-slate-900/10 relative">
       <div className="relative w-full flex flex-col justify-end" style={{ height: 180 }}>
         {tenant.bannerUrl ? (
           <img src={tenant.bannerUrl} alt={tenant.name} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
           <div className={`absolute inset-0 ${fallbackGradient}`} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
         
         {/* Banner content */}
-        <div className="relative z-10 p-4 flex items-end justify-between gap-4 w-full">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="relative z-10 p-4 sm:p-5 flex items-end justify-between gap-4 w-full">
+          <div className="flex items-center gap-3.5 min-w-0">
             {/* Logo Avatar */}
-            <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-amber-500 bg-slate-900/80 backdrop-blur-sm shrink-0 flex items-center justify-center shadow-md">
+            <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-white/80 dark:border-amber-400/80 bg-slate-900/90 backdrop-blur-md shrink-0 flex items-center justify-center shadow-lg">
               {tenant.logoUrl ? (
                 <img src={tenant.logoUrl} alt={tenant.name} className="h-full w-full object-cover" />
               ) : (
-                <Building2 size={24} className="text-amber-500" />
+                <Building2 size={24} className="text-amber-400" />
               )}
             </div>
             
             {/* Branding details */}
             <div className="min-w-0">
-              <p className="text-base sm:text-lg font-black text-white leading-tight drop-shadow truncate">{tenant.name}</p>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-300 mt-1">
+              <p className="text-base sm:text-xl font-black text-white leading-tight drop-shadow-md truncate">{tenant.name}</p>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-200 mt-1">
                 {tenant.schoolCode && (
-                  <span className="font-mono font-bold text-[#FFF078] bg-amber-500/10 border border-amber-500/30 rounded px-1 py-0.2">{tenant.schoolCode}</span>
+                  <span className="font-mono font-bold text-amber-300 bg-black/40 border border-white/20 rounded-full px-2 py-0.5 backdrop-blur-xs">{tenant.schoolCode}</span>
                 )}
                 {tenant.address && <span className="truncate">· {tenant.address}</span>}
               </div>
               {tenant.contactPhone && (
                 <p className="text-xs text-amber-300 font-semibold mt-1 flex items-center gap-1">
-                  <Phone size={10} /> {tenant.contactPhone}
+                  <Phone size={11} /> {tenant.contactPhone}
                 </p>
               )}
             </div>
           </div>
           
           {/* Badge + Social icons container */}
-          <div className="flex flex-col items-end gap-1.5 shrink-0 mb-0.5 animate-in fade-in slide-in-from-right-3 duration-300">
+          <div className="flex flex-col items-end gap-2 shrink-0 mb-0.5 animate-in fade-in slide-in-from-right-3 duration-300">
             {/* OFFICIAL Badge */}
-            <div className="rounded bg-amber-500/25 border border-amber-500/40 px-2 py-0.5 backdrop-blur-sm shadow-sm">
-              <span className="text-[9px] font-extrabold text-[#FFF078] uppercase tracking-wider">Official</span>
+            <div className="rounded-full bg-white/15 border border-white/30 px-2.5 py-0.5 backdrop-blur-md shadow-sm">
+              <span className="text-[9px] font-black text-white uppercase tracking-wider">Official</span>
             </div>
 
             {/* Social media icons in a horizontal row right below */}
             {(tenant.facebookUrl || tenant.tiktokUrl || tenant.instagramUrl || tenant.youtubeUrl || tenant.websiteUrl) && (
-              <div className="flex items-center gap-1 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full border border-white/10 shadow-inner">
+              <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-white/20 shadow-inner">
                 {tenant.facebookUrl && (
                   <a href={ensureExternalLink(tenant.facebookUrl)} target="_blank" rel="noopener noreferrer" title="Facebook"
-                    className="flex items-center justify-center h-6 w-6 rounded-full bg-white/15 hover:bg-amber-500 hover:text-slate-900 transition-all text-white border border-white/10">
-                    <Facebook size={10} />
+                    className="flex items-center justify-center h-6 w-6 rounded-full bg-white/20 hover:bg-amber-400 hover:text-slate-900 transition-all text-white border border-white/20 active:scale-95">
+                    <Facebook size={11} />
                   </a>
                 )}
                 {tenant.tiktokUrl && (
                   <a href={ensureExternalLink(tenant.tiktokUrl)} target="_blank" rel="noopener noreferrer" title="TikTok"
-                    className="flex items-center justify-center h-6 w-6 rounded-full bg-white/15 hover:bg-amber-500 hover:text-slate-900 transition-all text-white border border-white/10">
-                    <TikTokIcon size={10} />
+                    className="flex items-center justify-center h-6 w-6 rounded-full bg-white/20 hover:bg-amber-400 hover:text-slate-900 transition-all text-white border border-white/20 active:scale-95">
+                    <TikTokIcon size={11} />
                   </a>
                 )}
                 {tenant.instagramUrl && (
                   <a href={ensureExternalLink(tenant.instagramUrl)} target="_blank" rel="noopener noreferrer" title="Instagram"
-                    className="flex items-center justify-center h-6 w-6 rounded-full bg-white/15 hover:bg-amber-500 hover:text-slate-900 transition-all text-white border border-white/10">
-                    <Instagram size={10} />
+                    className="flex items-center justify-center h-6 w-6 rounded-full bg-white/20 hover:bg-amber-400 hover:text-slate-900 transition-all text-white border border-white/20 active:scale-95">
+                    <Instagram size={11} />
                   </a>
                 )}
                 {tenant.youtubeUrl && (
                   <a href={ensureExternalLink(tenant.youtubeUrl)} target="_blank" rel="noopener noreferrer" title="YouTube"
-                    className="flex items-center justify-center h-6 w-6 rounded-full bg-white/15 hover:bg-amber-500 hover:text-slate-900 transition-all text-white border border-white/10">
-                    <Youtube size={10} />
+                    className="flex items-center justify-center h-6 w-6 rounded-full bg-white/20 hover:bg-amber-400 hover:text-slate-900 transition-all text-white border border-white/20 active:scale-95">
+                    <Youtube size={11} />
                   </a>
                 )}
                 {tenant.websiteUrl && (
                   <a href={ensureExternalLink(tenant.websiteUrl)} target="_blank" rel="noopener noreferrer" title="Website"
-                    className="flex items-center justify-center h-6 w-6 rounded-full bg-white/15 hover:bg-amber-500 hover:text-slate-900 transition-all text-white border border-white/10">
-                    <Globe size={10} />
+                    className="flex items-center justify-center h-6 w-6 rounded-full bg-white/20 hover:bg-amber-400 hover:text-slate-900 transition-all text-white border border-white/20 active:scale-95">
+                    <Globe size={11} />
                   </a>
                 )}
               </div>
@@ -753,23 +753,23 @@ export default function Dashboard() {
       <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
 
         {/* Top Bar */}
-        <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur shadow-sm">
-          <div className="flex h-14 items-center justify-between px-4">
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#ffee47]"><Bus size={15} className="text-slate-900" /></span>
-              <span className="font-black text-primary text-sm">
-                Orbit<span className="text-[#ffd000]">Track</span>
+        <header className="sticky top-0 z-50 liquid-glass-dock border-b border-white/80 dark:border-white/10 shadow-sm">
+          <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400 shadow-md"><Bus size={17} className="text-slate-900" /></span>
+              <span className="font-black text-slate-800 dark:text-slate-100 text-base tracking-tight">
+                Orbit<span className="text-amber-500">Track</span>
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {userRole === "admin" && (tenant?.schoolCode || user?.tenant?.schoolCode) && (
                 <SchoolCodeWidget code={(tenant?.schoolCode ?? user?.tenant?.schoolCode)!} />
               )}
               <button onClick={() => setProfileOpen(true)}
-                className="relative rounded-full ring-2 ring-amber-500 hover:ring-amber-400 transition-all focus:outline-none"
+                className="relative rounded-full ring-2 ring-amber-400/80 hover:ring-amber-500 transition-all focus:outline-none shadow-sm active:scale-95"
                 title="My Profile">
-                <img src={avatarSrc} alt={user?.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
+                <img src={avatarSrc} alt={user?.name} className="h-8 w-8 rounded-full object-cover shrink-0 border border-white/40" />
               </button>
             </div>
           </div>

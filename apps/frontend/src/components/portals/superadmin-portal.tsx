@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useGetDashboardStats, useListTenants, useListSuperadminTripHistory } from "@workspace/api-client-react";
+import { LiquidStatCard } from "@/components/ui/liquid-card";
+import { LiquidButton } from "@/components/ui/liquid-button";
 import { Shield, Building2, Users, Radio, Banknote, Megaphone, Pencil, X, Check, Upload, Search, Trash2, ChevronDown, ChevronUp, ChevronRight, MapPin, Bus, Wifi, WifiOff, RefreshCw, CreditCard, CheckCircle, AlertTriangle, RotateCcw } from "lucide-react";
 
 function fileToDataUrl(file: File, maxWidth = 1000, maxHeight = 600, quality = 0.8): Promise<string> {
@@ -1916,19 +1918,31 @@ export default function SuperadminPortal() {
         </header>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
-          {[
-            { label: "Tenants",    value: stats?.totalTenants ?? 0, Icon: Building2, color: "text-slate-100" },
-            { label: "Passengers", value: stats?.totalPassengers ?? 0, Icon: Users, color: "text-blue-300" },
-            { label: "API Pings",  value: stats?.whatsappSmsPings ?? 0, Icon: Radio, color: "text-amber-300" },
-            { label: "MRR (NPR)",  value: `${(stats?.monthlyMrr ?? 0).toLocaleString()}`, Icon: Banknote, color: "text-emerald-400" },
-          ].map((s) => (
-            <div key={s.label} className="rounded-xl bg-slate-800/70 border border-slate-700 p-4">
-              <s.Icon size={20} className="mb-1 text-slate-400" />
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4 mb-6">
+          <LiquidStatCard
+            title="Total Schools"
+            value={stats?.totalTenants ?? 0}
+            icon={<Building2 size={22} />}
+            variant="blue"
+          />
+          <LiquidStatCard
+            title="Total Passengers"
+            value={stats?.totalPassengers ?? 0}
+            icon={<Users size={22} />}
+            variant="emerald"
+          />
+          <LiquidStatCard
+            title="System Pings"
+            value={stats?.whatsappSmsPings ?? 0}
+            icon={<Radio size={22} />}
+            variant="amber"
+          />
+          <LiquidStatCard
+            title="MRR (NPR)"
+            value={`NPR ${(stats?.monthlyMrr ?? 0).toLocaleString()}`}
+            icon={<Banknote size={22} />}
+            variant="purple"
+          />
         </div>
 
         {/* Subscription breakdown */}

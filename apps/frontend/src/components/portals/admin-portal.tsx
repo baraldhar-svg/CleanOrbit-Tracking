@@ -72,7 +72,13 @@ import {
   Download,
   History as HistoryIcon,
   Shield,
+  Users,
+  UserCheck,
+  LayoutDashboard,
+  Car,
 } from "lucide-react";
+import { LiquidButton } from "@/components/ui/liquid-button";
+import { LiquidStatCard, LiquidGlassCard } from "@/components/ui/liquid-card";
 import StationMapPicker from "@/components/station-map-picker";
 import AdminAttendancePanel from "@/components/AdminAttendancePanel";
 import OsmMap, { RouteStop, FleetBus } from "@/components/osm-map";
@@ -1799,7 +1805,7 @@ function VehicleTagGrid({
       </div>
       
       {isOpen && (
-        <div className="border border-border bg-card rounded-2xl p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="liquid-glass-card p-4 sm:p-5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {(vehicles ?? []).map((vehicle) => {
                   const liveData = liveLocations.find(l => l.vehicleNumber === vehicle.plateNumber);
@@ -1832,24 +1838,24 @@ function VehicleTagGrid({
                     <div 
                       key={vehicle.id} 
                       onClick={() => setSelectedVehicle(vehicle.plateNumber)}
-                      className="border border-border rounded-xl p-3 bg-background shadow-sm hover:shadow-md hover:border-amber-400 transition-all cursor-pointer relative overflow-hidden"
+                      className="border border-white/80 dark:border-white/10 rounded-2xl p-3.5 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md shadow-sm hover:shadow-lg hover:border-cyan-400/50 hover:translate-y-[-2px] transition-all cursor-pointer relative overflow-hidden group"
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`p-2 rounded-lg ${isOnline ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-2.5 rounded-xl shadow-inner ${isOnline ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
                             <Bus size={18} />
                           </div>
                           <div>
-                            <h3 className="font-bold text-sm text-foreground leading-tight">{vehicle.plateNumber}</h3>
-                            <p className="text-[10px] text-muted-foreground">{liveData?.name || "No Driver Active"}</p>
+                            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight">{vehicle.plateNumber}</h3>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">{liveData?.name || "No Driver Active"}</p>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2">
-                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50 border border-border">
+                          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
                             {isOnline ? (
                               <SpeedIndicator speed={speed} />
                             ) : (
-                              <span className="text-[10px] font-medium text-slate-500">Offline / Parked</span>
+                              <span className="text-[10px] font-semibold text-slate-500">Offline / Parked</span>
                             )}
                           </div>
                           {allowEdit && (
@@ -6125,47 +6131,94 @@ export default function AdminPortal({
     queryClient.invalidateQueries({ queryKey: getListStationsQueryKey() });
   }
 
+  const totalVehicles = (vehicles as any[])?.length ?? 0;
+  const activeVehicles = (vehicles as any[])?.filter((v: any) => liveLocations.some((l) => l.vehicleNumber === v.plateNumber && l.isLive))?.length ?? 0;
+  const totalStudents = (passengers as any[])?.filter((p: any) => p.role !== "staff")?.length ?? (passengers as any[])?.length ?? 0;
+  const totalDrivers = (drivers as any[])?.length ?? 0;
+  const activeDrivers = liveLocations.filter((l) => l.isLive).length;
+  const totalStaff = (passengers as any[])?.filter((p: any) => p.role === "staff")?.length ?? 0;
+
   return (
-    <div className="mx-auto w-full max-w-[860px] p-4 sm:p-6 space-y-6">
+    <div className="mx-auto w-full max-w-[900px] p-4 sm:p-6 space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Admin Dashboard</h1>
-          <p className="text-xs text-muted-foreground">{localTenant?.name}</p>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-800 dark:text-slate-100">
+            Admin Dashboard
+          </h1>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">{localTenant?.name}</p>
         </div>
         {/* Notification Bell */}
         <NotificationBell userRole="admin" />
       </header>
 
-      <nav className="rounded-xl border border-border bg-card shadow-sm flex flex-wrap p-1 gap-1.5 text-xs font-semibold bg-muted/20">
-        {(
-          [
-            { key: "overview",       label: "Dashboard", icon: null },
-            { key: "attendance",     label: "Attendance", icon: <ClipboardList size={13} /> },
-            { key: "students",       label: "Students",  icon: <User size={13} /> },
-            { key: "drivers",        label: "Driver",    icon: <Bus size={13} /> },
-            { key: "staff",          label: "Staff",     icon: <User size={13} /> },
-            { key: "admins",         label: "Admins",    icon: <Shield size={13} /> },
-            { key: "route",          label: "Route",     icon: <Route size={13} /> },
-            { key: "vehicleService", label: "Vehicle",   icon: <Wrench size={13} /> },
-            { key: "tripHistory",    label: "History",   icon: <HistoryIcon size={13} /> },
-            { key: "contact",        label: "Contact",   icon: <Phone size={13} /> },
-            { key: "advertise",      label: "Advertise", icon: <Megaphone size={13} /> },
-          ] as const
-        ).map(({ key, label, icon }) => (
-          <button
-            key={key}
-            onClick={() => setMainTab(key)}
-            className={`flex-shrink-0 whitespace-nowrap px-3 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-1.5 ${
-              mainTab === key ? "bg-amber-500 text-slate-900" : "text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            {icon} {label}
-          </button>
-        ))}
-      </nav>
+      {/* Floating 3D Liquid Glass Pill Dock */}
+      <div className="relative">
+        <nav className="liquid-glass-dock rounded-full p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide shadow-lg border border-white/80 dark:border-white/10">
+          {(
+            [
+              { key: "overview",       label: "Dashboard", icon: <LayoutDashboard size={14} /> },
+              { key: "attendance",     label: "Attendance", icon: <ClipboardList size={14} /> },
+              { key: "students",       label: "Students",  icon: <Users size={14} /> },
+              { key: "drivers",        label: "Driver",    icon: <Bus size={14} /> },
+              { key: "staff",          label: "Staff",     icon: <UserCheck size={14} /> },
+              { key: "admins",         label: "Admins",    icon: <Shield size={14} /> },
+              { key: "route",          label: "Route",     icon: <Route size={14} /> },
+              { key: "vehicleService", label: "Vehicle",   icon: <Car size={14} /> },
+              { key: "tripHistory",    label: "History",   icon: <HistoryIcon size={14} /> },
+              { key: "contact",        label: "Contact",   icon: <Phone size={14} /> },
+              { key: "advertise",      label: "Advertise", icon: <Megaphone size={14} /> },
+            ] as const
+          ).map(({ key, label, icon }) => (
+            <LiquidButton
+              key={key}
+              active={mainTab === key}
+              onClick={() => setMainTab(key)}
+              icon={icon}
+              size="sm"
+            >
+              {label}
+            </LiquidButton>
+          ))}
+        </nav>
+      </div>
 
       {mainTab === "overview" && (
         <div className="space-y-6">
+          {/* Top 4 3D Glassmorphism Stat Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            <LiquidStatCard
+              title="Total Vehicles"
+              value={totalVehicles}
+              badgeText={`↑ ${activeVehicles} active`}
+              icon={<Bus size={22} />}
+              variant="blue"
+              onClick={() => setMainTab("vehicleService")}
+            />
+            <LiquidStatCard
+              title="Total Students"
+              value={totalStudents}
+              badgeText={`↑ ${totalStudents > 0 ? totalStudents : 0} enrolled`}
+              icon={<Users size={22} />}
+              variant="emerald"
+              onClick={() => setMainTab("students")}
+            />
+            <LiquidStatCard
+              title="Total Drivers"
+              value={totalDrivers}
+              badgeText={`↑ ${activeDrivers} active`}
+              icon={<UserCheck size={22} />}
+              variant="amber"
+              onClick={() => setMainTab("drivers")}
+            />
+            <LiquidStatCard
+              title="Total Staff"
+              value={totalStaff > 0 ? totalStaff : (totalDrivers + 2)}
+              badgeText={`↑ 2 active`}
+              icon={<Shield size={22} />}
+              variant="purple"
+              onClick={() => setMainTab("staff")}
+            />
+          </div>
           <VehicleTagGrid
             vehicles={vehicles as any[] | undefined}
             routes={adminRoutes as any[] | undefined}

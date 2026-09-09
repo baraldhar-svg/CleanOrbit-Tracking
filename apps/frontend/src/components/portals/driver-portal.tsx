@@ -3,6 +3,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { SpeedIndicator } from "@/components/ui/SpeedIndicator";
 import { useListRoutes, useListPassengers, useBoardPassenger, useUnboardPassenger, usePatchDriver, useListDrivers, useSendBoardingOtp, getListPassengersQueryKey, getListAnnouncementsQueryKey, getListDriversQueryKey, getTenantId, useListTripHistory, useListCalendarEvents } from "@workspace/api-client-react";
 import { PhotoPicker } from "@/components/photo-picker";
+import { LiquidButton } from "@/components/ui/liquid-button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { sendDriverMessage } from "@/lib/driver-messages";
@@ -1174,18 +1175,18 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
       )}
 
       {/* Header */}
-      <header className="px-4 py-4 border-b border-border">
+      <header className="px-4 py-3.5 liquid-glass-dock border-b border-white/80 dark:border-white/10 shadow-xs">
         <div className="flex items-center justify-between">
           {/* Profile chip — tappable */}
-          <button onClick={() => setDriverProfileOpen(true)} className="flex items-center gap-2.5 text-left hover:opacity-80 transition-opacity">
-            <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-amber-500 bg-muted shrink-0 flex items-center justify-center">
+          <button onClick={() => setDriverProfileOpen(true)} className="flex items-center gap-2.5 text-left hover:opacity-85 transition-all active:scale-95">
+            <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-white/80 dark:border-amber-400/80 bg-slate-900/80 backdrop-blur-sm shrink-0 flex items-center justify-center shadow-md">
               {localDriverPhoto || myDriver?.photoUrl
                 ? <img src={localDriverPhoto || myDriver?.photoUrl!} alt={myDriver?.name ?? "Driver"} className="h-full w-full object-cover" />
-                : <User size={16} className="text-muted-foreground" />}
+                : <User size={18} className="text-amber-400" />}
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground leading-tight">{myDriver?.name ?? user?.name ?? "Driver"}</p>
-              <p className="text-[10px] text-muted-foreground leading-tight">
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight">{myDriver?.name ?? user?.name ?? "Driver"}</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                 {[myDriver?.gender, myDriver?.vehicleNumber].filter(Boolean).join(" · ") || "Driver Portal"}
               </p>
             </div>
@@ -1193,30 +1194,28 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
           <div className="flex items-center gap-2">
             <SpeedIndicator speed={speedKmh} isLive={true} />
             <NotificationBell userRole="driver" />
-            <button
+            
+            <LiquidButton
+              active={!isOffline}
+              size="sm"
               onClick={journeyStarted && !journeyCompleted || isFreezeActive ? undefined : handleToggleOffline}
               disabled={journeyStarted && !journeyCompleted || isFreezeActive}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all border flex items-center gap-1.5 ${
-                journeyStarted && !journeyCompleted || isFreezeActive
-                  ? "pointer-events-none cursor-not-allowed bg-red-50 border-red-200 text-red-600 opacity-80"
-                  : isOffline
-                    ? "bg-card border-border text-muted-foreground hover:bg-muted"
-                    : "bg-red-50 border-red-200 text-red-600 hover:bg-red-100/80"
-              }`}
+              className={journeyStarted && !journeyCompleted || isFreezeActive ? "opacity-75 pointer-events-none" : undefined}
             >
               {isOffline ? (
                 <>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                   Go Live
                 </>
               ) : (
                 <>
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
-                  Live Tracking Active
+                  <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                  Live Active
                 </>
               )}
-            </button>
-            <div className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-foreground">
+            </LiquidButton>
+            
+            <div className="rounded-full liquid-btn-glass px-2.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-200">
               {boardedCount}/{totalCount}
             </div>
           </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/components/VehicleLiveMap";
+import { LiquidButton } from "@/components/ui/liquid-button";
+import { LiquidStatCard } from "@/components/ui/liquid-card";
 import {
   Users,
   CheckCircle,
@@ -220,34 +222,33 @@ export default function TeacherPortal({ tenant }: { tenant: any }) {
     <div className="mx-auto max-w-4xl p-4 md:p-6 space-y-6">
       
       {/* Dynamic Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 liquid-glass-card p-6 rounded-3xl shadow-md border border-white/80 dark:border-white/10">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full text-xs font-semibold uppercase tracking-wider">
-              Class Teacher
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="px-3 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
+              Class Teacher Portal
             </span>
-            <span className="text-muted-foreground text-sm">Dashboard</span>
           </div>
-          <h1 className="text-2xl font-black text-foreground">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100">
             Class {assignedClass} — Section {assignedSection}
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
             Manage attendance, review bus transport syncs, and verify student presence.
           </p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-44">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground outline-none focus:border-amber-500"
+              className="w-full pl-9 pr-3 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 text-sm text-slate-800 dark:text-slate-100 outline-none backdrop-blur-md shadow-inner"
             />
           </div>
           <button
             onClick={fetchAttendance}
-            className="p-2.5 rounded-xl border border-border bg-background text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className="p-2.5 rounded-full liquid-btn-glass text-slate-600 dark:text-slate-300 transition-all cursor-pointer active:scale-95 shadow-sm"
             title="Refresh database"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
@@ -256,46 +257,31 @@ export default function TeacherPortal({ tenant }: { tenant: any }) {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center gap-4 shadow-sm">
-          <div className="h-10 w-10 bg-muted text-muted-foreground rounded-xl flex items-center justify-center border border-border">
-            <Users size={20} />
-          </div>
-          <div>
-            <div className="text-2xl font-black text-foreground">{stats.total}</div>
-            <div className="text-xs text-muted-foreground font-semibold uppercase">Total</div>
-          </div>
-        </div>
-
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center gap-4 shadow-sm">
-          <div className="h-10 w-10 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl flex items-center justify-center">
-            <CheckCircle size={20} />
-          </div>
-          <div>
-            <div className="text-2xl font-black text-emerald-650 dark:text-emerald-400">{stats.present}</div>
-            <div className="text-xs text-muted-foreground font-semibold uppercase">Present</div>
-          </div>
-        </div>
-
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center gap-4 shadow-sm">
-          <div className="h-10 w-10 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-xl flex items-center justify-center">
-            <XCircle size={20} />
-          </div>
-          <div>
-            <div className="text-2xl font-black text-rose-650 dark:text-rose-400">{stats.absent}</div>
-            <div className="text-xs text-muted-foreground font-semibold uppercase">Absent</div>
-          </div>
-        </div>
-
-        <div className="bg-card border border-border p-4 rounded-2xl flex items-center gap-4 shadow-sm">
-          <div className="h-10 w-10 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-xl flex items-center justify-center">
-            <AlertCircle size={20} />
-          </div>
-          <div>
-            <div className="text-2xl font-black text-amber-600 dark:text-amber-400">{stats.pending}</div>
-            <div className="text-xs text-muted-foreground font-semibold uppercase">Pending</div>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <LiquidStatCard
+          title="Total Students"
+          value={stats.total}
+          icon={<Users size={22} />}
+          variant="blue"
+        />
+        <LiquidStatCard
+          title="Present"
+          value={stats.present}
+          icon={<CheckCircle size={22} />}
+          variant="emerald"
+        />
+        <LiquidStatCard
+          title="Absent"
+          value={stats.absent}
+          icon={<XCircle size={22} />}
+          variant="purple"
+        />
+        <LiquidStatCard
+          title="Pending"
+          value={stats.pending}
+          icon={<AlertCircle size={22} />}
+          variant="amber"
+        />
       </div>
 
       {/* Control Actions & Search */}

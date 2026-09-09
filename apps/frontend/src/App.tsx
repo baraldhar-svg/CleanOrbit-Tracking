@@ -14,6 +14,7 @@ import SchoolProfile from "@/pages/school-profile";
 import AdvertisePage from "@/pages/advertise";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsOfService from "@/pages/terms-of-service";
+import DeleteAccount from "@/pages/delete-account";
 import SubscriptionPage from "@/pages/subscription";
 import VehicleLiveMap from "@/components/VehicleLiveMap";
 import { useEffect, useRef } from "react";
@@ -75,6 +76,8 @@ function Router() {
       <Route path="/school/:id" component={SchoolProfile} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/delete-account" component={DeleteAccount} />
+      <Route path="/data-deletion" component={DeleteAccount} />
       <Route path="/subscription">
         <AuthGuard>
           <SubscriptionPage />
