@@ -52,6 +52,7 @@ interface FoundUser {
   demoCode?: string;
   hasEmail?: boolean;
   maskedEmail?: string;
+  method?: "email" | "sms";
 }
 
 const ROLE_CONFIG: Record<string, { label: string; badge: string; icon: string }> = {
@@ -216,6 +217,7 @@ export default function AuthScreen() {
         demoCode: data.demoCode,
         hasEmail: data.hasEmail ?? false,
         maskedEmail: data.maskedEmail,
+        method: data.method ?? (data.hasEmail ? "email" : "sms"),
       };
 
       setFoundUser(fu);
@@ -227,7 +229,11 @@ export default function AuthScreen() {
         setStep("schoolCode");
       } else {
         setStep("otp");
-        setSuccessMsg(`Verification code sent to +977 ${cleanDigits}`);
+        if (fu.method === "email" || fu.hasEmail) {
+          setSuccessMsg(`Verification code sent to email (${fu.maskedEmail || "registered email"})`);
+        } else {
+          setSuccessMsg(`Verification code sent to mobile +977 ${cleanDigits}`);
+        }
         setTimeout(() => otpInputsRef.current[0]?.focus(), 150);
       }
     } catch (e: unknown) {
@@ -249,10 +255,14 @@ export default function AuthScreen() {
     setLoading(true);
 
     try {
-      await apiPost("/auth/send-otp", { phone: phone.replace(/\D/g, "") });
+      const res = await apiPost("/auth/send-otp", { phone: phone.replace(/\D/g, "") });
       setCountdown(60);
       setCanResend(false);
-      setSuccessMsg("A fresh 6-digit OTP has been sent.");
+      if (res?.method === "email" || res?.maskedEmail) {
+        setSuccessMsg(`A fresh 6-digit OTP has been sent to your email (${res.maskedEmail || foundUser?.maskedEmail || ""}).`);
+      } else {
+        setSuccessMsg("A fresh 6-digit OTP has been sent to your mobile via SMS.");
+      }
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Failed to resend code.");
     } finally {
@@ -508,7 +518,18 @@ export default function AuthScreen() {
                   Enter 6-Digit OTP Code
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Sent to mobile <strong className="text-amber-500 font-mono">+977 {phone}</strong>
+                  {foundUser?.method === "email" || foundUser?.hasEmail ? (
+                    <>
+                      Sent to registered email{" "}
+                      <strong className="text-amber-500 font-mono">
+                        {foundUser?.maskedEmail || "your email"}
+                      </strong>
+                    </>
+                  ) : (
+                    <>
+                      Sent to mobile <strong className="text-amber-500 font-mono">+977 {phone}</strong>
+                    </>
+                  )}
                 </p>
               </div>
 

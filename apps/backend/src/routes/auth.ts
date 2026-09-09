@@ -102,7 +102,7 @@ async function generateUniqueSchoolCode(schoolName: string): Promise<string> {
   throw new Error("Failed to generate a unique school code");
 }
 
-// ⚠️ परिवर्तन गरिएको मुख्य ठाउँ: अब यसले ओटिपी नमागी सिधै लगिन गराइदिन्छ
+// Check phone and intelligently send OTP: Email for existing users, SMS for new users
 router.post("/check-phone", async (req, res) => {
   try {
     const { phone } = req.body as { phone?: string };
@@ -126,8 +126,10 @@ router.post("/check-phone", async (req, res) => {
 
       return res.json({
         found: true,
-        requiresPassword: false, // Routes to OTP screen on frontend
+        requiresPassword: false,
         hasEmail: true,
+        method: "email",
+        maskedEmail: "ba***@gmail.com",
         user: {
           id: 9851049147,
           phone: "9851049147",
@@ -139,7 +141,7 @@ router.post("/check-phone", async (req, res) => {
       });
     }
 
-    const { user } = await syncUserAndProfiles(normalized);
+    const { user, passenger, driver } = await syncUserAndProfiles(normalized);
 
     if (!user) {
       return res.status(200).json({
@@ -159,13 +161,50 @@ router.post("/check-phone", async (req, res) => {
       tenant = t ?? null;
     }
 
+    const targetEmail = user.email || (passenger as any)?.email || (driver as any)?.email || null;
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+    await db.insert(otpCodesTable).values({
+      phone: normalized,
+      code: otp,
+      expiresAt,
+      used: 0,
+    });
+
+    let method: "email" | "sms" = "sms";
+    let maskedEmail: string | undefined = undefined;
+
+    if (targetEmail) {
+      // Purano (existing) user with email -> send OTP to Email!
+      method = "email";
+      maskedEmail = targetEmail.split('@')[0].length > 2
+        ? targetEmail.split('@')[0].substring(0, 2) + '***@' + targetEmail.split('@')[1]
+        : targetEmail.split('@')[0] + '***@' + targetEmail.split('@')[1];
+      try {
+        await sendLoginOtpEmail(targetEmail, otp, user.name || "User");
+        logger.info(`Sent login OTP email to existing user ${user.name} (${targetEmail})`);
+      } catch (e) {
+        logger.error({ err: e }, "Failed to send login OTP email in check-phone");
+      }
+    } else {
+      // Existing user without email -> send via SMS
+      method = "sms";
+      try {
+        await sendOtpSms(normalized, otp);
+        logger.info(`Sent login OTP SMS to existing user ${user.name} (${normalized})`);
+      } catch (e) {
+        logger.error({ err: e }, "Failed to send login OTP SMS in check-phone");
+      }
+    }
+
     return res.json({
       found: true,
       verified: false,
       user: { ...user, tenant, subscriptionStatus: calculateSubscriptionStatus(user) },
       requiresSchoolCode: user.role !== "superadmin" && !!user.tenantId,
-      hasEmail: !!user.email,
-      maskedEmail: user.email ? (user.email.split('@')[0].length > 2 ? user.email.split('@')[0].substring(0, 2) + '***@' + user.email.split('@')[1] : user.email.split('@')[0] + '***@' + user.email.split('@')[1]) : undefined,
+      hasEmail: !!targetEmail,
+      maskedEmail,
+      method,
     });
   } catch (err: any) {
     logger.error({ err }, "check-phone error");
@@ -194,7 +233,7 @@ router.post("/send-otp", async (req, res) => {
       used: 0,
     });
     await sendSuperAdminOtpEmail(otp);
-    return res.json({ success: true });
+    return res.json({ success: true, method: "email", maskedEmail: "ba***@gmail.com", message: "OTP sent to super admin email" });
   }
 
   if (!/^9[6-9]\d{8}$/.test(phone.replace(/\s/g, ""))) {
@@ -213,10 +252,29 @@ router.post("/send-otp", async (req, res) => {
   });
 
   try {
-    let targetPhoneForSms = normalized;
-    const { user } = await syncUserAndProfiles(normalized);
+    const { user, passenger, driver } = await syncUserAndProfiles(normalized);
+    const targetEmail = user?.email || (passenger as any)?.email || (driver as any)?.email || null;
     
-    // Feature: Admin authorizations (Route OTP to the primary/oldest admin)
+    // 1. Purano user with email -> send OTP to Email!
+    if (user && targetEmail) {
+      const emailSent = await sendLoginOtpEmail(targetEmail, otp, user.name || "User");
+      const maskedEmail = targetEmail.split('@')[0].length > 2
+        ? targetEmail.split('@')[0].substring(0, 2) + '***@' + targetEmail.split('@')[1]
+        : targetEmail.split('@')[0] + '***@' + targetEmail.split('@')[1];
+
+      if (emailSent) {
+        logger.info(`Sent OTP email to user ${user.name} (${targetEmail})`);
+        return res.json({
+          success: true,
+          method: "email",
+          maskedEmail,
+          message: `OTP sent to your email (${maskedEmail})`
+        });
+      }
+    }
+    
+    // 2. New user (or user without email) -> Send OTP to Mobile SMS!
+    let targetPhoneForSms = normalized;
     if (user && user.role === "admin" && user.tenantId) {
       const [oldestAdmin] = await db.select({ phone: usersTable.phone })
         .from(usersTable)
@@ -231,9 +289,14 @@ router.post("/send-otp", async (req, res) => {
     }
 
     await sendOtpSms(targetPhoneForSms, otp);
-    return res.json({ success: true, message: "OTP sent successfully" });
+    return res.json({
+      success: true,
+      method: "sms",
+      message: `OTP sent to mobile +977 ${targetPhoneForSms}`
+    });
   } catch (error: any) {
-    return res.status(500).json({ error: error?.message || "Failed to send OTP SMS" });
+    logger.error({ error }, "send-otp error");
+    return res.status(500).json({ error: error?.message || "Failed to send OTP" });
   }
 });
 
