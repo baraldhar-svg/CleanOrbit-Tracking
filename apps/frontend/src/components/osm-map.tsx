@@ -293,11 +293,10 @@ export default function OsmMap({
         touchZoom: true,
       });
 
-      // CartoDB Positron — clean, clear street tiles, no key required
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
+      // OpenStreetMap — clean, clear standard tiles, no key required
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
-        subdomains: "abcd",
-        attribution: "© OpenStreetMap contributors © CARTO",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
 
       leafletRef.current = map;
