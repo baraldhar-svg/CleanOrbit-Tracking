@@ -98,6 +98,7 @@ export default function AuthScreen() {
   const [successMsg, setSuccessMsg] = useState("");
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const [unregisteredPhone, setUnregisteredPhone] = useState<string | null>(null);
 
   const [foundUser, setFoundUser] = useState<FoundUser | null>(() => {
     try {
@@ -200,13 +201,14 @@ export default function AuthScreen() {
 
     setErr("");
     setSuccessMsg("");
+    setUnregisteredPhone(null);
     setLoading(true);
 
     try {
       const data = await apiPost("/auth/check-phone", { phone: cleanDigits });
 
       if (data.found === false) {
-        navigate(`/register?phone=${encodeURIComponent(cleanDigits)}`);
+        setUnregisteredPhone(cleanDigits);
         return;
       }
 
@@ -239,7 +241,7 @@ export default function AuthScreen() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Could not verify phone number";
       if (msg.toLowerCase().includes("not registered") || msg.toLowerCase().includes("not found")) {
-        navigate(`/register?phone=${encodeURIComponent(cleanDigits)}`);
+        setUnregisteredPhone(cleanDigits);
       } else {
         setErr(msg);
       }
@@ -355,6 +357,7 @@ export default function AuthScreen() {
     setSchoolCode("");
     setErr("");
     setSuccessMsg("");
+    setUnregisteredPhone(null);
   };
 
   const userRoleMeta = foundUser?.role ? ROLE_CONFIG[foundUser.role] || ROLE_CONFIG.student : ROLE_CONFIG.student;
@@ -413,13 +416,69 @@ export default function AuthScreen() {
 
           {step === "phone" && (
             <div className="space-y-5">
-              <div className="text-center"><h2 className="text-lg font-black text-white">Enter Mobile Number</h2></div>
+              <div className="text-center">
+                <h2 className="text-lg font-black text-white">Sign In to OrbitTrack</h2>
+                <p className="text-xs text-slate-400 mt-1">Enter your registered mobile number</p>
+              </div>
+
               <div className="flex items-center rounded-2xl border-2 border-white/10 bg-slate-800 focus-within:border-amber-500 transition-all overflow-hidden">
                 <div className="px-3.5 py-3 border-r border-slate-700 bg-slate-800"><span className="text-xs font-black text-white">+977</span></div>
-                <input type="tel" placeholder="98XXXXXXXX" value={phone} maxLength={10} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} className="flex-1 px-3.5 py-3 bg-transparent text-sm font-bold text-white outline-none" />
+                <input
+                  type="tel"
+                  placeholder="98XXXXXXXX"
+                  value={phone}
+                  maxLength={10}
+                  onChange={(e) => {
+                    setPhone(e.target.value.replace(/\D/g, ""));
+                    setErr("");
+                    setUnregisteredPhone(null);
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && phone.length === 10 && handleSendOtp()}
+                  className="flex-1 px-3.5 py-3 bg-transparent text-sm font-bold text-white outline-none"
+                />
               </div>
+
+              {unregisteredPhone && (
+                <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-left space-y-3 animate-in fade-in duration-200">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-bold text-white">This number is not registered</h3>
+                      <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                        No account was found for mobile number <span className="font-mono text-amber-300 font-bold">+977 {unregisteredPhone}</span>.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-amber-500/20 flex flex-col gap-2">
+                    <p className="text-xs text-slate-300 font-medium">
+                      Do you want to Sign up?
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/register?phone=${encodeURIComponent(unregisteredPhone)}`)}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 py-2.5 px-4 font-bold text-xs transition-colors shadow-md cursor-pointer"
+                    >
+                      <span>Sign Up / Create Account</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {err && <div className="p-3 bg-red-900/20 text-red-400 text-xs rounded-2xl border border-red-900">{err}</div>}
+              
               <LiquidButton onClick={() => handleSendOtp()} disabled={phone.length < 10 || loading} variant="primary" className="w-full justify-center">Send OTP Code →</LiquidButton>
+
+              <p className="text-center text-xs text-slate-400 pt-2">
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => navigate(phone.length >= 10 ? `/register?phone=${encodeURIComponent(phone)}` : "/register")}
+                  className="font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                >
+                  Sign Up here
+                </button>
+              </p>
             </div>
           )}
 

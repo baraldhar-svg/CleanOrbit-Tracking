@@ -1,8 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+  ArrowLeft,
+  Building2,
+} from "lucide-react";
 
-type Step = "phone" | "login" | "verify_new_otp" | "new" | "admin_form" | "admin_pending";
+type Step = "new" | "admin_form" | "admin_pending";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -29,7 +37,7 @@ async function apiPost(path: string, body: unknown) {
   let data: any;
   try {
     data = JSON.parse(text);
-  } catch (e) {
+  } catch {
     if (!res.ok) throw new ApiError(`Server error (${res.status}). Please try again shortly.`);
     throw new ApiError("Invalid response from server.");
   }
@@ -37,19 +45,11 @@ async function apiPost(path: string, body: unknown) {
   return data;
 }
 
-interface FoundUser {
-  name: string;
-  role: string;
-  requiresSchoolCode: boolean;
-  demoCode: string;
-  requiresPassword?: boolean;
-}
-
 const ROLE_LABELS: Record<string, string> = {
-  student: "Student",
-  staff: "Staff",
+  student: "Student / Parent",
+  staff: "Staff / Teacher",
   driver: "Driver",
-  admin: "Admin",
+  admin: "School Admin",
 };
 
 const CLASS_OPTIONS = [
@@ -78,18 +78,28 @@ export default function RegisterScreen() {
   const { login } = useAuth();
   const [, navigate] = useLocation();
 
-  const [step, setStep] = useState<Step>("phone");
-  const [phone, setPhone] = useState("");
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const paramPhone = (params.get("phone") ?? "").replace(/\D/g, "").slice(0, 10);
+
+  const [step, setStep] = useState<Step>("new");
+  const [phone, setPhone] = useState(paramPhone);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  // Existing-user login state
-  const [foundUser, setFoundUser] = useState<FoundUser | null>(null);
+  // Mobile OTP verification state
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [schoolCode, setSchoolCode] = useState("");
+  const [countdown, setCountdown] = useState(0);
+  const [canResend, setCanResend] = useState(true);
+  const [otpError, setOtpError] = useState("");
+  const [otpSuccess, setOtpSuccess] = useState("");
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // New-user registration state
+  // User registration state
   const [name, setName] = useState("");
   const [role, setRole] = useState("student");
   const [regSchoolCode, setRegSchoolCode] = useState("");
@@ -105,13 +115,19 @@ export default function RegisterScreen() {
   const [faculty, setFaculty] = useState("");
   const [customFaculty, setCustomFaculty] = useState("");
 
+  // Driver & Staff registration state
+  const [gender, setGender] = useState("male");
+  const [designation, setDesignation] = useState("");
+  const [customDesignation, setCustomDesignation] = useState("");
+  const [isClassTeacher, setIsClassTeacher] = useState(false);
+
   // Admin registration state
   const [adminSchoolName, setAdminSchoolName] = useState("");
   const [adminContactName, setAdminContactName] = useState("");
   const [adminLandline, setAdminLandline] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPosition, setAdminPosition] = useState("");
-  const [adminMobile, setAdminMobile] = useState("");
+  const [adminMobile, setAdminMobile] = useState(paramPhone);
   const [adminName, setAdminName] = useState("");
   const [adminFieldErrors, setAdminFieldErrors] = useState<Record<string, string>>({});
 
@@ -119,91 +135,79 @@ export default function RegisterScreen() {
   const [isNepal, setIsNepal] = useState<boolean | null>(null);
 
   useEffect(() => {
+    if (paramPhone && !phone) {
+      setPhone(paramPhone);
+      setAdminMobile(paramPhone);
+    }
+  }, [paramPhone, phone]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (otpSent && countdown > 0) {
+      setCanResend(false);
+      timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else if (countdown === 0) {
+      setCanResend(true);
+    }
+    return () => clearInterval(timer);
+  }, [otpSent, countdown]);
+
+  useEffect(() => {
     if (step !== "admin_pending") return;
     setIsNepal(null);
     fetch("https://ipapi.co/json/")
-      .then(r => r.json())
+      .then((r) => r.json())
       .then((d: { country_code?: string }) => setIsNepal(d.country_code === "NP"))
       .catch(() => {
-        // Fallback: Nepal mobile numbers start with 97x / 98x / 96x
         setIsNepal(/^9[6-8]/.test(adminMobile));
       });
   }, [step, adminMobile]);
 
-  function resetToPhone() {
-    setStep("phone");
-    setFoundUser(null);
-    setOtp(["", "", "", "", "", ""]);
-    setSchoolCode("");
-    setName("");
-    setRegSchoolCode("");
-    setErr("");
-    setAdminFieldErrors({});
-  }
-
-  // Auto-check phone if prefilled in query parameter (e.g. from landing or auth screen)
-  const search = useSearch();
-  const params = new URLSearchParams(search);
-  const paramPhone = params.get("phone") ?? "";
-
-  useEffect(() => {
-    if (paramPhone && paramPhone.replace(/\D/g, "").length >= 7 && !phone) {
-      setPhone(paramPhone);
-      apiPost("/auth/check-phone", { phone: paramPhone })
-        .then(async (data) => {
-          if (data.found === false) {
-            try {
-              await apiPost("/auth/send-otp", { phone: paramPhone });
-              setStep("verify_new_otp");
-            } catch (e) {
-              setErr(e instanceof Error ? e.message : "Failed to send OTP");
-            }
-          } else if (data.user) {
-            navigate(`/auth?phone=${encodeURIComponent(paramPhone)}`);
-          }
-        })
-        .catch(() => { setStep("phone"); });
+  // Handle OTP SMS sending
+  async function handleSendMobileOtp() {
+    const num = phone.replace(/\D/g, "");
+    if (num.length < 10) {
+      setOtpError("Please enter a valid 10-digit Nepal mobile number.");
+      return;
     }
-  }, [paramPhone]);
 
-  // ── Step 1: Check phone ───────────────────────────────────────────────
-  async function handleCheckPhone() {
-    setErr(""); setLoading(true);
+    setOtpSending(true);
+    setOtpError("");
+    setOtpSuccess("");
+    setErr("");
 
     try {
-      const data = await apiPost("/auth/check-phone", { phone });
-      
-      if (data.found === false) {
-        await apiPost("/auth/send-otp", { phone });
-        setStep("verify_new_otp");
+      // Check if number already registered
+      const check = await apiPost("/auth/check-phone", { phone: num });
+      if (check.found === true && check.user) {
+        setOtpError("This number already has an account. Please Sign In.");
+        setOtpSending(false);
         return;
       }
 
-      // User is found, redirect them to login!
-      navigate(`/auth?phone=${encodeURIComponent(phone)}`);
+      await apiPost("/auth/send-otp", { phone: num });
+      setOtpSent(true);
+      setCountdown(60);
+      setCanResend(false);
+      setOtp(["", "", "", "", "", ""]);
+      setOtpSuccess(`6-digit OTP sent via SMS to +977 ${num}`);
+      setTimeout(() => otpRefs.current[0]?.focus(), 150);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Error";
-      if (msg.toLowerCase().includes("not registered") || msg.toLowerCase().includes("not found")) {
-        await apiPost("/auth/send-otp", { phone });
-        setStep("verify_new_otp");
-      } else {
-        setErr(msg);
-      }
-    } finally { setLoading(false); }
+      setOtpError(e instanceof Error ? e.message : "Failed to send SMS OTP. Please try again.");
+    } finally {
+      setOtpSending(false);
+    }
   }
 
-  async function handleLoginPassword() {
-    setErr(""); setLoading(true);
-    try {
-      const result = await apiPost("/auth/login-password", { phone, password });
-      login({ ...result.user, tenant: result.user?.tenant ?? null }, result.token as string | undefined);
-      navigate("/dashboard");
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Incorrect password");
-    } finally { setLoading(false); }
-  }
-
-  // ── Step 2a: OTP login for existing user ─────────────────────────────
+  // Handle OTP Inputs
   function handleOtpKey(i: number, val: string) {
     if (!/^\d?$/.test(val)) return;
     const next = [...otp];
@@ -220,34 +224,30 @@ export default function RegisterScreen() {
     otpRefs.current[Math.min(digits.length, 5)]?.focus();
   }
 
-  async function handleVerifyOtp() {
-    setErr(""); setLoading(true);
-    try {
-      const code = otp.join("");
-      const result = await apiPost("/auth/verify-otp", {
-        phone,
-        code,
-        schoolCode: schoolCode.trim() || undefined,
-      });
-      login({ ...result.user, tenant: result.user?.tenant ?? null });
-      navigate("/dashboard");
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Verification failed");
-    } finally { setLoading(false); }
-  }
+  // Verify OTP
+  async function handleVerifyMobileOtp() {
+    const num = phone.replace(/\D/g, "");
+    const code = otp.join("");
+    if (code.length < 6) {
+      setOtpError("Please enter all 6 digits of the OTP code.");
+      return;
+    }
 
-  async function handleVerifyNewOtp() {
-    setErr(""); setLoading(true);
+    setOtpVerifying(true);
+    setOtpError("");
     try {
-      const code = otp.join("");
       await apiPost("/auth/verify-otp-register", {
-        phone,
+        phone: num,
         code,
       });
-      setStep("new");
+      setIsPhoneVerified(true);
+      setOtpSent(false);
+      setOtpSuccess("Mobile verified successfully! ✓");
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Verification failed");
-    } finally { setLoading(false); }
+      setOtpError(e instanceof Error ? e.message : "Invalid or expired OTP code.");
+    } finally {
+      setOtpVerifying(false);
+    }
   }
 
   // ── Step 2b: Register new user ────────────────────────────────────────
@@ -283,13 +283,16 @@ export default function RegisterScreen() {
     } finally { setLoading(false); }
   }, [adminSchoolName, adminContactName, adminLandline, adminEmail, adminName, adminPosition, adminMobile]);
 
-  // Driver & Staff registration state
-  const [gender, setGender] = useState("male");
-  const [designation, setDesignation] = useState("");
-  const [customDesignation, setCustomDesignation] = useState("");
-  const [isClassTeacher, setIsClassTeacher] = useState(false);
-
   const handleRegister = useCallback(async () => {
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length < 10) {
+      setErr("Enter your 10-digit mobile number.");
+      return;
+    }
+    if (!isPhoneVerified) {
+      setErr("Please verify your mobile number with OTP first.");
+      return;
+    }
     if (!name.trim()) { setErr("Name is required"); return; }
     if (role !== "admin" && !regSchoolCode.trim()) { setErr("School Code is required"); return; }
     if (role === "staff" && !designation) { setErr("Please select your Designation"); return; }
@@ -305,7 +308,7 @@ export default function RegisterScreen() {
       const effectiveClass = className === "Others" ? "Others" : className;
       const effectiveDesignation = designation === "Others" ? customDesignation.trim() : designation;
       const user = await apiPost("/auth/register", {
-        phone,
+        phone: cleanPhone,
         name: name.trim(),
         role,
         gender: (role === "driver" || role === "staff") ? gender : undefined,
@@ -333,314 +336,217 @@ export default function RegisterScreen() {
         setErr(msg);
       }
     } finally { setLoading(false); }
-  }, [phone, name, role, gender, designation, customDesignation, regSchoolCode, password, confirmPassword, className, customClass, section, rollNumber, faculty, customFaculty, isClassTeacher, login, navigate]);
+  }, [phone, isPhoneVerified, name, role, gender, designation, customDesignation, regSchoolCode, password, confirmPassword, className, customClass, section, rollNumber, faculty, customFaculty, isClassTeacher, login, navigate]);
 
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#0F172A] px-4 py-8">
       <div className="w-full max-w-sm rounded-2xl bg-slate-800 border border-slate-700 p-6 shadow-2xl">
 
-        {/* Back button */}
+        {/* Navigation Back */}
         <div className="mb-4">
           <button
-            onClick={() => step === "phone" ? navigate("/") : resetToPhone()}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            onClick={() => step === "admin_form" ? setStep("new") : navigate("/auth")}
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            {step === "phone" ? "Back" : "Change number"}
+            <ArrowLeft size={14} />
+            <span>{step === "admin_form" ? "Back to Roles" : "Back to Sign In"}</span>
           </button>
         </div>
 
         {/* Header */}
-        <div className="mb-6 flex flex-col items-center gap-2">
+        <div className="mb-6 flex flex-col items-center gap-2 text-center">
           <span className="text-5xl bus-float">🚌</span>
           <h1 className="text-2xl font-black text-white">
             Orbit<span className="text-[#ffd000]">Track</span>
           </h1>
+          <p className="text-xs text-slate-400">
+            {step === "admin_form" ? "Register School Organization" : "Create your account & get started"}
+          </p>
         </div>
-
-        {/* ── STEP: Phone ── */}
-        {step === "phone" && (
-          <>
-            <div className="mb-5 text-center">
-              <h2 className="text-lg font-bold text-slate-100">Create your account</h2>
-              <p className="text-sm text-slate-400 mt-1">Enter your mobile number to get started</p>
-            </div>
-
-            <div className="mb-4">
-              <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">Mobile Number</label>
-              <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
-                <span className="text-sm text-slate-400 select-none">🇳🇵 +977</span>
-                <input
-                  type="tel"
-                  placeholder="98XXXXXXXX"
-                  value={phone}
-                  onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 10)); setErr(""); }}
-                  className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none"
-                  onKeyDown={(e) => e.key === "Enter" && phone.length === 10 && handleCheckPhone()}
-                />
-              </div>
-            </div>
-
-            {err && (
-              <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
-                <span className="text-red-400 mt-0.5 text-sm shrink-0">🚫</span>
-                <p className="text-xs text-red-300 leading-relaxed">{err}</p>
-              </div>
-            )}
-
-            <button
-              onClick={handleCheckPhone}
-              disabled={phone.length < 10 || loading}
-              className="w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="h-4 w-4 rounded-full border-2 border-slate-900/30 border-t-slate-900 animate-spin" />
-                  Checking…
-                </span>
-              ) : "Continue →"}
-            </button>
-
-            <p className="mt-4 text-center text-xs text-slate-500">
-              Already have an account?{" "}
-              <button onClick={() => navigate("/auth")} className="text-amber-400 hover:text-amber-300 font-semibold">Sign In</button>
-            </p>
-          </>
-        )}
-
-        {/* ── STEP: Existing account found — School Code input like first image ── */}
-        {step === "login" && foundUser && (
-          <>
-            {/* Welcome card */}
-            <div className="mb-5 rounded-xl border border-slate-700 bg-slate-900/60 p-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-black text-sm">
-                {foundUser.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0 text-left">
-                <p className="text-sm font-bold text-white truncate">
-                  Welcome back, {foundUser.name.split(" ")[0]}! 👋
-                </p>
-                <p className="text-xs text-slate-400">
-                  {ROLE_LABELS[foundUser.role] ?? foundUser.role}
-                </p>
-              </div>
-            </div>
-
-            {/* School Code Input (if required by role) */}
-            {foundUser.requiresSchoolCode && (
-              <div className="mb-5">
-                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide text-left">
-                  School Code
-                </label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
-                  <span className="text-slate-400 text-sm">🏫</span>
-                  <input
-                    type="text"
-                    placeholder="e.g. APEX-ALPHA-1234"
-                    value={schoolCode}
-                    onChange={(e) => {
-                      setSchoolCode(e.target.value.toUpperCase());
-                      setErr("");
-                    }}
-                    className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none font-mono tracking-wider"
-                    autoCapitalize="characters"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Password input for super admin if required */}
-            {foundUser.requiresPassword && (
-              <div className="mb-5">
-                <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide text-left">
-                  Password
-                </label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 focus-within:border-amber-500 transition-colors">
-                  <span className="text-slate-400 text-sm">🔒</span>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter password"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setErr(""); }}
-                    className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none"
-                    onKeyDown={(e) => e.key === "Enter" && password && handleLoginPassword()}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-xs text-slate-400 hover:text-slate-200"
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {err && (
-              <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
-                <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
-                <p className="text-xs text-red-300 leading-relaxed text-left">{err}</p>
-              </div>
-            )}
-
-            <button
-              onClick={foundUser.requiresPassword ? handleLoginPassword : handleVerifyOtp}
-              disabled={
-                loading ||
-                (foundUser.requiresSchoolCode && !schoolCode.trim()) ||
-                (foundUser.requiresPassword && !password.trim())
-              }
-              className="w-full rounded-xl bg-emerald-800 hover:bg-emerald-700 py-3.5 font-bold text-white disabled:opacity-40 transition-colors shadow-lg"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                  Signing in…
-                </span>
-              ) : (
-                "Sign In to Existing Account →"
-              )}
-            </button>
-
-            <button
-              onClick={resetToPhone}
-              className="mt-4 w-full text-center text-xs text-slate-500 hover:text-slate-300 py-1.5"
-            >
-              ← Change number
-            </button>
-          </>
-        )}
-
-        {/* ── STEP: Verify OTP for New Account ── */}
-        {step === "verify_new_otp" && (
-          <>
-            <div className="mb-6 flex flex-col items-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 mb-3 shadow-inner ring-1 ring-amber-500/20">
-                <span className="text-2xl">💬</span>
-              </div>
-              <h2 className="text-xl font-bold text-white mb-1">Verify Mobile</h2>
-              <p className="text-xs text-slate-400 text-center px-4 leading-relaxed">
-                We sent a 6-digit code to<br />
-                <strong className="text-white">+977 {phone}</strong>
-              </p>
-            </div>
-
-            <div className="mb-6 flex justify-center gap-2" onPaste={handleOtpPaste}>
-              {otp.map((digit, i) => (
-                <input
-                  key={i}
-                  ref={(el) => { otpRefs.current[i] = el; }}
-                  type="tel"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpKey(i, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Backspace" && !digit && i > 0) {
-                      otpRefs.current[i - 1]?.focus();
-                    }
-                  }}
-                  className="h-12 w-10 md:h-14 md:w-12 rounded-xl border border-slate-700 bg-slate-900 text-center text-lg md:text-xl font-bold text-white shadow-inner focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all outline-none"
-                />
-              ))}
-            </div>
-
-            {err && (
-              <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
-                <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
-                <p className="text-xs text-red-300 leading-relaxed text-left">{err}</p>
-              </div>
-            )}
-
-            <button
-              onClick={handleVerifyNewOtp}
-              disabled={loading || otp.join("").length < 6}
-              className="w-full rounded-xl bg-amber-500 hover:bg-amber-400 py-3.5 font-bold text-slate-900 disabled:opacity-40 transition-colors shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)]"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="h-4 w-4 rounded-full border-2 border-slate-900/30 border-t-slate-900 animate-spin" />
-                  Verifying…
-                </span>
-              ) : (
-                "Verify & Continue →"
-              )}
-            </button>
-
-            <button
-              onClick={resetToPhone}
-              className="mt-4 w-full text-center text-xs text-slate-500 hover:text-slate-300 py-1.5"
-            >
-              ← Change number
-            </button>
-          </>
-        )}
 
         {/* ── STEP: New account form ── */}
         {step === "new" && (
           <>
-            {/* New number banner */}
-            <div className="mb-5 flex items-center gap-3 rounded-xl border border-blue-700/40 bg-blue-950/30 px-4 py-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-300 text-xl">
-                🆕
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-blue-300">New number detected</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">+977 {phone} · Fill in your details to register</p>
-              </div>
-            </div>
-
             {/* Role picker — always visible */}
             <div className="mb-4">
-              <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">I am a…</label>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                Choose Your Role <span className="text-amber-400">*</span>
+              </label>
               <div className="grid grid-cols-2 gap-2">
                 {(["student", "staff", "driver", "admin"] as const).map((r) => (
                   <button
                     key={r}
                     type="button"
                     onClick={() => { setRole(r); setErr(""); }}
-                    className={`rounded-xl border py-2.5 text-xs font-semibold capitalize transition-all ${
+                    className={`rounded-xl border py-2.5 px-2 text-xs font-bold capitalize transition-all cursor-pointer ${
                       role === r
-                        ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                        : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500"
+                        ? "border-amber-500 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
+                        : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500 hover:text-slate-200"
                     }`}
                   >
+                    {r === "student" && "🎒 "}
+                    {r === "staff" && "👩‍🏫 "}
+                    {r === "driver" && "🚍 "}
+                    {r === "admin" && "🏫 "}
                     {ROLE_LABELS[r]}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Admin role: show a special CTA — no standard form */}
+            {/* Admin role: show special CTA */}
             {role === "admin" ? (
               <>
                 <div className="mb-4 rounded-xl border border-amber-700/40 bg-amber-900/10 px-4 py-3.5">
                   <p className="text-sm font-bold text-amber-300 mb-1">🏫 Register Your School</p>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    School Admin registration requires SuperAdmin verification. You'll fill in your school's details and wait for approval (5–10 minutes). A verification code will then be sent to your school email.
+                    School Admin registration requires SuperAdmin verification. Fill in your school's details and a verification code will be sent to your school email within 5–10 minutes.
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setAdminMobile(phone); setStep("admin_form"); setErr(""); }}
-                  className="w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 transition-colors"
+                  onClick={() => {
+                    setAdminMobile(phone);
+                    setStep("admin_form");
+                    setErr("");
+                  }}
+                  className="w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 transition-colors shadow-lg cursor-pointer"
                 >
                   Register as School Admin →
                 </button>
               </>
             ) : (
               <>
-                {/* Row 1: Full Name — full width */}
+                {/* Full Name */}
                 <div className="mb-3">
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">Full Name</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                    Full Name <span className="text-amber-400">*</span>
+                  </label>
                   <input
                     type="text"
-                    placeholder="e.g. Priya Maharjan"
+                    placeholder="e.g. Priya Sharma"
                     value={name}
                     onChange={(e) => { setName(e.target.value); setErr(""); }}
                     className="w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none focus:border-amber-500 transition-colors"
                   />
+                </div>
+
+                {/* Mobile Number with Verify Button on Right Side */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                      Mobile Number <span className="text-amber-400">*</span>
+                    </label>
+                    {isPhoneVerified && (
+                      <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 size={12} /> Verified
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 focus-within:border-amber-500 transition-colors">
+                    <span className="text-sm text-slate-400 select-none">🇳🇵 +977</span>
+                    <input
+                      type="tel"
+                      placeholder="98XXXXXXXX"
+                      value={phone}
+                      disabled={isPhoneVerified}
+                      onChange={(e) => {
+                        setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                        setErr("");
+                        setOtpError("");
+                        if (isPhoneVerified) setIsPhoneVerified(false);
+                      }}
+                      className="flex-1 bg-transparent text-sm text-white font-semibold placeholder:text-slate-600 outline-none disabled:text-slate-300"
+                    />
+
+                    {/* Right side verification badge or Verify button */}
+                    {isPhoneVerified ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPhoneVerified(false);
+                          setOtpSent(false);
+                        }}
+                        className="text-[11px] font-bold text-slate-400 hover:text-white underline cursor-pointer shrink-0"
+                      >
+                        Change
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSendMobileOtp()}
+                        disabled={phone.length < 10 || otpSending}
+                        className="shrink-0 flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 px-2.5 py-1 text-xs font-black transition-all cursor-pointer shadow-sm"
+                      >
+                        {otpSending ? (
+                          <span className="h-3.5 w-3.5 rounded-full border-2 border-slate-900 border-t-transparent animate-spin" />
+                        ) : (
+                          <>
+                            <ShieldCheck size={13} />
+                            <span>{otpSent ? "Resend" : "Verify"}</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Inline OTP Verification Box */}
+                  {otpSent && !isPhoneVerified && (
+                    <div className="mt-2.5 rounded-xl border border-amber-500/40 bg-slate-900/90 p-3 space-y-2.5 animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-amber-300 font-bold flex items-center gap-1">
+                          <span>💬</span> Enter 6-digit SMS OTP:
+                        </span>
+                        {countdown > 0 ? (
+                          <span className="text-[11px] text-slate-400 font-mono">Resend in {countdown}s</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSendMobileOtp()}
+                            className="text-[11px] font-bold text-amber-400 hover:underline cursor-pointer"
+                          >
+                            Resend Code
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex justify-center gap-1.5" onPaste={handleOtpPaste}>
+                        {otp.map((d, i) => (
+                          <input
+                            key={i}
+                            ref={(el) => { otpRefs.current[i] = el; }}
+                            type="tel"
+                            maxLength={1}
+                            value={d}
+                            onChange={(e) => handleOtpKey(i, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Backspace" && !d && i > 0) {
+                                otpRefs.current[i - 1]?.focus();
+                              }
+                            }}
+                            className="h-10 w-9 rounded-lg border border-slate-700 bg-slate-800 text-center text-base font-bold text-white focus:border-amber-500 outline-none"
+                          />
+                        ))}
+                      </div>
+
+                      {otpError && (
+                        <p className="text-[11px] text-red-400 font-medium leading-tight">{otpError}</p>
+                      )}
+                      {otpSuccess && (
+                        <p className="text-[11px] text-emerald-400 font-medium leading-tight">{otpSuccess}</p>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleVerifyMobileOtp}
+                        disabled={otp.join("").length < 6 || otpVerifying}
+                        className="w-full rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 py-2 text-xs font-black disabled:opacity-40 transition-colors cursor-pointer shadow-md"
+                      >
+                        {otpVerifying ? "Verifying OTP…" : "Confirm OTP Code ✓"}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Gender picker — for Driver & Staff */}
@@ -655,9 +561,9 @@ export default function RegisterScreen() {
                           key={g}
                           type="button"
                           onClick={() => { setGender(g); setErr(""); }}
-                          className={`rounded-xl border py-2 text-xs font-semibold capitalize transition-all ${
+                          className={`rounded-xl border py-2 text-xs font-semibold capitalize transition-all cursor-pointer ${
                             gender === g
-                              ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                              ? "border-amber-500 bg-amber-500/15 text-amber-300"
                               : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500"
                           }`}
                         >
@@ -716,9 +622,9 @@ export default function RegisterScreen() {
                       <button
                         type="button"
                         onClick={() => { setIsClassTeacher(true); setErr(""); }}
-                        className={`rounded-xl border py-2.5 text-xs font-semibold transition-all ${
+                        className={`rounded-xl border py-2.5 text-xs font-semibold transition-all cursor-pointer ${
                           isClassTeacher
-                            ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                            ? "border-amber-500 bg-amber-500/15 text-amber-300"
                             : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500"
                         }`}
                       >
@@ -727,9 +633,9 @@ export default function RegisterScreen() {
                       <button
                         type="button"
                         onClick={() => { setIsClassTeacher(false); setClassName(""); setSection(""); setCustomClass(""); setErr(""); }}
-                        className={`rounded-xl border py-2.5 text-xs font-semibold transition-all ${
+                        className={`rounded-xl border py-2.5 text-xs font-semibold transition-all cursor-pointer ${
                           !isClassTeacher
-                            ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                            ? "border-amber-500 bg-amber-500/15 text-amber-300"
                             : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500"
                         }`}
                       >
@@ -851,7 +757,7 @@ export default function RegisterScreen() {
                         {faculty === "Others" && (
                           <input
                             type="text"
-                            placeholder="e.g. Agriculture, Fine Arts, Architecture"
+                            placeholder="e.g. Agriculture, Fine Arts"
                             value={customFaculty}
                             onChange={(e) => { setCustomFaculty(e.target.value); setErr(""); }}
                             className="mt-2 w-full rounded-xl border border-amber-600/60 bg-slate-900 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none focus:border-amber-500 transition-colors"
@@ -888,7 +794,7 @@ export default function RegisterScreen() {
                         placeholder="e.g. GOLDEN202647"
                         value={regSchoolCode}
                         onChange={(e) => { setRegSchoolCode(e.target.value.toUpperCase()); setErr(""); }}
-                        className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none font-mono tracking-wider"
+                        className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none font-mono tracking-wider uppercase"
                         autoCapitalize="characters"
                       />
                     </div>
@@ -896,7 +802,7 @@ export default function RegisterScreen() {
                   </div>
                 )}
 
-                {/* Row 4: Password | Confirm Password */}
+                {/* Password | Confirm Password */}
                 <div className="mb-3 grid grid-cols-2 gap-2">
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
@@ -912,7 +818,7 @@ export default function RegisterScreen() {
                         autoComplete="new-password"
                       />
                       <button type="button" onClick={() => setShowPassword((v) => !v)}
-                        className="shrink-0 text-slate-500 hover:text-slate-300 text-[10px] transition-colors">
+                        className="shrink-0 text-slate-500 hover:text-slate-300 text-[10px] transition-colors cursor-pointer">
                         {showPassword ? "Hide" : "Show"}
                       </button>
                     </div>
@@ -938,31 +844,47 @@ export default function RegisterScreen() {
 
                 {!password && (
                   <p className="mb-3 text-[11px] text-slate-500">
-                    Skip password to use OTP-only login.
+                    Skip password to use mobile OTP-only login.
                   </p>
                 )}
 
                 {err && (
                   <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-800/50 bg-red-900/20 px-3.5 py-3">
-                    <span className="text-red-400 mt-0.5 text-sm shrink-0">⚠️</span>
+                    <AlertTriangle className="text-red-400 mt-0.5 shrink-0" size={16} />
                     <p className="text-xs text-red-300 leading-relaxed">{err}</p>
                   </div>
                 )}
 
                 <button
+                  type="button"
                   onClick={handleRegister}
-                  disabled={!name.trim() || (!!password && password !== confirmPassword) || loading}
-                  className="w-full rounded-xl bg-amber-500 py-3 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors"
+                  disabled={!name.trim() || !isPhoneVerified || (!!password && password !== confirmPassword) || loading}
+                  className="w-full rounded-xl bg-amber-500 py-3.5 font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 transition-colors shadow-lg cursor-pointer"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="h-4 w-4 rounded-full border-2 border-slate-900/30 border-t-slate-900 animate-spin" />
                       Creating account…
                     </span>
-                  ) : "Create Account →"}
+                  ) : !isPhoneVerified ? (
+                    "Verify Mobile to Continue →"
+                  ) : (
+                    "Create Account →"
+                  )}
                 </button>
               </>
             )}
+
+            <p className="mt-4 text-center text-xs text-slate-500">
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/auth")}
+                className="text-amber-400 hover:text-amber-300 font-semibold cursor-pointer underline"
+              >
+                Sign In
+              </button>
+            </p>
           </>
         )}
 
