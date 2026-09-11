@@ -6219,7 +6219,7 @@ export default function AdminPortal({
 
       {/* Floating 3D Liquid Glass Pill Dock */}
       <div className="relative">
-        <nav className="liquid-glass-dock rounded-full p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide shadow-lg border border-white/80 dark:border-white/10">
+        <nav className="liquid-glass-dock rounded-2xl sm:rounded-full p-2 sm:p-2.5 flex flex-wrap items-center gap-1.5 sm:gap-2 shadow-lg border border-white/80 dark:border-white/10">
           {(
             [
               { key: "overview",       label: "Dashboard", icon: <LayoutDashboard size={14} /> },

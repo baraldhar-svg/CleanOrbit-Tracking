@@ -162,22 +162,18 @@ router.post("/check-phone", async (req, res) => {
     }
 
     const targetEmail = user.email || (passenger as any)?.email || (driver as any)?.email || null;
-    const otp = generateOtp();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
-    await db.insert(otpCodesTable).values({
-      phone: normalized,
-      code: otp,
-      expiresAt,
-      used: 0,
-    });
-
-    let method: "email" | "sms" = "sms";
-    let maskedEmail: string | undefined = undefined;
 
     if (targetEmail) {
-      // Purano (existing) user with email -> send OTP to Email!
-      method = "email";
-      maskedEmail = targetEmail.split('@')[0].length > 2
+      const otp = generateOtp();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+      await db.insert(otpCodesTable).values({
+        phone: normalized,
+        code: otp,
+        expiresAt,
+        used: 0,
+      });
+
+      const maskedEmail = targetEmail.split('@')[0].length > 2
         ? targetEmail.split('@')[0].substring(0, 2) + '***@' + targetEmail.split('@')[1]
         : targetEmail.split('@')[0] + '***@' + targetEmail.split('@')[1];
       try {
@@ -186,26 +182,29 @@ router.post("/check-phone", async (req, res) => {
       } catch (e) {
         logger.error({ err: e }, "Failed to send login OTP email in check-phone");
       }
-    } else {
-      // Existing user without email -> send via SMS
-      method = "sms";
-      try {
-        await sendOtpSms(normalized, otp);
-        logger.info(`Sent login OTP SMS to existing user ${user.name} (${normalized})`);
-      } catch (e) {
-        logger.error({ err: e }, "Failed to send login OTP SMS in check-phone");
-      }
-    }
 
-    return res.json({
-      found: true,
-      verified: false,
-      user: { ...user, tenant, subscriptionStatus: calculateSubscriptionStatus(user) },
-      requiresSchoolCode: user.role !== "superadmin" && !!user.tenantId,
-      hasEmail: !!targetEmail,
-      maskedEmail,
-      method,
-    });
+      return res.json({
+        found: true,
+        verified: false,
+        user: { ...user, tenant, subscriptionStatus: calculateSubscriptionStatus(user) },
+        requiresSchoolCode: user.role !== "superadmin" && !!user.tenantId,
+        hasEmail: true,
+        needsEmail: false,
+        maskedEmail,
+        method: "email",
+      });
+    } else {
+      // Existing user without email -> prompt to add email for receiving OTP
+      return res.json({
+        found: true,
+        verified: false,
+        user: { ...user, tenant, subscriptionStatus: calculateSubscriptionStatus(user) },
+        requiresSchoolCode: user.role !== "superadmin" && !!user.tenantId,
+        hasEmail: false,
+        needsEmail: true,
+        method: "email",
+      });
+    }
   } catch (err: any) {
     logger.error({ err }, "check-phone error");
     return res.status(500).json({
@@ -215,8 +214,79 @@ router.post("/check-phone", async (req, res) => {
   }
 });
 
+router.post("/link-email-and-send-otp", async (req, res) => {
+  try {
+    const { phone, email } = req.body as { phone?: string; email?: string };
+    if (!phone || !email) {
+      return res.status(400).json({ error: "Phone number and email address are required" });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+      return res.status(400).json({ error: "Please enter a valid email address (e.g. name@domain.com)" });
+    }
+
+    const normalized = normalizePhone(phone);
+    const { user, passenger, driver } = await syncUserAndProfiles(normalized);
+    if (!user) {
+      return res.status(404).json({ error: "No registered account found for this mobile number" });
+    }
+
+    // Update email in usersTable, and passengersTable/driversTable
+    await db.update(usersTable).set({ email: cleanEmail }).where(eq(usersTable.id, user.id));
+    if (passenger) {
+      await db.update(passengersTable).set({ email: cleanEmail }).where(eq(passengersTable.phone, normalized));
+    }
+    if (driver) {
+      await db.update(driversTable).set({ email: cleanEmail }).where(eq(driversTable.phone, normalized));
+    }
+
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+    await db.insert(otpCodesTable).values({
+      phone: normalized,
+      code: otp,
+      expiresAt,
+      used: 0,
+    });
+
+    try {
+      await sendLoginOtpEmail(cleanEmail, otp, user.name || "User");
+      logger.info(`Sent OTP email to updated user ${user.name} (${cleanEmail})`);
+    } catch (e) {
+      logger.error({ err: e }, "Failed to send OTP email in link-email-and-send-otp");
+    }
+
+    const maskedEmail = cleanEmail.split('@')[0].length > 2
+      ? cleanEmail.split('@')[0].substring(0, 2) + '***@' + cleanEmail.split('@')[1]
+      : cleanEmail.split('@')[0] + '***@' + cleanEmail.split('@')[1];
+
+    let tenant = null;
+    if (user.tenantId) {
+      const [t] = await db
+        .select()
+        .from(tenantsTable)
+        .where(eq(tenantsTable.id, user.tenantId))
+        .limit(1);
+      tenant = t ?? null;
+    }
+
+    return res.json({
+      success: true,
+      method: "email",
+      hasEmail: true,
+      maskedEmail,
+      message: `Verification code sent to ${cleanEmail}`,
+      requiresSchoolCode: user.role !== "superadmin" && !!user.tenantId,
+      user: { ...user, email: cleanEmail, tenant, subscriptionStatus: calculateSubscriptionStatus(user) },
+    });
+  } catch (err: any) {
+    logger.error({ err }, "link-email-and-send-otp error");
+    return res.status(500).json({ error: err?.message || "Failed to link email and send OTP" });
+  }
+});
+
 router.post("/send-otp", async (req, res) => {
-  const { phone } = req.body as { phone?: string };
+  const { phone, email, sendSms } = req.body as { phone?: string; email?: string; sendSms?: boolean };
   if (!phone) {
     return res.status(400).json({ error: "Phone is required" });
   }
@@ -253,17 +323,30 @@ router.post("/send-otp", async (req, res) => {
 
   try {
     const { user, passenger, driver } = await syncUserAndProfiles(normalized);
-    const targetEmail = user?.email || (passenger as any)?.email || (driver as any)?.email || null;
+    let targetEmail = user?.email || (passenger as any)?.email || (driver as any)?.email || null;
     
-    // 1. Purano user with email -> send OTP to Email!
-    if (user && targetEmail) {
-      const emailSent = await sendLoginOtpEmail(targetEmail, otp, user.name || "User");
+    if (!targetEmail && email && /^\S+@\S+\.\S+$/.test(email.trim())) {
+      targetEmail = email.trim().toLowerCase();
+      if (user) {
+        await db.update(usersTable).set({ email: targetEmail }).where(eq(usersTable.id, user.id));
+      }
+      if (passenger) {
+        await db.update(passengersTable).set({ email: targetEmail }).where(eq(passengersTable.phone, normalized));
+      }
+      if (driver) {
+        await db.update(driversTable).set({ email: targetEmail }).where(eq(driversTable.phone, normalized));
+      }
+    }
+
+    // 1. Send OTP to Email if user has email and didn't explicitly request SMS
+    if (targetEmail && !sendSms) {
+      const emailSent = await sendLoginOtpEmail(targetEmail, otp, user?.name || "User");
       const maskedEmail = targetEmail.split('@')[0].length > 2
         ? targetEmail.split('@')[0].substring(0, 2) + '***@' + targetEmail.split('@')[1]
         : targetEmail.split('@')[0] + '***@' + targetEmail.split('@')[1];
 
       if (emailSent) {
-        logger.info(`Sent OTP email to user ${user.name} (${targetEmail})`);
+        logger.info(`Sent OTP email to user ${user?.name} (${targetEmail})`);
         return res.json({
           success: true,
           method: "email",
@@ -273,7 +356,7 @@ router.post("/send-otp", async (req, res) => {
       }
     }
     
-    // 2. New user (or user without email) -> Send OTP to Mobile SMS!
+    // 2. Send SMS fallback / if requested
     let targetPhoneForSms = normalized;
     if (user && user.role === "admin" && user.tenantId) {
       const [oldestAdmin] = await db.select({ phone: usersTable.phone })

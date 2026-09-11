@@ -115,7 +115,7 @@ export function LiquidButton({
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
       className={cn(
-        "relative select-none font-medium flex items-center justify-center transition-all duration-300 outline-none focus:outline-none overflow-hidden group shadow-md",
+        "relative select-none font-medium flex items-center justify-center shrink-0 whitespace-nowrap transition-all duration-300 outline-none focus:outline-none overflow-hidden group shadow-md",
         "active:scale-95",
         shapeStyles[shape],
         sizeStyles[size],

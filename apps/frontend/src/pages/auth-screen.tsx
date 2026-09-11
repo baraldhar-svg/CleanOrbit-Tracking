@@ -13,10 +13,11 @@ import {
   Building2,
   AlertTriangle,
   CheckCircle2,
-  Fingerprint
+  Fingerprint,
+  Mail
 } from "lucide-react";
 
-type Step = "phone" | "schoolCode" | "otp";
+type Step = "phone" | "addEmail" | "schoolCode" | "otp";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -53,6 +54,7 @@ interface FoundUser {
   hasEmail?: boolean;
   maskedEmail?: string;
   method?: "email" | "sms";
+  needsEmail?: boolean;
 }
 
 const ROLE_CONFIG: Record<string, { label: string; badge: string; icon: string }> = {
@@ -66,8 +68,14 @@ const ROLE_CONFIG: Record<string, { label: string; badge: string; icon: string }
 };
 
 export default function AuthScreen() {
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const [pendingUser, setPendingUser] = useState<AuthUser | null>(null);
   const [bioAutoState, setBioAutoState] = useState<BiometricAutoState>("idle");
@@ -92,6 +100,7 @@ export default function AuthScreen() {
   const [schoolCode, setSchoolCode] = useState(() => {
     try { return sessionStorage.getItem("auth_schoolCode") || ""; } catch { return ""; }
   });
+  const [email, setEmail] = useState("");
   
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -183,11 +192,7 @@ export default function AuthScreen() {
     } catch {}
 
     login(user, token);
-    if (!user.biometricEnabled && isBiometricSupported()) {
-      setPendingUser(user);
-    } else {
-      navigate("/dashboard");
-    }
+    navigate("/dashboard");
   }
 
   async function handleSendOtp(customPhone?: string) {
@@ -218,6 +223,7 @@ export default function AuthScreen() {
         requiresSchoolCode: data.requiresSchoolCode ?? false,
         demoCode: data.demoCode,
         hasEmail: data.hasEmail ?? false,
+        needsEmail: data.needsEmail ?? false,
         maskedEmail: data.maskedEmail,
         method: data.method ?? (data.hasEmail ? "email" : "sms"),
       };
@@ -227,7 +233,10 @@ export default function AuthScreen() {
       setCountdown(60);
       setCanResend(false);
 
-      if (fu.requiresSchoolCode) {
+      if (data.needsEmail) {
+        // Account exists (e.g. registered by Admin) but no email attached yet!
+        setStep("addEmail");
+      } else if (fu.requiresSchoolCode) {
         setStep("schoolCode");
       } else {
         setStep("otp");
@@ -250,6 +259,87 @@ export default function AuthScreen() {
     }
   }
 
+  async function handleLinkEmailAndSendOtp() {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+      setErr("Please enter a valid email address (e.g. name@gmail.com).");
+      return;
+    }
+
+    setErr("");
+    setSuccessMsg("");
+    setLoading(true);
+
+    try {
+      const cleanDigits = phone.replace(/\D/g, "");
+      const data = await apiPost("/auth/link-email-and-send-otp", {
+        phone: cleanDigits,
+        email: cleanEmail,
+      });
+
+      if (foundUser) {
+        setFoundUser({
+          ...foundUser,
+          hasEmail: true,
+          needsEmail: false,
+          maskedEmail: data.maskedEmail,
+          method: "email",
+        });
+      }
+
+      setCountdown(60);
+      setCanResend(false);
+
+      if (foundUser?.requiresSchoolCode) {
+        setStep("schoolCode");
+      } else {
+        setStep("otp");
+        setSuccessMsg(`Verification code sent to email (${data.maskedEmail || cleanEmail})`);
+        setTimeout(() => otpInputsRef.current[0]?.focus(), 150);
+      }
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed to link email and send verification code.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSendSmsOtpFallback() {
+    setErr("");
+    setSuccessMsg("");
+    setLoading(true);
+
+    try {
+      const cleanDigits = phone.replace(/\D/g, "");
+      await apiPost("/auth/send-otp", {
+        phone: cleanDigits,
+        sendSms: true,
+      });
+
+      if (foundUser) {
+        setFoundUser({
+          ...foundUser,
+          method: "sms",
+        });
+      }
+
+      setCountdown(60);
+      setCanResend(false);
+
+      if (foundUser?.requiresSchoolCode) {
+        setStep("schoolCode");
+      } else {
+        setStep("otp");
+        setSuccessMsg(`Verification code sent to mobile +977 ${cleanDigits}`);
+        setTimeout(() => otpInputsRef.current[0]?.focus(), 150);
+      }
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed to send SMS verification code.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleResendOtp() {
     if (!canResend || loading) return;
     setErr("");
@@ -257,7 +347,10 @@ export default function AuthScreen() {
     setLoading(true);
 
     try {
-      const res = await apiPost("/auth/send-otp", { phone: phone.replace(/\D/g, "") });
+      const res = await apiPost("/auth/send-otp", { 
+        phone: phone.replace(/\D/g, ""),
+        email: email.trim().toLowerCase() || undefined,
+      });
       setCountdown(60);
       setCanResend(false);
       if (res?.method === "email" || res?.maskedEmail) {
@@ -355,6 +448,7 @@ export default function AuthScreen() {
     setFoundUser(null);
     setOtp(["", "", "", "", "", ""]);
     setSchoolCode("");
+    setEmail("");
     setErr("");
     setSuccessMsg("");
     setUnregisteredPhone(null);
@@ -479,6 +573,98 @@ export default function AuthScreen() {
                   Sign Up here
                 </button>
               </p>
+            </div>
+          )}
+
+          {step === "addEmail" && foundUser && (
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-white/10 bg-slate-800/80 p-3.5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-500 font-black text-base border border-amber-500/30">
+                    {foundUser.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-white truncate">
+                      {foundUser.name}
+                    </p>
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full border mt-0.5 ${userRoleMeta.badge}`}>
+                      <span>{userRoleMeta.icon}</span> {userRoleMeta.label}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20 shrink-0">
+                  +977 {phone}
+                </span>
+              </div>
+
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-2 text-left">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                  <Mail size={16} />
+                  <span>Email Address Required for Login OTP</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Your account is registered in OrbitTrack, but no email address is linked yet. Please enter your email address to receive your 6-digit login OTP code.
+                </p>
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300">
+                  Your Email Address
+                </label>
+                <div className="flex items-center rounded-2xl border-2 border-white/10 bg-slate-800 px-3.5 py-3 focus-within:border-amber-500 transition-all">
+                  <Mail size={16} className="text-slate-400 mr-2 shrink-0" />
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    autoFocus
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setErr("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && email.trim() && !loading) {
+                        handleLinkEmailAndSendOtp();
+                      }
+                    }}
+                    className="flex-1 bg-transparent text-sm font-medium text-white placeholder:text-slate-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {err && (
+                <div className="flex items-start gap-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400">
+                  <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                  <p className="font-medium">{err}</p>
+                </div>
+              )}
+
+              <LiquidButton
+                onClick={handleLinkEmailAndSendOtp}
+                disabled={!email.trim() || loading}
+                variant="primary"
+                className="w-full justify-center py-3.5 text-sm font-black shadow-lg"
+              >
+                {loading ? "Sending OTP Code…" : "Send Verification Code to Email →"}
+              </LiquidButton>
+
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={resetToPhone}
+                  className="font-bold text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
+                >
+                  ← Change Number
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendSmsOtpFallback}
+                  disabled={loading}
+                  className="font-bold text-slate-400 hover:text-amber-300 underline transition-colors cursor-pointer"
+                >
+                  Or send OTP via SMS →
+                </button>
+              </div>
             </div>
           )}
 
