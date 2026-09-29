@@ -48,7 +48,7 @@ async function apiPost(path: string, body: unknown) {
 const ROLE_LABELS: Record<string, string> = {
   student: "Student / Parent",
   staff: "Staff / Teacher",
-  driver: "Driver",
+  driver: "Driver / Bus Asst",
   admin: "School Admin",
 };
 
@@ -311,7 +311,7 @@ export default function RegisterScreen() {
         phone: cleanPhone,
         name: name.trim(),
         role,
-        gender: (role === "driver" || role === "staff") ? gender : undefined,
+        gender: (role === "driver" || role === "bus_assistant" || role === "staff") ? gender : undefined,
         designation: role === "staff" ? effectiveDesignation || undefined : undefined,
         schoolCode: regSchoolCode.trim() || undefined,
         password: password || undefined,
@@ -373,26 +373,72 @@ export default function RegisterScreen() {
                 Choose Your Role <span className="text-amber-400">*</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {(["student", "staff", "driver", "admin"] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => { setRole(r); setErr(""); }}
-                    className={`rounded-xl border py-2.5 px-2 text-xs font-bold capitalize transition-all cursor-pointer ${
-                      role === r
-                        ? "border-amber-500 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
-                        : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500 hover:text-slate-200"
-                    }`}
-                  >
-                    {r === "student" && "🎒 "}
-                    {r === "staff" && "👩‍🏫 "}
-                    {r === "driver" && "🚍 "}
-                    {r === "admin" && "🏫 "}
-                    {ROLE_LABELS[r]}
-                  </button>
-                ))}
+                {(["student", "staff", "driver", "admin"] as const).map((r) => {
+                  const isSelected = role === r || (r === "driver" && role === "bus_assistant");
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => { 
+                        setRole(r === "driver" ? (role === "bus_assistant" ? "bus_assistant" : "driver") : r); 
+                        setErr(""); 
+                      }}
+                      className={`rounded-xl border py-2.5 px-2 text-xs font-bold capitalize transition-all cursor-pointer ${
+                        isSelected
+                          ? "border-amber-500 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
+                          : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                      }`}
+                    >
+                      {r === "student" && "🎒 "}
+                      {r === "staff" && "👩‍🏫 "}
+                      {r === "driver" && (role === "bus_assistant" ? "🦺 " : "🚍 ")}
+                      {r === "admin" && "🏫 "}
+                      {r === "driver" && role === "bus_assistant" ? "Bus Assistant" : ROLE_LABELS[r]}
+                    </button>
+                  );
+                })}
               </div>
             </div>
+
+            {/* Slide Option: Driver vs Bus Assistant */}
+            {(role === "driver" || role === "bus_assistant") && (
+              <div className="mb-4 rounded-xl border border-amber-500/30 bg-slate-900/80 p-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center justify-between mb-1.5 px-0.5">
+                  <label className="block text-[11px] font-bold text-amber-300 uppercase tracking-wide">
+                    Crew Role Type <span className="text-amber-400">*</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400">
+                    {role === "driver" ? "Vehicle Driver" : "Bus Assistant (Bus Asess)"}
+                  </span>
+                </div>
+                <div className="relative flex p-1 rounded-lg bg-slate-950 border border-slate-700">
+                  {/* Sliding Pill Background */}
+                  <div
+                    className={`absolute top-1 bottom-1 rounded-md bg-amber-500 shadow-md transition-all duration-200 ease-out ${
+                      role === "driver" ? "left-1 w-[calc(50%-4px)]" : "left-[calc(50%+0px)] w-[calc(50%-4px)]"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setRole("driver"); setErr(""); }}
+                    className={`relative z-10 flex-1 py-1.5 text-xs font-bold transition-colors text-center cursor-pointer ${
+                      role === "driver" ? "text-slate-950 font-black" : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    🚍 Driver
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setRole("bus_assistant"); setErr(""); }}
+                    className={`relative z-10 flex-1 py-1.5 text-xs font-bold transition-colors text-center cursor-pointer ${
+                      role === "bus_assistant" ? "text-slate-950 font-black" : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    🦺 Bus Assistant
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Admin role: show special CTA */}
             {role === "admin" ? (
@@ -549,8 +595,8 @@ export default function RegisterScreen() {
                   )}
                 </div>
 
-                {/* Gender picker — for Driver & Staff */}
-                {(role === "driver" || role === "staff") && (
+                {/* Gender picker — for Driver, Bus Assistant & Staff */}
+                {(role === "driver" || role === "bus_assistant" || role === "staff") && (
                   <div className="mb-3">
                     <label className="mb-1.5 block text-xs font-semibold text-slate-300 uppercase tracking-wide">
                       Gender

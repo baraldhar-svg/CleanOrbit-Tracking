@@ -82,7 +82,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
       .values({
         phone: normalizedPhone,
         name: driver.name,
-        role: "driver",
+        role: (driver as any).role || "driver",
         tenantId: driver.tenantId,
         schoolCode,
         photoUrl: driver.photoUrl,
@@ -128,7 +128,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
           .returning();
         passenger = createdPassenger;
       }
-    } else if (user.role === "driver") {
+    } else if (user.role === "driver" || user.role === "bus_assistant") {
       const tenantId = user.tenantId;
       if (tenantId) {
         const [createdDriver] = await db
@@ -141,6 +141,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
             isActive: false,
             photoUrl: user.photoUrl,
             email: user.email,
+            role: user.role,
           })
           .returning();
         driver = createdDriver;
@@ -247,9 +248,14 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
       }
 
       // Sync role
-      if (user.role !== "driver") {
-        user.role = "driver";
+      const expectedRole = (driver as any).role || (user.role === "bus_assistant" ? "bus_assistant" : "driver");
+      if (user.role !== "admin" && user.role !== "superadmin" && user.role !== expectedRole) {
+        user.role = expectedRole;
         shouldUpdateUser = true;
+      }
+      if ((driver as any).role !== expectedRole) {
+        (driver as any).role = expectedRole;
+        shouldUpdateDriver = true;
       }
 
       // Sync photo
@@ -306,6 +312,7 @@ export async function syncUserAndProfiles(normalizedPhone: string) {
             name: driver.name,
             photoUrl: driver.photoUrl,
             email: driver.email,
+            role: (driver as any).role,
           })
           .where(eq(driversTable.id, driver.id));
       }

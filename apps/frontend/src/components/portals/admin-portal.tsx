@@ -3148,6 +3148,7 @@ function AddDriverDialog({
   const queryClient = useQueryClient();
   const { data: routes } = useListRoutes();
   const { data: vehicles } = useListVehicles();
+  const [role, setRole] = useState<"driver" | "bus_assistant">("driver");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
@@ -3158,6 +3159,7 @@ function AddDriverDialog({
   const [err, setErr] = useState("");
 
   function reset() {
+    setRole("driver");
     setName("");
     setPhone("");
     setPhotoUrl("");
@@ -3181,6 +3183,7 @@ function AddDriverDialog({
         photoUrl: photoUrl || undefined,
         gender: gender || undefined,
         vehicleNumber: vehicleNumber.trim(),
+        role: role,
       });
       if (routeId) {
         await apiPatch(`/routes/${routeId}`, { driverId: driver.id });
@@ -3206,10 +3209,37 @@ function AddDriverDialog({
     >
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Add New Driver</DialogTitle>
+          <DialogTitle>Add New Driver / Bus Assistant</DialogTitle>
         </DialogHeader>
         <div className="space-y-2.5 text-xs">
-          <PhotoPicker value={photoUrl} onChange={setPhotoUrl} name={name || "New Driver"} />
+          <div>
+            <label className="mb-1 block font-semibold text-muted-foreground">Crew Role *</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setRole("driver")}
+                className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  role === "driver"
+                    ? "bg-amber-500 border border-amber-500 text-slate-900 shadow-sm"
+                    : "border border-border bg-background text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                🚍 Driver
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("bus_assistant")}
+                className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  role === "bus_assistant"
+                    ? "bg-amber-500 border border-amber-500 text-slate-900 shadow-sm"
+                    : "border border-border bg-background text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                🦺 Bus Assistant
+              </button>
+            </div>
+          </div>
+          <PhotoPicker value={photoUrl} onChange={setPhotoUrl} name={name || (role === "bus_assistant" ? "New Bus Assistant" : "New Driver")} />
           <div>
             <label className="mb-1 block font-semibold text-muted-foreground">
               Full Name *
@@ -3304,6 +3334,7 @@ function EditDriverDialog({
   const queryClient = useQueryClient();
   const { data: routes } = useListRoutes();
   const { data: vehicles } = useListVehicles();
+  const [role, setRole] = useState<"driver" | "bus_assistant">("driver");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
@@ -3316,6 +3347,7 @@ function EditDriverDialog({
 
   useEffect(() => {
     if (driver && open) {
+      setRole(driver.role === "bus_assistant" ? "bus_assistant" : "driver");
       setName(driver.name ?? "");
       setPhone(driver.phone ?? "");
       setPhotoUrl(driver.photoUrl ?? "");
@@ -3332,11 +3364,11 @@ function EditDriverDialog({
 
   async function handleResetLogin() {
     if (!driver || !phone) return;
-    if (!window.confirm("Reset login credentials for this driver? They will be logged out everywhere and can sign in fresh with their mobile number.")) return;
+    if (!window.confirm(`Reset login credentials for this ${role === "bus_assistant" ? "bus assistant" : "driver"}? They will be logged out everywhere and can sign in fresh with their mobile number.`)) return;
     setResetting(true);
     setErr("");
     try {
-      await apiPost("/users/reset-login", { phone: driver.phone, role: "driver" });
+      await apiPost("/users/reset-login", { phone: driver.phone, role: role });
       alert("Login reset successful.");
     } catch (e: any) {
       setErr(e.message || "Failed to reset login");
@@ -3347,7 +3379,7 @@ function EditDriverDialog({
 
   async function handleDelete() {
     if (!driver) return;
-    if (!window.confirm("Are you sure you want to delete this driver?")) return;
+    if (!window.confirm(`Are you sure you want to delete this ${role === "bus_assistant" ? "bus assistant" : "driver"}?`)) return;
     setSaving(true);
     setErr("");
     try {
@@ -3377,6 +3409,7 @@ function EditDriverDialog({
         photoUrl: photoUrl || undefined,
         gender: gender || undefined,
         vehicleNumber: vehicleNumber.trim(),
+        role: role,
       });
       const previousRoute = (routes ?? []).find(
         (r: any) => r.driverId === driver.id,
@@ -3401,10 +3434,37 @@ function EditDriverDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Edit Driver</DialogTitle>
+          <DialogTitle>Edit {role === "bus_assistant" ? "Bus Assistant" : "Driver"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-2.5 text-xs">
-          <PhotoPicker value={photoUrl} onChange={setPhotoUrl} name={name || "Driver"} />
+          <div>
+            <label className="mb-1 block font-semibold text-muted-foreground">Crew Role *</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setRole("driver")}
+                className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  role === "driver"
+                    ? "bg-amber-500 border border-amber-500 text-slate-900 shadow-sm"
+                    : "border border-border bg-background text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                🚍 Driver
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("bus_assistant")}
+                className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  role === "bus_assistant"
+                    ? "bg-amber-500 border border-amber-500 text-slate-900 shadow-sm"
+                    : "border border-border bg-background text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                🦺 Bus Assistant
+              </button>
+            </div>
+          </div>
+          <PhotoPicker value={photoUrl} onChange={setPhotoUrl} name={name || (role === "bus_assistant" ? "Bus Assistant" : "Driver")} />
           <div>
             <label className="mb-1 block font-semibold text-muted-foreground">
               Full Name *
@@ -4197,7 +4257,7 @@ function DriverPanel() {
     <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-border font-bold text-sm text-primary flex items-center justify-between gap-2">
         <span className="flex items-center gap-2">
-          <Bus size={15} className="text-amber-500" /> Drivers Directory
+          <Bus size={15} className="text-amber-500" /> Drivers & Crew Directory
         </span>
         <LiquidButton
           size="xs"
@@ -4230,7 +4290,7 @@ function DriverPanel() {
         </div>
         {filtered.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-6 italic">
-            No drivers found.
+            No drivers or crew found.
           </p>
         ) : (
           <div className="divide-y border rounded-xl overflow-hidden bg-muted/10">
@@ -4245,14 +4305,21 @@ function DriverPanel() {
                     className={`h-2.5 w-2.5 rounded-full shrink-0 ${d.isOnline ? "bg-green-500 animate-pulse" : d.isActive !== false ? "bg-amber-400" : "bg-gray-400"}`}
                   />
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-semibold text-foreground">{d.name}</p>
-                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                      <span className={`rounded-full px-1.5 py-0.2 text-[8px] font-bold ${
+                        d.role === "bus_assistant"
+                          ? "bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-800"
+                          : "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800"
+                      }`}>
+                        {d.role === "bus_assistant" ? "🦺 Assistant" : "🚍 Driver"}
+                      </span>
+                      <span className={`rounded-full px-1.5 py-0.2 text-[8px] font-bold ${
                         d.isActive !== false
                           ? "bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-800"
                           : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700"
                       }`}>
-                        {d.isActive !== false ? "Active Duty" : "Freezed / Off Duty"}
+                        {d.isActive !== false ? "Active Duty" : "Freezed"}
                       </span>
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-0.5">

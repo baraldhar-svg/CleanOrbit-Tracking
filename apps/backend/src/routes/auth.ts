@@ -21,7 +21,7 @@ import { logger } from "../lib/logger";
 import { broadcast } from "../lib/sse";
 
 function calculateSubscriptionStatus(user: any) {
-  if (!user || user.role === 'superadmin' || user.role === 'admin' || user.role === 'driver') {
+  if (!user || user.role === 'superadmin' || user.role === 'admin' || user.role === 'driver' || user.role === 'bus_assistant') {
     return 'active';
   }
   
@@ -602,7 +602,7 @@ router.post("/verify-otp", async (req, res) => {
     }
   }
 
-  const sessionId = user.role === "driver" ? await registerDriverSession(normalized, user.tenantId) : undefined;
+  const sessionId = (user.role === "driver" || user.role === "bus_assistant") ? await registerDriverSession(normalized, user.tenantId) : undefined;
 
   let tenant = null;
   if (user.tenantId) {
@@ -645,7 +645,7 @@ router.post("/login-password", async (req, res) => {
   const valid = await bcrypt.compare(password, user.passwordHash || "");
   if (!valid) return res.status(401).json({ error: "Incorrect password" });
 
-  const sessionId = user.role === "driver" ? await registerDriverSession(normalized, user.tenantId) : undefined;
+  const sessionId = (user.role === "driver" || user.role === "bus_assistant") ? await registerDriverSession(normalized, user.tenantId) : undefined;
 
   let tenant = null;
   if (user.tenantId) {
@@ -800,8 +800,10 @@ router.post("/register", async (req, res) => {
     }
   }
 
-  if (activeUser && activeUser.role === "driver" && gender) {
-    await db.update(driversTable).set({ gender }).where(eq(driversTable.phone, normalized));
+  if (activeUser && (activeUser.role === "driver" || activeUser.role === "bus_assistant")) {
+    const dUpdates: Record<string, any> = { role: activeUser.role };
+    if (gender) dUpdates.gender = gender;
+    await db.update(driversTable).set(dUpdates).where(eq(driversTable.phone, normalized));
   }
 
   let tenant = null;

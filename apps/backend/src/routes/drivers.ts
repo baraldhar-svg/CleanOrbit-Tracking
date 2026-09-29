@@ -111,9 +111,10 @@ router.post("/", async (req, res) => {
     return res.status(409).json({ error: "A driver with this phone number already exists." });
   }
 
+  const role = (req.body as any).role === "bus_assistant" ? "bus_assistant" : "driver";
   const [row] = await db
     .insert(driversTable)
-    .values({ tenantId: req.tenantId, name, phone, photoUrl: photoUrl ?? null, gender: gender ?? null, vehicleNumber, isActive: false })
+    .values({ tenantId: req.tenantId, name, phone, photoUrl: photoUrl ?? null, gender: gender ?? null, vehicleNumber, role, isActive: false })
     .returning();
 
   await syncUserAndProfiles(phone);
@@ -132,12 +133,14 @@ router.patch("/:id", async (req, res) => {
   }
   const id = paramsParsed.data.id;
   const { name, phone, vehicleNumber, photoUrl, gender, isActive, isOnline } = bodyParsed.data;
-  const updates: Partial<{ name: string; phone: string; vehicleNumber: string; photoUrl: string | null; gender: string | null; isActive: boolean; isOnline: boolean }> = {};
+  const role = (req.body as any).role;
+  const updates: Partial<{ name: string; phone: string; vehicleNumber: string; photoUrl: string | null; gender: string | null; role: string; isActive: boolean; isOnline: boolean }> = {};
   if (name !== undefined) updates.name = name;
   if (phone !== undefined) updates.phone = phone ? normalizePhone(phone) : undefined;
   if (vehicleNumber !== undefined) updates.vehicleNumber = vehicleNumber;
   if (photoUrl !== undefined) updates.photoUrl = photoUrl;
   if (gender !== undefined) updates.gender = gender;
+  if (role !== undefined) updates.role = role === "bus_assistant" ? "bus_assistant" : "driver";
   if (isActive !== undefined) {
     updates.isActive = isActive;
     if (isActive === true) {
@@ -156,6 +159,10 @@ router.patch("/:id", async (req, res) => {
     .where(and(eq(driversTable.id, id), eq(driversTable.tenantId, req.tenantId)))
     .returning();
   if (!updated[0]) { return res.status(404).json({ error: "Driver not found" }); }
+
+  if (updates.phone || updates.name || updates.role) {
+    await syncUserAndProfiles(updated[0].phone);
+  }
 
   broadcast(req.tenantId, "drivers_updated", { tenantId: req.tenantId, driverId: id });
   if (isActive === true) {

@@ -27,6 +27,7 @@ export const driversTable = pgTable("drivers", {
   unfrozenAt: timestamp("unfrozen_at"),
   email: text("email"),
   tripType: text("trip_type"), // 'morning' or 'evening'
+  role: text("role").default("driver"), // 'driver' or 'bus_assistant'
 });
 
 export const insertDriverSchema = createInsertSchema(driversTable).omit({ id: true });

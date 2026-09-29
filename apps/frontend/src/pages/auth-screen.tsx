@@ -61,8 +61,9 @@ const ROLE_CONFIG: Record<string, { label: string; badge: string; icon: string }
   superadmin: { label: "Super Admin", badge: "bg-purple-500/20 text-purple-300 border-purple-500/30", icon: "⚡" },
   admin:      { label: "Organization Admin", badge: "bg-blue-500/20 text-blue-300 border-blue-500/30", icon: "🏫" },
   teacher:    { label: "Class Teacher", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", icon: "👩‍🏫" },
-  driver:     { label: "Fleet Driver", badge: "bg-amber-500/20 text-amber-300 border-amber-500/30", icon: "🚍" },
-  staff:      { label: "Staff Member", badge: "bg-teal-500/20 text-teal-300 border-teal-500/30", icon: "👤" },
+  driver:        { label: "Fleet Driver", badge: "bg-amber-500/20 text-amber-300 border-amber-500/30", icon: "🚍" },
+  bus_assistant: { label: "Bus Assistant (Bus Asess)", badge: "bg-orange-500/20 text-orange-300 border-orange-500/30", icon: "🦺" },
+  staff:         { label: "Staff Member", badge: "bg-teal-500/20 text-teal-300 border-teal-500/30", icon: "👤" },
   student:    { label: "Student / Parent", badge: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30", icon: "🎒" },
   parent:     { label: "Guardian / Parent", badge: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30", icon: "👨‍👩‍👧" },
 };

@@ -13,7 +13,7 @@ import AppFooter from "@/components/app-footer";
 import BiometricSetupModal from "@/components/BiometricSetupModal";
 import { useGetMySubscription } from "@workspace/api-client-react";
 
-type Role = "student" | "driver" | "admin" | "superadmin" | "teacher";
+type Role = "student" | "driver" | "bus_assistant" | "admin" | "superadmin" | "teacher";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -338,7 +338,7 @@ function ProfilePanel({
                 <div className="text-center">
                   <p className="text-lg font-bold text-foreground">{user.title ? `${user.title} ` : ""}{user.name}</p>
                   <span className="inline-block rounded-full bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase mt-1">
-                    {user.role}
+                    {user.role === "bus_assistant" ? "Bus Assistant" : user.role}
                   </span>
                 </div>
               )}
@@ -698,6 +698,7 @@ export default function Dashboard() {
   const userRole: Role = (() => {
     if (user?.role === "admin") return "admin";
     if (user?.role === "driver") return "driver";
+    if (user?.role === "bus_assistant") return "bus_assistant";
     if (user?.role === "superadmin") return "superadmin";
     if (user?.role === "staff" && user?.isClassTeacher) return "teacher";
     return "student";
@@ -740,6 +741,7 @@ export default function Dashboard() {
   const ROLE_LABELS: Record<Role, string> = {
     student: "Student / Staff",
     driver: "Driver",
+    bus_assistant: "Bus Assistant",
     admin: "Admin",
     superadmin: "Superadmin",
     teacher: "Class Teacher",
@@ -872,7 +874,7 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          {userRole === "driver" && <DriverPortal tenant={tenant} />}
+          {(userRole === "driver" || userRole === "bus_assistant") && <DriverPortal tenant={tenant} isAssistant={userRole === "bus_assistant"} />}
           {userRole === "admin" && <AdminPortal tenant={tenant} onTenantUpdate={setTenant} />}
           {userRole === "superadmin" && <SuperadminPortal />}
         </main>

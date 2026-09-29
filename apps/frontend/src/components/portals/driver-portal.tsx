@@ -153,8 +153,10 @@ function TripAccordionItem({ t }: { t: any }) {
 }
 
 
-export default function DriverPortal({ tenant }: { tenant?: any }) {
+export default function DriverPortal({ tenant, isAssistant }: { tenant?: any; isAssistant?: boolean }) {
   const { user, login, logout } = useAuth();
+  const isCrewAssistant = isAssistant || user?.role === "bus_assistant";
+  const roleTitle = isCrewAssistant ? "Bus Assistant" : "Driver";
   const [driverProfileOpen, setDriverProfileOpen] = useState(false);
   const [myTripsOpen, setMyTripsOpen] = useState(false);
   // Attendance popup modal for geofenced stations
@@ -1185,9 +1187,9 @@ export default function DriverPortal({ tenant }: { tenant?: any }) {
                 : <User size={18} className="text-amber-400" />}
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight">{myDriver?.name ?? user?.name ?? "Driver"}</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight">{myDriver?.name ?? user?.name ?? roleTitle}</p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
-                {[myDriver?.gender, myDriver?.vehicleNumber].filter(Boolean).join(" · ") || "Driver Portal"}
+                {[roleTitle, myDriver?.gender, myDriver?.vehicleNumber].filter(Boolean).join(" · ") || `${roleTitle} Portal`}
               </p>
             </div>
           </button>
